@@ -8,7 +8,7 @@ int main (int argc, char** argv) {
 
 	QApplication app (argc, argv);
 
-	QPixmap pixmap ("C:\\Users\\Regal-Lab\\Code\\Chimera-Control\\Chimera\\Source\\Shades_Of_Infrared.bmp");
+	QPixmap pixmap ("C:\\Users\\yb2\\Chimera-Control\\Chimera\\Source\\Shades_Of_Infrared.bmp");
 	QSplashScreen splash (pixmap.scaledToHeight (qApp->screens ()[0]->geometry ().height ()));
 	//splash.showFullScreen ();
 

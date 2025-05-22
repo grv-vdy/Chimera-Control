@@ -198,12 +198,15 @@ void CommandModulator::isCalibrationRunning(bool& running, ErrorStatus& status)
 	running = calManager.isCalibrationRunning();
 }
 
-void CommandModulator::setStaticDDS(QString ddsfreqStr, QString channelStr, ErrorStatus& status)
+void CommandModulator::setStaticDDS(QString ddsfreqStr, QString ddslevelStr, QString channelStr, QString portStr, ErrorStatus& status)
 {
 	unsigned channel;
+	unsigned port;
 	std::string ddsfreq = str(ddsfreqStr);
+	std::string ddslevel = str(ddslevelStr);
 	try {
 		channel = boost::lexical_cast<unsigned>(str(channelStr));
+		port = boost::lexical_cast<unsigned>(str(portStr));
 	}
 	catch (boost::bad_lexical_cast&) {
 		status.error = true;
@@ -214,7 +217,8 @@ void CommandModulator::setStaticDDS(QString ddsfreqStr, QString channelStr, Erro
 	auxWin->reportStatus("----------------------\r\nSetting static Ddss... ");
 	try {
 		auto& staticDds = analysisWin->getStaticDds();
-		staticDds.setDdsEditValue(ddsfreq, channel);
+		staticDds.setDdsEditFrequencyValue(ddsfreq, channel, port);
+		staticDds.setDdsEditLevelValue(ddslevel, channel, port);
 		staticDds.handleProgramNowPress(auxWin->getUsableConstants());
 	}
 	catch (ChimeraError& err) {

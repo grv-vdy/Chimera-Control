@@ -34,14 +34,19 @@ public:
     const bool safemode;
 private:
     std::string getDDSCommand(double ddsfreqVal);
-    void writeDDSs(std::array<double, size_t(StaticDDSGrid::total)> outputs);
-    bool checkBound(double ddsfreqVal);
+    void writeDDSs(std::array<std::array<double, 2>, size_t(StaticDDSGrid::total)> outputs_frequency,
+	std::array<std::array<double, 2>, size_t(StaticDDSGrid::total)> outputs_level);
+    bool checkBoundFreq(double ddsfreqVal);
+    bool checkBoundLevel(double ddslevelVal);
 
 public:
     static constexpr double ddsResolutionInst = 1e-6; // 1 Hz
     const int numFreqDigits = static_cast<int>(abs(round(log10(ddsResolutionInst) - 0.49)));
-    const double minVal = 0.1;
-    const double maxVal = 1000;
+    const double minFreqVal = 20;
+    const double maxFreqVal = 6400;
+    const double minLevelVal = 0;
+    const double maxLevelVal = 31.5;
+
 
 private:
     StaticDDSFlume sddsFlume;

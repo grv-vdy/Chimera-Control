@@ -127,8 +127,8 @@ class ExperimentProcedure:
     def is_calibration_running(self) -> bool:
         return self.chimera_bool_command("Is-Calibration-Running?")
 
-    def setStaticDDS(self, ddsfreq : float, channel : int):
-        return self.chimera_command(f"Set-Static-DDS ${ddsfreq:.6f} ${channel:d}") # Hz resoultion, in MHz unit
+    def setStaticDDS(self, ddsfreq : float, ddsLevel: float, channel : int, port: int):
+        return self.chimera_command(f"Set-Static-DDS ${ddsfreq:.6f} ${ddsLevel:.6f} ${channel:d} ${port:d}") # Hz resoultion, in MHz unit
 
     def setTTL(self, name:str, value:bool):
         return self.chimera_command(f"Set-TTL ${name}${int(value)}")

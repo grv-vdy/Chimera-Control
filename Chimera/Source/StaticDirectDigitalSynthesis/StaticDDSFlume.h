@@ -10,6 +10,10 @@ public:
 	std::string read();
 	void resetConnection();
 	const bool SAFEMODE;
+	std::string getSerialNumberOnly();
+	void setFrequency(double frequencyMHz);
+	void setOutputLevel(int leveldBm);
+	void setReferenceFrequency(double refMHz);
 private:
 	void readCallback(int byte);
 	void errorCallback(std::string error);

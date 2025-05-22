@@ -109,7 +109,7 @@ void MessageConsumer::consume()
             auto args = getArguments(message, 2, argValid, connection);
             if (!argValid) continue;
             QMetaObject::invokeMethod(&modulator_, [&]() {
-                modulator_.setStaticDDS(qstr(args[0]), qstr(args[1]), status);
+                modulator_.setStaticDDS(qstr(args[0]), qstr(args[1]), qstr(args[2]), qstr(args[3]), status);
                 }, Qt::BlockingQueuedConnection);
             connection->do_write(compileReply("Finished setting static DDS", status));
         }
