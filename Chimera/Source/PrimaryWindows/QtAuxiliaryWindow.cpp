@@ -60,11 +60,11 @@ void QtAuxiliaryWindow::initializeWidgets (){
 		aoSys.initialize (this);
 		layout1->addWidget(&aoSys, 0);
 
-		olSys.initialize(this);
-		layout1->addWidget(&olSys, 0);
+		// olSys.initialize(this);
+		// layout1->addWidget(&olSys, 0);
 
-		dds.initialize(this);
-		layout1->addWidget(&dds, 0);
+		// dds.initialize(this);
+		// layout1->addWidget(&dds, 0);
 		//dds.initialize (this, "DDS SYSTEM");
 		//layout3->addWidget(&dds, 1);
 
@@ -89,32 +89,32 @@ void QtAuxiliaryWindow::initializeWidgets (){
 		
 		QVBoxLayout* layout2 = new QVBoxLayout();
 
-		aiSys.initialize(this);
-		calManager.initialize(this, &aiSys, &aoSys, &ttlBoard,
-			scriptWin->getArbGenCore(), andorWin->getPython());
-		mwSys.initialize(this);
-		layout2->addWidget(&aiSys);
-		layout2->addWidget(&calManager);
-		layout2->addWidget(&mwSys, 0);
-		layout2->addStretch(1);
+		// aiSys.initialize(this);
+		// calManager.initialize(this, &aiSys, &aoSys, &ttlBoard,
+		// 	scriptWin->getArbGenCore(), andorWin->getPython());
+		// mwSys.initialize(this);
+		// layout2->addWidget(&aiSys);
+		// layout2->addWidget(&calManager);
+		// layout2->addWidget(&mwSys, 0);
+		// layout2->addStretch(1);
 
 		layout1->setContentsMargins(0, 0, 0, 0);
-		layout2->setContentsMargins(0, 0, 0, 0);
+		// layout2->setContentsMargins(0, 0, 0, 0);
 		layout3->setContentsMargins(0, 0, 0, 0);
 		layout->addLayout(layout1);
 		layout->addLayout(layout3);
-		layout->addLayout(layout2);
+		// layout->addLayout(layout2);
 
 		DOdialog = new doChannelInfoDialog(&ttlBoard);
 		AOdialog = new AoSettingsDialog(&aoSys);
 		DDSdialog = new DdsSettingsDialog(&dds);
-		OLdialog = new OlSettingsDialog(&olSys);
-		AIdialog = new AiSettingsDialog(&aiSys);
+		// OLdialog = new OlSettingsDialog(&olSys);
+		// AIdialog = new AiSettingsDialog(&aiSys);
 
 		connect(DOdialog, &doChannelInfoDialog::updateSyntaxHighLight, [this]() {this->scriptWin->updateDoAoDdsNames(); });
 		connect(AOdialog, &AoSettingsDialog::updateSyntaxHighLight, [this]() {this->scriptWin->updateDoAoDdsNames(); });
-		connect(DDSdialog, &DdsSettingsDialog::updateSyntaxHighLight, [this]() {this->scriptWin->updateDoAoDdsNames(); });
-		connect(OLdialog, &OlSettingsDialog::updateSyntaxHighLight, [this]() {this->scriptWin->updateDoAoDdsNames(); });
+		// connect(DDSdialog, &DdsSettingsDialog::updateSyntaxHighLight, [this]() {this->scriptWin->updateDoAoDdsNames(); });
+		// connect(OLdialog, &OlSettingsDialog::updateSyntaxHighLight, [this]() {this->scriptWin->updateDoAoDdsNames(); });
 
 	}
 	catch (ChimeraError& err){
@@ -177,12 +177,12 @@ void QtAuxiliaryWindow::windowSaveConfig (ConfigStream& saveFile){
 	configParamCtrl.handleSaveConfig (saveFile);
 	ttlBoard.handleSaveConfig (saveFile);
 	aoSys.handleSaveConfig (saveFile);
-	dds.handleSaveConfig (saveFile);
-	olSys.handleSaveConfig(saveFile);
-	mwSys.handleSaveConfig(saveFile);
+	// dds.handleSaveConfig (saveFile);
+	// olSys.handleSaveConfig(saveFile);
+	// mwSys.handleSaveConfig(saveFile);
 	picoSys.handleSaveConfig(saveFile);
-	aiSys.handleSaveConfig(saveFile);
-	calManager.handleSaveConfig(saveFile);
+	// aiSys.handleSaveConfig(saveFile);
+	// calManager.handleSaveConfig(saveFile);
 }
 
 void QtAuxiliaryWindow::windowOpenConfig (ConfigStream& configFile){
@@ -192,15 +192,15 @@ void QtAuxiliaryWindow::windowOpenConfig (ConfigStream& configFile){
 		Sleep(10);
 		ConfigSystem::standardOpenConfig (configFile, aoSys.getCore().getDelim(), &aoSys);
 		Sleep(50);
-		ConfigSystem::standardOpenConfig (configFile, dds.getDelim (), &dds);
-		Sleep(50);
-		ConfigSystem::standardOpenConfig(configFile, olSys.getDelim(), &olSys);
-		microwaveSettings uwsettings;
-		ConfigSystem::stdGetFromConfig(configFile, mwSys.getCore(), uwsettings);
-		mwSys.setMicrowaveSettings(uwsettings);
+		// ConfigSystem::standardOpenConfig (configFile, dds.getDelim (), &dds);
+		// Sleep(50);
+		// ConfigSystem::standardOpenConfig(configFile, olSys.getDelim(), &olSys);
+		// microwaveSettings uwsettings;
+		// ConfigSystem::stdGetFromConfig(configFile, mwSys.getCore(), uwsettings);
+		// mwSys.setMicrowaveSettings(uwsettings);
 		ConfigSystem::standardOpenConfig(configFile, picoSys.getConfigDelim(), &picoSys);
-		ConfigSystem::standardOpenConfig(configFile, aiSys.getDelim(), &aiSys);
-		ConfigSystem::standardOpenConfig(configFile, calManager.systemDelim, &calManager);
+		//ConfigSystem::standardOpenConfig(configFile, aiSys.getDelim(), &aiSys);
+		// ConfigSystem::standardOpenConfig(configFile, calManager.systemDelim, &calManager);
 	}
 	catch (ChimeraError&){
 		throwNested ("Auxiliary Window failed to read parameters from the configuration file.");
@@ -449,8 +449,8 @@ void QtAuxiliaryWindow::handleMasterConfigSave (std::stringstream& configStream)
 void QtAuxiliaryWindow::handleNormalFin () {
 	try {
 		SetDacs();
-		SetDds();
-		SetOls();
+		// SetDds();
+		// SetOls();
 		ttlBoard.setTtlStatus (ttlBoard.getCore().getFinalSnapshot ());
 	}
 	catch (ChimeraError& e) { 
@@ -583,7 +583,6 @@ void QtAuxiliaryWindow::SetDds()
 		dds.handleSetDdsButtonPress(true);
 		ttlBoard.setTtlStatus(ttlBoard.getCurrentStatus());
 		//dds.setDDSs();
-		//aoSys.forceDacs (ttlBoard.getCore (), { 0, ttlBoard.getCurrentStatus () });
 		reportStatus("Finished Setting DDSs.\r\n");
 	}
 	catch (ChimeraError& exception) {

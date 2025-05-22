@@ -20,7 +20,7 @@ void NewPythonHandler::runDataAnalysis (std::string date, long runNumber, long a
 double NewPythonHandler::runCarrierAnalysis (std::string date, long runNumber, atomGrid gridInfo, QWidget* parent) {
 	QString command ("python");
 	auto params = QStringList ();
-	params << "C:\\Users\\Regal-Lab\\Code\\Data-Analysis-Code\\CarrierAnalysis.py";
+	params << "C:\\Users\\yb2\\Code\\Data-Analysis-Code\\CarrierAnalysis.py";
 	params << qstr(date);
 	params << qstr(runNumber);
 	params << "[" + qstr (gridInfo.gridOrigin.row) + "," + qstr (gridInfo.gridOrigin.column) + ","
@@ -33,7 +33,7 @@ double NewPythonHandler::runCarrierAnalysis (std::string date, long runNumber, a
 	QByteArray out = process->readAllStandardOutput ();
 	QByteArray oute = process->readAllStandardError ();
 	process->close ();
-	std::string filename = "C:\\Users\\Regal-Lab\\Code\\Data-Analysis-Code\\CarrierResultFile.txt";
+	std::string filename = "C:\\Users\\yb2\\Code\\Data-Analysis-Code\\CarrierResultFile.txt";
 	double resval;
 	std::ifstream stdfile (filename);
 	stdfile >> resval;
@@ -43,7 +43,7 @@ double NewPythonHandler::runCarrierAnalysis (std::string date, long runNumber, a
 std::vector<double> NewPythonHandler:: runCalibrationFits (calSettings cal, QWidget* parent) {
 	QString command ("python");
 	auto params = QStringList ();
-	//params << "C:\\Users\\Regal-Lab\\Code\\Data-Analysis-Code\\CalibrationAnalysis.py" << qstr(cal.includeSqrt) 
+	//params << "C:\\Users\\yb2\\Code\\Data-Analysis-Code\\CalibrationAnalysis.py" << qstr(cal.includeSqrt) 
 	//	<< qstr(cal.result.polynomialOrder);
 
 	QProcess* process = new QProcess (parent);
@@ -54,7 +54,7 @@ std::vector<double> NewPythonHandler:: runCalibrationFits (calSettings cal, QWid
 	QByteArray oute = process->readAllStandardError ();
 	process->close ();
 	qDebug () << out << oute;
-	std::string resname = "C:\\Users\\Regal-Lab\\Code\\Data-Analysis-Code\\CalibrationResultFile.txt";
+	std::string resname = "C:\\Users\\yb2\\Code\\Data-Analysis-Code\\CalibrationResultFile.txt";
 	double resval;
 	std::ifstream stdfile (resname);
 	// the coefficients of the polynomial fit I'm using.

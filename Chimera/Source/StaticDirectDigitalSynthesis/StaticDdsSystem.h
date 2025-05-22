@@ -22,13 +22,16 @@ public:
 	StaticDdsCore& getCore() { return core; };
 	std::string getDeviceInfo();
 
-	void setDdsEditValue(std::string ddsfreq, unsigned channel); // should only be used in CommandModulator
+	void setDdsEditFrequencyValue(std::string ddsfreq, unsigned channel, unsigned port); // should only be used in CommandModulator
+	void setDdsEditLevelValue(std::string ddsfreq, unsigned channel, unsigned port); // should only be used in CommandModulator
 private:
 	bool expActive;
 	StaticDdsCore core;
 	QCheckBox* ctrlButton;
-	std::array<QLabel*, size_t(StaticDDSGrid::total)> labels;
-	std::array<QLineEdit*, size_t(StaticDDSGrid::total)> edits;
+	std::array<QLabel*, size_t(StaticDDSGrid::total)> labels_port;
+	std::array<std::array<QLabel*, 2>, size_t(StaticDDSGrid::total)> labels_channel;
+	std::array<std::array<QLineEdit*, 2>, size_t(StaticDDSGrid::total)> edits_frequency;
+	std::array<std::array<QLineEdit*, 2>, size_t(StaticDDSGrid::total)> edits_level;
 
 
 };

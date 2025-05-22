@@ -21,6 +21,7 @@
 
 // I don't use this because I manually import dll functions.
 // #include "Dio64.h"
+
 DoSystem::DoSystem( IChimeraQtWindow* parent) 
 	: core()
 	, IChimeraSystem(parent)

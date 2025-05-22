@@ -10,6 +10,6 @@ enum class StaticDDSGrid : size_t
 
 struct StaticDDSSettings
 {
-	std::array<Expression, size_t(StaticDDSGrid::total)> staticDDSs;
+	std::array<std::array<Expression,2>, size_t((StaticDDSGrid::total))*2> staticDDSs;
 	bool ctrlDDS;
 };
