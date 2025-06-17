@@ -80,25 +80,17 @@ void QtScriptWindow::updateDoAoDdsNames () {
 	auto doNames = std::vector<std::string>(doNamesArr.begin(), doNamesArr.end());
 	auto aoNamesArr = auxWin->getDacNames();
 	auto aoNames = std::vector<std::string>(aoNamesArr.begin(), aoNamesArr.end());
-	auto ddsNamesArr = auxWin->getDdsNames();
-	auto ddsNames = std::vector<std::string>(ddsNamesArr.begin(), ddsNamesArr.end());
-	auto olNamesArr = auxWin->getOlNames();
-	auto olNames = std::vector<std::string>(olNamesArr.begin(), olNamesArr.end());
 	auto calNames = auxWin->getCalNames();
 
 	
 	masterScript.highlighter->setTtlNames(doNames);
 	masterScript.highlighter->setDacNames(aoNames);
-	masterScript.highlighter->setDdsNames(ddsNames);
-	masterScript.highlighter->setOlNames(olNames);
 	masterScript.highlighter->setCalNames(calNames);
 	masterScript.highlighter->rehighlight();
 
 	for (auto name : ArbGenEnum::allAgs) {
 		arbGens[(int)name].arbGenScript.highlighter->setTtlNames(doNames);
 		arbGens[(int)name].arbGenScript.highlighter->setDacNames(aoNames);
-		arbGens[(int)name].arbGenScript.highlighter->setDdsNames(ddsNames);
-		arbGens[(int)name].arbGenScript.highlighter->setOlNames(olNames);
 		arbGens[(int)name].arbGenScript.highlighter->setCalNames(calNames);
 		arbGens[(int)name].arbGenScript.highlighter->rehighlight();
 	}

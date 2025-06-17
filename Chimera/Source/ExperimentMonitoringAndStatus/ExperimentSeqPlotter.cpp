@@ -6,7 +6,6 @@
 #include <Plotting/QCustomPlotCtrl.h>
 #include <AnalogOutput/AoStructures.h>
 #include <DigitalOutput/DoStructures.h>
-#include <OffsetLock/OlStructure.h>
 
 
 ExperimentSeqPlotter::ExperimentSeqPlotter(IChimeraQtWindow* parent)
@@ -14,7 +13,7 @@ ExperimentSeqPlotter::ExperimentSeqPlotter(IChimeraQtWindow* parent)
 
 void ExperimentSeqPlotter::initialize(IChimeraQtWindow* parent)
 {
-	int maxh = 1000 / (NUM_DAC_PLTS + NUM_TTL_PLTS + NUM_OL_PLTS);
+	int maxh = 1000 / (NUM_DAC_PLTS + NUM_TTL_PLTS);
 	aoPlots.resize(NUM_DAC_PLTS);
 	for (auto dacPltCount : range(aoPlots.size())) {
 		std::string titleTxt;
@@ -58,33 +57,15 @@ void ExperimentSeqPlotter::initialize(IChimeraQtWindow* parent)
 		ttlPlots[ttlPltCount]->plot->setMaximumHeight(maxh);
 		ttlPlots[ttlPltCount]->plot->setMinimumSize(500, maxh / 2);
 	}
-	// offsetlock plots are similar to aoSys.
-	olPlots.resize(NUM_OL_PLTS);
-	for (auto olPltCount : range(olPlots.size())) {
-		// currently assuming 4 ttl plots...
-		std::string titleTxt;
-		switch (olPltCount) {
-		case 0:
-			titleTxt = "Offset 0";
-			break;
-		}
-		olPlots[olPltCount] = new QCustomPlotCtrl();
-		olPlots[olPltCount]->setStyle(plotStyle::DacPlot);
-		olPlots[olPltCount]->init(parent, qstr(titleTxt), size_t(OLGrid::total) /NUM_OL_PLTS);
-		olPlots[olPltCount]->plot->setMaximumHeight(maxh);
-		olPlots[olPltCount]->plot->setMinimumSize(500, maxh / 2);
-	}
 }
 
 void ExperimentSeqPlotter::handleDoAoOlPlotData(
 	const std::vector<std::vector<plotDataVec>>& doData,
-	const std::vector<std::vector<plotDataVec>>& aoData,
-	const std::vector<std::vector<plotDataVec>>& olData) 
+	const std::vector<std::vector<plotDataVec>>& aoData)
 {
 	auto win = dynamic_cast<IChimeraQtWindow*>(parent());
 	auto dacN = win->auxWin->getDacNames();
 	auto ttlN = win->auxWin->getTtlNames();
-	auto olN = win->auxWin->getOlNames();
 	
 	unsigned numTrace = size_t(DOGrid::total) / NUM_TTL_PLTS;
 	for (auto ttlPlotNum : range(ttlPlots.size())) {
@@ -97,12 +78,6 @@ void ExperimentSeqPlotter::handleDoAoOlPlotData(
 		aoPlots[aoPlotNum]->setData(aoData[aoPlotNum],
 			std::vector<std::string>(dacN.begin() + aoPlotNum * numTrace,
 				dacN.begin() + (aoPlotNum + 1) * numTrace));
-	}
-	numTrace = size_t(OLGrid::total) / NUM_OL_PLTS;
-	for (auto olPlotNum : range(olPlots.size())) {
-		olPlots[olPlotNum]->setData(olData[olPlotNum],
-			std::vector<std::string>(olN.begin() + olPlotNum * numTrace,
-				olN.begin() + (olPlotNum + 1) * numTrace));
 	}
 }
 

@@ -101,9 +101,6 @@ void QtAnalysisWindow::initializeWidgets()
 	for (auto* p : SeqPlotter.ttlPlots) {
 		layoutSeq->addWidget(p->plot);
 	}
-	for (auto* p : SeqPlotter.olPlots) {
-		layoutSeq->addWidget(p->plot);
-	}
 	layout->addLayout(layoutSeq);
 
 	QVBoxLayout* layoutAux = new QVBoxLayout(this);

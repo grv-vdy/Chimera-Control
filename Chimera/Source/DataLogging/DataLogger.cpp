@@ -8,8 +8,6 @@
 #include <ConfigurationSystems/ConfigSystem.h>
 #include <ExperimentThread/autoCalConfigInfo.h>
 #include <AnalogOutput/AoSystem.h>
-#include <DirectDigitalSynthesis/DdsSystem.h>
-#include <OffsetLock/OlSystem.h>
 #include <Scripts/Script.h>
 #include <ctime>
 
@@ -221,40 +219,6 @@ void DataLogger::logAoSystemSettings ( AoSystem& aoSys ){
 	}
 }
 
-void DataLogger::logOlSystemSettings(OlSystem& olSys) {
-	auto info = olSys.getOlInfo();
-	H5::Group OlSystemGroup(file.createGroup("/Ol_System"));
-	unsigned count = 0;
-	for (auto& output : info) {
-		H5::Group indvOutput(OlSystemGroup.createGroup("OffsetLock_" + str(count++)));
-		writeDataSet(output.name, "OffsetLock_Name", indvOutput);
-		writeDataSet(output.note, "Note", indvOutput);
-		writeDataSet(output.currFreq, "Freq_At_Start", indvOutput);
-		writeDataSet(output.defaultFreq, "Default_Freq", indvOutput);
-		writeDataSet(output.minFreq, "Minimum_Freq", indvOutput);
-		writeDataSet(output.maxFreq, "Maximum_Freq", indvOutput);
-	}
-}
-
-void DataLogger::logDdsSystemSettings(DdsSystem& ddsSys) {
-	auto info = ddsSys.getDdsInfo();
-	H5::Group DdsSystemGroup(file.createGroup("/Dds_System"));
-	unsigned count = 0;
-	for (auto& output : info) {
-		H5::Group indvOutput(DdsSystemGroup.createGroup("DDS_" + str(count++)));
-		writeDataSet(output.name, "DDS_Name", indvOutput);
-		writeDataSet(output.note, "Note", indvOutput);
-		writeDataSet(output.currFreq, "Freq_At_Start", indvOutput);
-		writeDataSet(output.defaultFreq, "Default_Freq", indvOutput);
-		writeDataSet(output.minFreq, "Minimum_Freq", indvOutput);
-		writeDataSet(output.maxFreq, "Maximum_Freq", indvOutput);
-		writeDataSet(output.currAmp, "Amp_At_Start", indvOutput);
-		writeDataSet(output.defaultAmp, "Default_Amp", indvOutput);
-		writeDataSet(output.minAmp, "Minimum_Amp", indvOutput);
-		writeDataSet(output.maxAmp, "Maximum_Amp", indvOutput);
-	}
-}
-
 void DataLogger::logDoSystemSettings ( DoCore& doSys ){
 	auto names = doSys.getAllNames ( );
 	H5::Group DoSystemGroup ( file.createGroup ( "/Do_System" ) );
@@ -407,8 +371,6 @@ void DataLogger::logMasterInput( ExperimentThreadInput* input ){
 		}
 		logFunctions( runParametersGroup );
 		logAoSystemSettings ( input->aoSys );
-		logOlSystemSettings ( input->olSys );
-		logDdsSystemSettings( input->ddsSys);
 		logDoSystemSettings ( input->ttls );
 	}
 	catch ( H5::Exception& err ){

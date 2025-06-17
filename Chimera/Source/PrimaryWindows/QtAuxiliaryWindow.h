@@ -10,9 +10,6 @@
 #include "DigitalOutput/DoSystem.h"
 #include "AnalogOutput/AoSystem.h"
 #include "AnalogInput/AiSystem.h"
-#include "DirectDigitalSynthesis/DdsSystem.h"
-#include "OffsetLock/OlSystem.h"
-#include "Microwave/MicrowaveSystem.h"
 #include "PicoScrew/PicoScrewSystem.h"
 
 #include "ParameterSystem/ParameterSystem.h"
@@ -29,8 +26,6 @@
 
 #include "ExcessDialogs/doChannelInfoDialog.h"
 #include "ExcessDialogs/AoSettingsDialog.h"
-#include "ExcessDialogs/DdsSettingsDialog.h"
-#include "ExcessDialogs/OlSettingsDialog.h"
 #include "ExcessDialogs/AiSettingsDialog.h"
 
 #include <QMainWindow>
@@ -55,8 +50,6 @@ class QtAuxiliaryWindow : public IChimeraQtWindow{
 		/// Message Map Functions
 		void ViewOrChangeTTLNames();
 		void ViewOrChangeDACNames();
-		void ViewOrChangeDDSNames();
-		void ViewOrChangeOLNames();
 		void ViewOrChangeAINames();
 		void passRoundToDac ();
 		std::string getOtherSystemStatusMsg ();
@@ -64,15 +57,11 @@ class QtAuxiliaryWindow : public IChimeraQtWindow{
 		std::array<std::string, size_t(DOGrid::total)> getTtlNames ();
 		std::array<AoInfo, size_t(AOGrid::total)> getDacInfo ();
 		std::array<std::string, size_t(AOGrid::total)> getDacNames();
-		std::array<std::string, size_t(DDSGrid::total)> getDdsNames();
-		std::array<std::string, size_t(OLGrid::total)> getOlNames();
 		std::vector<std::string> getCalNames();
 
 		DoSystem& getTtlSystem();
 		DoCore& getTtlCore();
 		AoSystem& getAoSys();
-		DdsSystem& getDdsSys();
-		OlSystem& getOlSys();
 		PicoScrewSystem& getPsSys();
 		AiSystem& getAiSys();
 		CalibrationManager& getCalibManager();
@@ -81,16 +70,10 @@ class QtAuxiliaryWindow : public IChimeraQtWindow{
 
 		void fillMasterThreadInput(ExperimentThreadInput* input) override;
 		void SetDacs ();
-		void SetDds();
-		void SetOls();
 
 		void handleAbort ();
 		void zeroDacs ();
-		void zeroDds();
-		void zeroOls();
 
-		void relockPLL();
-	 
 		std::vector<parameterType> getAllParams ();
 		std::vector<parameterType> getConfigParams();
 		std::vector<parameterType> getGlobalParams();
@@ -120,9 +103,6 @@ class QtAuxiliaryWindow : public IChimeraQtWindow{
 		DoSystem ttlBoard;
 		AoSystem aoSys;
 		AiSystem aiSys;
-		DdsSystem dds;
-		OlSystem olSys;
-		MicrowaveSystem mwSys;
 		PicoScrewSystem picoSys;
 
 		MasterConfiguration masterConfig{ MASTER_CONFIGURATION_FILE_ADDRESS };
@@ -132,8 +112,6 @@ class QtAuxiliaryWindow : public IChimeraQtWindow{
 
 		doChannelInfoDialog* DOdialog;
 		AoSettingsDialog* AOdialog;
-		DdsSettingsDialog* DDSdialog;
-		OlSettingsDialog* OLdialog;
 		AiSettingsDialog* AIdialog;
 
 		//std::vector<PlotCtrl*> aoPlots;

@@ -3,10 +3,7 @@
 
 #include "DigitalOutput/DoSystem.h"
 #include "AnalogOutput/AoSystem.h"
-#include "DirectDigitalSynthesis/DdsSystem.h"
-#include "OffsetLock/OlSystem.h"
 #include "CMOSCamera/MakoCamera.h"
-#include <Microwave/MicrowaveCore.h>
 
 #include "ParameterSystem/ParameterSystem.h"
 #include "MiscellaneousExperimentOptions/DebugOptionsControl.h"
@@ -48,11 +45,7 @@ struct ExperimentThreadInput{
 	DoCore& ttls;
 	AoSystem& aoSys;
 	AoCore& ao;
-	DdsSystem& ddsSys;
-	DdsCore& dds;
-	OlSystem& olSys;
-	OlCore& ol;
-
+	
 	ZynqTCP zynqExp;
 
 	DeviceList devices;

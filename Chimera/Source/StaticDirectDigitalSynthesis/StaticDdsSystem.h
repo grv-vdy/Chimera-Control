@@ -1,7 +1,6 @@
 #pragma once
 #include <GeneralObjects/IChimeraSystem.h>
 #include <ParameterSystem/ParameterSystem.h>
-#include <StaticDirectDigitalSynthesis/StaticDdsCore.h>
 
 class IChimeraQtWindow;
 class StaticDdsSystem : public IChimeraSystem

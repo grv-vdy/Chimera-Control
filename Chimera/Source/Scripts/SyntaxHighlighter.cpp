@@ -83,31 +83,6 @@ void SyntaxHighlighter::setDacNames (std::vector<std::string> dacNames)
 	addRules (aoNamesRegex, QColor (203, 75, 22), false, true, aoRules);
 }
 
-void SyntaxHighlighter::setDdsNames(std::vector<std::string> ddsNames) 
-{
-	QVector<QString> ddsNamesRegex;
-	for (auto ddsInc : range(ddsNames.size())) 
-	{
-		ddsNamesRegex.push_back(cstr("dds" + str(ddsInc / size_t(DDSGrid::numPERunit)) + "_"
-			+ str(ddsInc % size_t(DDSGrid::numPERunit))));
-		ddsNamesRegex.push_back(cstr(ddsNames[ddsInc]));
-	}
-	ddsRules.clear();
-	addRules(ddsNamesRegex, QColor(94, 148, 247), false, true, ddsRules);
-}
-
-void SyntaxHighlighter::setOlNames(std::vector<std::string> olNames)
-{
-	QVector<QString> olNamesRegex;
-	for (auto olInc : range(olNames.size()))
-	{
-		olNamesRegex.push_back(cstr("ol" + str(olInc / size_t(OLGrid::numPERunit)) + "_"
-			+ str(olInc % size_t(OLGrid::numPERunit))));
-		olNamesRegex.push_back(cstr(olNames[olInc]));
-	}
-	olRules.clear();
-	addRules(olNamesRegex, QColor(47, 193, 225), false, true, olRules);
-}
 
 void SyntaxHighlighter::setCalNames(std::vector<std::string> calNames)
 {

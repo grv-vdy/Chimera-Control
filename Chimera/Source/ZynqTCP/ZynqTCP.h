@@ -7,7 +7,6 @@
 #include <Ws2tcpip.h>
 #include "AnalogOutput/AoStructures.h"
 #include "DigitalOutput/DoStructures.h"
-#include "DirectDigitalSynthesis/DdsSystemStructures.h"
 
 
 class ZynqTCP 
@@ -20,7 +19,6 @@ public:
 	int connectTCP(const char ip_address[]);
 	int writeDIO(std::vector<std::array<char[DIO_LEN_BYTE_BUF], 1>> TtlSnapshots);
 	int writeDACs(std::vector<AoChannelSnapshot> dacSnapshots);
-	int writeDDSs(std::vector<DdsChannelSnapshot> ddsSnapshots);
 	int sendCommand(std::string command);/*do connection inside*/
 	int writeCommand(std::string command);/*this is only for writing, requires conection already estabilished*/
 	
@@ -35,7 +33,6 @@ private:
 
 	const unsigned int timeConv = 100000; // SEQ time given in multiples of 10 ns, 1/DIO_TIME_RESOLUTION
 	const unsigned int timeConvDAC = 100000; //DAC seq duration is in 10ns, so x100000 to convert ms to 10ns
-	const unsigned int timeConvDDS = 1000; //DDS seq duration is in us, so x1000 to convert ms to us
 	const unsigned int dacRes = 0xffff; //16 bit dac resolution
 
 };

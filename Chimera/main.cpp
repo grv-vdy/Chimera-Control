@@ -37,8 +37,6 @@ int main (int argc, char** argv) {
 
 	qRegisterMetaType<std::vector<AoCommand>>();
 	qRegisterMetaType<std::vector<DoCommand>>();
-	qRegisterMetaType<std::vector<DdsCommand>>();
-	qRegisterMetaType<std::vector<OlCommand>>();
 
 	QtMainWindow* mainWinQt = new QtMainWindow ();
 	mainWinQt->show ();

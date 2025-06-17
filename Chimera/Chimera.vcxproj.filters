@@ -147,28 +147,10 @@
     <ClCompile Include="Source\DigitalOutput\DoSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\DirectDigitalSynthesis\DdsCore.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\DirectDigitalSynthesis\DdsOutput.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\DirectDigitalSynthesis\DdsSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\DirectDigitalSynthesis\DdsSystemStructures.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Source\ExcessDialogs\AoSettingsDialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\ExcessDialogs\DdsSettingsDialog.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Source\ExcessDialogs\doChannelInfoDialog.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\ExcessDialogs\OlSettingsDialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\ExcessDialogs\openWithExplorer.cpp">
@@ -256,15 +238,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\MiscellaneousExperimentOptions\Repetitions.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\OffsetLock\OffsetLockOutput.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\OffsetLock\OlCore.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\OffsetLock\OlSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\ParameterSystem\Expression.cpp">
@@ -471,15 +444,6 @@
     <ClCompile Include="Source\RealTimeDataAnalysis\atomGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Microwave\MicrowaveCore.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Microwave\MicrowaveSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Microwave\WindFreakFlume.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Source\GeneralFlumes\WinSerialFlume.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -590,13 +554,7 @@
     <QtMoc Include="Source\ExcessDialogs\AoSettingsDialog.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <QtMoc Include="Source\ExcessDialogs\DdsSettingsDialog.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
     <QtMoc Include="Source\ExcessDialogs\doChannelInfoDialog.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
-    <QtMoc Include="Source\ExcessDialogs\OlSettingsDialog.h">
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="Source\ExperimentMonitoringAndStatus\ColorBox.h">
@@ -747,12 +705,6 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="Source\AnalogOutput\AoSystem.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
-    <QtMoc Include="Source\DirectDigitalSynthesis\DdsSystem.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
-    <QtMoc Include="Source\OffsetLock\OlSystem.h">
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="Source\ExperimentMonitoringAndStatus\StatusOptionsWindow.h">
@@ -916,15 +868,6 @@
     <ClInclude Include="Source\DigitalOutput\DoStructures.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\DirectDigitalSynthesis\DdsCore.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\DirectDigitalSynthesis\DdsOutput.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\DirectDigitalSynthesis\DdsSystemStructures.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Source\ExcessDialogs\openWithExplorer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -1031,15 +974,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\MiscellaneousExperimentOptions\debugInfo.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\OffsetLock\OffsetLockOutput.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\OffsetLock\OlCore.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\OffsetLock\OlStructure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\ParameterSystem\Expression.h">
@@ -1184,18 +1118,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\ExperimentThread\repeatManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Microwave\MicrowaveCore.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Microwave\microwaveSettings.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Microwave\MicrowaveSystem.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Microwave\WindFreakFlume.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\GeneralFlumes\WinSerialFlume.h">

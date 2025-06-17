@@ -14,19 +14,14 @@ public:
 	void initialize(IChimeraQtWindow* parent);
 	void handleDoAoOlPlotData(
 		const std::vector<std::vector<plotDataVec>>& doData, 
-		const std::vector<std::vector<plotDataVec>>& aoData, 
-		const std::vector<std::vector<plotDataVec>>& olData);
+		const std::vector<std::vector<plotDataVec>>& aoData);
 	static const unsigned NUM_DAC_PLTS = 2;
 	static const unsigned NUM_TTL_PLTS = 4;
-	static const unsigned NUM_OL_PLTS = 1;
 private:
 
 public:
-
-
 	std::vector<QCustomPlotCtrl*> aoPlots;
 	std::vector<QCustomPlotCtrl*> ttlPlots;
-	std::vector<QCustomPlotCtrl*> olPlots;
 
 public slots:
 

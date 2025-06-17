@@ -1,7 +1,5 @@
 #pragma once
 #include <GeneralObjects/IDeviceCore.h>
-#include <StaticDirectDigitalSynthesis/StaticDdsStructures.h>
-#include <StaticDirectDigitalSynthesis/StaticDDSFlume.h>
 #include <ParameterSystem/ParameterSystemStructures.h>
 
 class ConfigStream;

@@ -217,61 +217,6 @@ int ZynqTCP::writeDACs(std::vector<AoChannelSnapshot> dacChannelSnapshots)
 
 }
 
-int ZynqTCP::writeDDSs(std::vector<DdsChannelSnapshot> ddsChannelSnapshots)
-{
-	char buff[ZYNQ_MAX_BUFF];
-	char buffCommand[ZYNQ_MAX_BUFF];
-	memset(buff, 0, sizeof(buff));
-
-	int snapIndex = 0;
-
-	char byte_buf[DDS_LEN_BYTE_BUF];
-	char byte_bufCommand[DDS_LEN_BYTE_BUF];
-	memset(byte_buf, 0, sizeof(byte_buf));
-	unsigned int time, duration;
-	unsigned short channel;
-	char type;
-	double start, end;
-
-	sprintf_s(buffCommand, ZYNQ_MAX_BUFF, "DDSseq_%u", ddsChannelSnapshots.size());
-	for (size_t i = 0; i < strlen(buffCommand); i++)
-	{
-		buff[i] = buffCommand[i];
-	}
-
-	int err = sendWithCatch(ConnectSocket, buff, sizeof(buff), 0);
-	if (err == 1 /*bad*/) {
-		return 1;
-	}
-
-	for (int i = 0; i < ddsChannelSnapshots.size(); ++i)
-	{
-		DdsChannelSnapshot snapshot = ddsChannelSnapshots[i];
-
-		time = (unsigned int)(snapshot.time * timeConv);
-		type = snapshot.ampOrFreq;
-		channel = snapshot.channel;
-		start = snapshot.val;
-		end = snapshot.endVal;
-		duration = (unsigned int)(snapshot.rampTime * timeConvDDS);
-
-		sprintf_s(byte_bufCommand, DDS_LEN_BYTE_BUF, "t%08X_c%04X_%c_s%07.3f_e%07.3f_d%08x", 
-			time, channel, type, start, end, duration);
-		for (size_t inc = 0; inc < strlen(byte_bufCommand); inc++)
-		{
-			byte_buf[inc] = byte_bufCommand[inc];
-		}
-		int err2 = sendWithCatch(ConnectSocket, byte_buf, DDS_LEN_BYTE_BUF, 0);
-		if (err2 == 1) {
-			return 1;
-		}
-	}
-
-	return 0;
-
-
-}
-
 int ZynqTCP::sendCommand(std::string command)
 {
 	int tcp_connect;

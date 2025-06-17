@@ -209,14 +209,6 @@ void IChimeraQtWindow::initializeMenu (){
 	connect (changeIndvAo, &QAction::triggered, [this, cmnMsg]() {auxWin->ViewOrChangeDACNames (); });
 	masterSystemsM->addAction (changeIndvAo);
 
-	auto* changeIndvDds = new QAction("View or Change Individual Direct Digital Synthesizer Settings", this);
-	connect(changeIndvDds, &QAction::triggered, [this, cmnMsg]() {auxWin->ViewOrChangeDDSNames(); });
-	masterSystemsM->addAction(changeIndvDds);
-	
-	auto* changeIndvOl = new QAction("View or Change Individual OffsetLock Settings", this);
-	connect(changeIndvOl, &QAction::triggered, [this, cmnMsg]() {auxWin->ViewOrChangeOLNames(); });
-	masterSystemsM->addAction(changeIndvOl);
-
 	auto* changeIndvAi = new QAction("View or Change Individual Analog Input Settings", this);
 	connect(changeIndvAi, &QAction::triggered, [this, cmnMsg]() {auxWin->ViewOrChangeAINames(); });
 	masterSystemsM->addAction(changeIndvAi);

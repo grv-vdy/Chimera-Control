@@ -4,8 +4,9 @@
 #include <RealTimeMOTAnalysis/MOTAnalysisSystem.h>
 #include <ExperimentMonitoringAndStatus/ExperimentSeqPlotter.h>
 #include <StaticAnalogOutput/StaticAoSystem.h>
-#include <StaticDirectDigitalSynthesis/StaticDdsSystem.h>
 #include <ElliptecRotationStage/ElliptecSystem.h>
+#include "StaticDirectDigitalSynthesis/StaticDdsSystem.h" // Ensure the header file is included
+
 
 
 namespace Ui {

@@ -17,9 +17,6 @@ QtAuxiliaryWindow::QtAuxiliaryWindow (QWidget* parent)
 	, aiSys(this)
 	, configParamCtrl (this, "CONFIG_PARAMETERS")
 	, globalParamCtrl (this, "GLOBAL_PARAMETERS")
-	, dds (this, DDS_SAFEMODE)
-	, olSys(this, ttlBoard)
-	, mwSys(this)
 	, picoSys(this)
 	, calManager(this)
 {	
@@ -31,7 +28,7 @@ QtAuxiliaryWindow::~QtAuxiliaryWindow () {}
 
 bool QtAuxiliaryWindow::eventFilter (QObject* obj, QEvent* event){
 	//this will trigger the quickChange in Ao/DDS to perform
-	if (aoSys.eventFilter(obj, event) || dds.eventFilter(obj, event) || olSys.eventFilter(obj, event))
+	if (aoSys.eventFilter(obj, event))
 	{
 		try 
 		{
@@ -60,14 +57,6 @@ void QtAuxiliaryWindow::initializeWidgets (){
 		aoSys.initialize (this);
 		layout1->addWidget(&aoSys, 0);
 
-		// olSys.initialize(this);
-		// layout1->addWidget(&olSys, 0);
-
-		// dds.initialize(this);
-		// layout1->addWidget(&dds, 0);
-		//dds.initialize (this, "DDS SYSTEM");
-		//layout3->addWidget(&dds, 1);
-
 		picoSys.initialize();
 		layout1->addWidget(&picoSys, 0);
 
@@ -89,14 +78,12 @@ void QtAuxiliaryWindow::initializeWidgets (){
 		
 		QVBoxLayout* layout2 = new QVBoxLayout();
 
-		// aiSys.initialize(this);
-		// calManager.initialize(this, &aiSys, &aoSys, &ttlBoard,
-		// 	scriptWin->getArbGenCore(), andorWin->getPython());
-		// mwSys.initialize(this);
-		// layout2->addWidget(&aiSys);
-		// layout2->addWidget(&calManager);
-		// layout2->addWidget(&mwSys, 0);
-		// layout2->addStretch(1);
+		aiSys.initialize(this);
+		calManager.initialize(this, &aiSys, &aoSys, &ttlBoard,
+			scriptWin->getArbGenCore(), andorWin->getPython());
+		layout2->addWidget(&aiSys);
+		layout2->addWidget(&calManager);
+		layout2->addStretch(1);
 
 		layout1->setContentsMargins(0, 0, 0, 0);
 		// layout2->setContentsMargins(0, 0, 0, 0);
@@ -107,14 +94,10 @@ void QtAuxiliaryWindow::initializeWidgets (){
 
 		DOdialog = new doChannelInfoDialog(&ttlBoard);
 		AOdialog = new AoSettingsDialog(&aoSys);
-		DDSdialog = new DdsSettingsDialog(&dds);
-		// OLdialog = new OlSettingsDialog(&olSys);
-		// AIdialog = new AiSettingsDialog(&aiSys);
+		AIdialog = new AiSettingsDialog(&aiSys);
 
 		connect(DOdialog, &doChannelInfoDialog::updateSyntaxHighLight, [this]() {this->scriptWin->updateDoAoDdsNames(); });
 		connect(AOdialog, &AoSettingsDialog::updateSyntaxHighLight, [this]() {this->scriptWin->updateDoAoDdsNames(); });
-		// connect(DDSdialog, &DdsSettingsDialog::updateSyntaxHighLight, [this]() {this->scriptWin->updateDoAoDdsNames(); });
-		// connect(OLdialog, &OlSettingsDialog::updateSyntaxHighLight, [this]() {this->scriptWin->updateDoAoDdsNames(); });
 
 	}
 	catch (ChimeraError& err){
@@ -177,12 +160,9 @@ void QtAuxiliaryWindow::windowSaveConfig (ConfigStream& saveFile){
 	configParamCtrl.handleSaveConfig (saveFile);
 	ttlBoard.handleSaveConfig (saveFile);
 	aoSys.handleSaveConfig (saveFile);
-	// dds.handleSaveConfig (saveFile);
-	// olSys.handleSaveConfig(saveFile);
-	// mwSys.handleSaveConfig(saveFile);
 	picoSys.handleSaveConfig(saveFile);
-	// aiSys.handleSaveConfig(saveFile);
-	// calManager.handleSaveConfig(saveFile);
+	aiSys.handleSaveConfig(saveFile);
+	calManager.handleSaveConfig(saveFile);
 }
 
 void QtAuxiliaryWindow::windowOpenConfig (ConfigStream& configFile){
@@ -192,15 +172,9 @@ void QtAuxiliaryWindow::windowOpenConfig (ConfigStream& configFile){
 		Sleep(10);
 		ConfigSystem::standardOpenConfig (configFile, aoSys.getCore().getDelim(), &aoSys);
 		Sleep(50);
-		// ConfigSystem::standardOpenConfig (configFile, dds.getDelim (), &dds);
-		// Sleep(50);
-		// ConfigSystem::standardOpenConfig(configFile, olSys.getDelim(), &olSys);
-		// microwaveSettings uwsettings;
-		// ConfigSystem::stdGetFromConfig(configFile, mwSys.getCore(), uwsettings);
-		// mwSys.setMicrowaveSettings(uwsettings);
 		ConfigSystem::standardOpenConfig(configFile, picoSys.getConfigDelim(), &picoSys);
-		//ConfigSystem::standardOpenConfig(configFile, aiSys.getDelim(), &aiSys);
-		// ConfigSystem::standardOpenConfig(configFile, calManager.systemDelim, &calManager);
+		ConfigSystem::standardOpenConfig(configFile, aiSys.getDelim(), &aiSys);
+		ConfigSystem::standardOpenConfig(configFile, calManager.systemDelim, &calManager);
 	}
 	catch (ChimeraError&){
 		throwNested ("Auxiliary Window failed to read parameters from the configuration file.");
@@ -225,25 +199,6 @@ std::array<AoInfo, size_t(AOGrid::total)> QtAuxiliaryWindow::getDacInfo (){
 	return aoSys.getDacInfo ();
 }
 
-std::array<std::string, size_t(DDSGrid::total)> QtAuxiliaryWindow::getDdsNames()
-{
-	std::array<std::string, size_t(DDSGrid::total)> names;
-	for (size_t i = 0; i < size_t(DDSGrid::total); i++)
-	{
-		names[i] = dds.getName(i);
-	}
-	return names;
-}
-
-std::array<std::string, size_t(OLGrid::total)> QtAuxiliaryWindow::getOlNames()
-{
-	std::array<std::string, size_t(OLGrid::total)> names;
-	for (size_t i = 0; i < size_t(OLGrid::total); i++)
-	{
-		names[i] = olSys.getName(i);
-	}
-	return names;
-}
 
 std::vector<std::string> QtAuxiliaryWindow::getCalNames()
 {
@@ -308,44 +263,6 @@ void QtAuxiliaryWindow::zeroDacs (){
 	}
 }
 
-void QtAuxiliaryWindow::zeroDds() {
-	try {
-		mainWin->updateConfigurationSavedStatus(false);
-		dds.zeroDds();
-		reportStatus("Zero'd DDSs.\n");
-	}
-	catch (ChimeraError& exception) {
-		errBox(exception.trace());
-		reportStatus("Failed to Zero DDSs!!!\n");
-		reportErr(exception.qtrace());
-	}
-}
-
-void QtAuxiliaryWindow::zeroOls() {
-	try {
-		mainWin->updateConfigurationSavedStatus(false);
-		olSys.zeroOffsetLock(ttlBoard.getCore(), ttlBoard.getCurrentStatus());
-		reportStatus("Default'd Offsetlocks.\n");
-	}
-	catch (ChimeraError& exception) {
-		errBox(exception.trace());
-		reportStatus("Failed to Zero OffsetLocks!!!\n");
-		reportErr(exception.qtrace());
-	}
-}
-
-void QtAuxiliaryWindow::relockPLL()
-{
-	try {
-		dds.relockPLL();
-		reportStatus("Relock'd PLL of DDS system.\n");
-	}
-	catch (ChimeraError& exception) {
-		errBox(exception.trace());
-		reportStatus("Failed to Relock PLL of DDS system!!!\n");
-		reportErr(exception.qtrace());
-	}
-}
 
 DoSystem& QtAuxiliaryWindow::getTtlSystem (){
 	return ttlBoard;
@@ -372,14 +289,6 @@ void QtAuxiliaryWindow::fillMasterThreadInput (ExperimentThreadInput* input){
 
 AoSystem& QtAuxiliaryWindow::getAoSys () {
 	return aoSys;
-}
-
-DdsSystem& QtAuxiliaryWindow::getDdsSys() {
-	return dds;
-}
-
-OlSystem& QtAuxiliaryWindow::getOlSys() {
-	return olSys;
 }
 
 PicoScrewSystem& QtAuxiliaryWindow::getPsSys()
@@ -571,45 +480,6 @@ void QtAuxiliaryWindow::SetDacs (){
 	mainWin->updateConfigurationSavedStatus(false);
 }
 
-
-void QtAuxiliaryWindow::SetDds() 
-{
-	reportStatus("----------------------\r\nSetting DDSs... ");
-	try {
-		mainWin->updateConfigurationSavedStatus(false);
-		//aoSys.resetDacEvents();
-		////ttlBoard.resetTtlEvents();
-		//reportStatus("Setting Dacs...\r\n");
-		dds.handleSetDdsButtonPress(true);
-		ttlBoard.setTtlStatus(ttlBoard.getCurrentStatus());
-		//dds.setDDSs();
-		reportStatus("Finished Setting DDSs.\r\n");
-	}
-	catch (ChimeraError& exception) {
-		errBox(exception.trace());
-		reportStatus(": " + exception.qtrace() + "\r\n");
-		reportErr(exception.qtrace());
-	}
-	mainWin->updateConfigurationSavedStatus(false);
-}
-
-void QtAuxiliaryWindow::SetOls()
-{
-	reportStatus("----------------------\r\nSetting Offsetlocks... ");
-	try {
-		mainWin->updateConfigurationSavedStatus(false);
-		olSys.handleSetOlsButtonPress(ttlBoard.getCore(), ttlBoard.getCurrentStatus());
-		reportStatus("Finished Setting Offsetlocks.\r\n");
-	}
-	catch (ChimeraError& exception) {
-		errBox(exception.trace());
-		reportStatus(": " + exception.qtrace() + "\r\n");
-		reportErr(exception.qtrace());
-	}
-	mainWin->updateConfigurationSavedStatus(false);
-}
-
-
 void QtAuxiliaryWindow::ViewOrChangeTTLNames (){
 	mainWin->updateConfigurationSavedStatus (false);
 	//ttlInputStruct input;
@@ -636,20 +506,6 @@ void QtAuxiliaryWindow::ViewOrChangeDACNames (){
 	AOdialog->show();
 }
 
-void QtAuxiliaryWindow::ViewOrChangeDDSNames()
-{
-	DDSdialog->updateAllEdits();
-	DDSdialog->setStyleSheet(chimeraStyleSheets::stdStyleSheet());
-	DDSdialog->show();
-}
-
-void QtAuxiliaryWindow::ViewOrChangeOLNames()
-{
-	OLdialog->updateAllEdits();
-	OLdialog->setStyleSheet(chimeraStyleSheets::stdStyleSheet());
-	OLdialog->show();
-}
-
 void QtAuxiliaryWindow::ViewOrChangeAINames()
 {
 	AIdialog->updateAllEdits();
@@ -667,41 +523,6 @@ std::string QtAuxiliaryWindow::getOtherSystemStatusMsg (){
 	}
 	else{
 		msg += "\tZynq System is disabled! Enable in \"constants.h\" as well as \"ZynqTcp.h\"\n";
-	}
-
-	msg += "Offset Lock:\n\t";
-
-	for (auto ol_com_port_num : range(OL_COM_PORT.size())) {
-		auto ol_com_port = OL_COM_PORT[ol_com_port_num];
-		bool safemode = OFFSETLOCK_SAFEMODE[ol_com_port_num];
-		if (!safemode) {
-			msg += str("Offset Lock System is Active at " + ol_com_port + ",\n\t");
-		}
-		else {
-			msg += "\tOffset Lock System is disabled! Enable in \"constants.h\" \n";
-
-		}
-	}
-	msg += "Attached trigger line is \n\t\t";
-	for (const auto& oltrig : OL_TRIGGER_LINE)
-	{
-		msg += "(" + str(oltrig.first) + "," + str(oltrig.second) + ") ";
-	}
-	msg += "\n";
-
-
-	msg += "Microwave System:\n";
-	if (!MICROWAVE_SAFEMODE) {
-		msg += "\tCode System is Active!\n";
-		msg += "\t" + mwSys.getIdentity() + "\n\t";
-		msg += "Attached trigger line is \n\t\t";
-		{
-			msg += "(" + str(MW_TRIGGER_LINE.first) + "," + str(MW_TRIGGER_LINE.second) + ") ";
-		}
-		msg += "\n";
-	}
-	else {
-		msg += "\tCode System is disabled! Enable in \"constants.h\"\n";
 	}
 
 	msg += "PicoScrew System:\n";
@@ -730,9 +551,6 @@ std::string QtAuxiliaryWindow::getVisaDeviceStatus (){
 }
 
 void QtAuxiliaryWindow::fillExpDeviceList (DeviceList& list){
-	//list.list.push_back (dds.getCore ());
-	//list.list.push_back(olSys.getCore());
-	list.list.push_back(mwSys.getCore());
 	list.list.push_back(aiSys.getCore());
 	list.list.push_back(picoSys.getCore());
 }

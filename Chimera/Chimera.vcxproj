@@ -167,9 +167,6 @@
     <ClCompile Include="Source\GigaMOOG\MemoryController.cpp" />
     <ClCompile Include="Source\GigaMOOG\MessagePrinter.cpp" />
     <ClCompile Include="Source\GigaMOOG\MessageSender.cpp" />
-    <ClCompile Include="Source\Microwave\MicrowaveCore.cpp" />
-    <ClCompile Include="Source\Microwave\MicrowaveSystem.cpp" />
-    <ClCompile Include="Source\Microwave\WindFreakFlume.cpp" />
     <ClCompile Include="Source\MiscellaneousExperimentOptions\InExpCalControl.cpp" />
     <ClCompile Include="Source\Python\cnpy.cpp" />
     <ClCompile Include="Source\RealTimeDataAnalysis\atomGrid.cpp" />
@@ -268,10 +265,6 @@
     <ClInclude Include="Source\GigaMOOG\MessagePrinter.h" />
     <ClInclude Include="Source\GigaMOOG\MessageSender.h" />
     <ClInclude Include="Source\GigaMOOG\Messagetypes.h" />
-    <ClInclude Include="Source\Microwave\MicrowaveCore.h" />
-    <ClInclude Include="Source\Microwave\microwaveSettings.h" />
-    <ClInclude Include="Source\Microwave\MicrowaveSystem.h" />
-    <ClInclude Include="Source\Microwave\WindFreakFlume.h" />
     <ClInclude Include="Source\MiscellaneousExperimentOptions\InExpCalControl.h" />
     <ClInclude Include="Source\Plotting\PlotInfo.h" />
     <ClInclude Include="Source\Python\cnpy.h" />
@@ -328,14 +321,8 @@
     <ClCompile Include="Source\DigitalOutput\DigitalOutput.cpp" />
     <ClCompile Include="Source\DigitalOutput\DoCore.cpp" />
     <ClCompile Include="Source\DigitalOutput\DoSystem.cpp" />
-    <ClCompile Include="Source\DirectDigitalSynthesis\DdsCore.cpp" />
-    <ClCompile Include="Source\DirectDigitalSynthesis\DdsOutput.cpp" />
-    <ClCompile Include="Source\DirectDigitalSynthesis\DdsSystem.cpp" />
-    <ClCompile Include="Source\DirectDigitalSynthesis\DdsSystemStructures.cpp" />
     <ClCompile Include="Source\ExcessDialogs\AoSettingsDialog.cpp" />
-    <ClCompile Include="Source\ExcessDialogs\DdsSettingsDialog.cpp" />
     <ClCompile Include="Source\ExcessDialogs\doChannelInfoDialog.cpp" />
-    <ClCompile Include="Source\ExcessDialogs\OlSettingsDialog.cpp" />
     <ClCompile Include="Source\ExcessDialogs\openWithExplorer.cpp" />
     <ClCompile Include="Source\ExcessDialogs\saveWithExplorer.cpp" />
     <ClCompile Include="Source\ExperimentMonitoringAndStatus\AlertSystem.cpp" />
@@ -368,9 +355,6 @@
     <ClCompile Include="Source\MiscellaneousExperimentOptions\DebugOptionsControl.cpp" />
     <ClCompile Include="Source\MiscellaneousExperimentOptions\MainOptionsControl.cpp" />
     <ClCompile Include="Source\MiscellaneousExperimentOptions\Repetitions.cpp" />
-    <ClCompile Include="Source\OffsetLock\OffsetLockOutput.cpp" />
-    <ClCompile Include="Source\OffsetLock\OlCore.cpp" />
-    <ClCompile Include="Source\OffsetLock\OlSystem.cpp" />
     <ClCompile Include="Source\ParameterSystem\Expression.cpp" />
     <ClCompile Include="Source\ParameterSystem\ParameterModel.cpp" />
     <ClCompile Include="Source\ParameterSystem\ParameterSystem.cpp" />
@@ -447,10 +431,6 @@
     <ClInclude Include="Source\DigitalOutput\DigitalOutput.h" />
     <ClInclude Include="Source\DigitalOutput\DoCore.h" />
     <ClInclude Include="Source\DigitalOutput\DoStructures.h" />
-    <ClInclude Include="Source\DirectDigitalSynthesis\DdsCore.h" />
-    <ClInclude Include="Source\DirectDigitalSynthesis\DdsOutput.h" />
-    <QtMoc Include="Source\DirectDigitalSynthesis\DdsSystem.h" />
-    <ClInclude Include="Source\DirectDigitalSynthesis\DdsSystemStructures.h" />
     <ClInclude Include="Source\ExcessDialogs\openWithExplorer.h" />
     <ClInclude Include="Source\ExcessDialogs\saveWithExplorer.h" />
     <QtMoc Include="Source\ExperimentMonitoringAndStatus\AlertSystem.h" />
@@ -493,10 +473,6 @@
     <ClInclude Include="Source\LowLevel\resource.h" />
     <ClInclude Include="Source\LowLevel\targetver.h" />
     <ClInclude Include="Source\MiscellaneousExperimentOptions\debugInfo.h" />
-    <ClInclude Include="Source\OffsetLock\OffsetLockOutput.h" />
-    <ClInclude Include="Source\OffsetLock\OlCore.h" />
-    <ClInclude Include="Source\OffsetLock\OlStructure.h" />
-    <QtMoc Include="Source\OffsetLock\OlSystem.h" />
     <ClInclude Include="Source\ParameterSystem\Expression.h" />
     <ClInclude Include="Source\ParameterSystem\ParameterSystemStructures.h" />
     <ClInclude Include="Source\Plotting\dataPoint.h" />
@@ -545,9 +521,7 @@
     <QtMoc Include="Source\ExperimentThread\ExpThreadWorker.h" />
     <QtMoc Include="Source\ExperimentMonitoringAndStatus\StatusControl.h" />
     <QtMoc Include="Source\ExperimentMonitoringAndStatus\ColorBox.h" />
-    <QtMoc Include="Source\ExcessDialogs\OlSettingsDialog.h" />
     <QtMoc Include="Source\ExcessDialogs\doChannelInfoDialog.h" />
-    <QtMoc Include="Source\ExcessDialogs\DdsSettingsDialog.h" />
     <QtMoc Include="Source\ExcessDialogs\AoSettingsDialog.h" />
     <QtMoc Include="Source\DigitalOutput\DoSystem.h" />
     <QtMoc Include="Source\ConfigurationSystems\ProfileIndicator.h" />

@@ -150,7 +150,7 @@ void ExpThreadWorker::experimentThreadProcedure () {
 }
 
 
-void ExpThreadWorker::analyzeMasterScript (DoCore& ttls, AoCore& ao, DdsCore& dds, OlCore& ol,
+void ExpThreadWorker::analyzeMasterScript (DoCore& ttls, AoCore& ao,
 	std::vector<parameterType>& vars,
 	ScriptStream& currentMasterScript, bool expectsLoadSkip,
 	std::string& warnings, timeType& operationTime,
@@ -178,9 +178,7 @@ void ExpThreadWorker::analyzeMasterScript (DoCore& ttls, AoCore& ao, DdsCore& dd
 			else if (handleVariableDeclaration (word, currentMasterScript, vars, scope, warnings)) {}
 			else if (handleDoCommands (word, currentMasterScript, vars, ttls, scope, operationTime, repeatMgr)) {}
 			else if (handleAoCommands (word, currentMasterScript, vars, ao, ttls, scope, operationTime, repeatMgr)) {}
-			else if (handleDdsCommands(word, currentMasterScript, vars, dds, scope, operationTime, repeatMgr)) {}
-			else if (handleOlCommands(word, currentMasterScript, vars, ol, scope, operationTime, repeatMgr)) {}
-			else if (handleRepeats(word, currentMasterScript, vars, ttls, ao, dds, ol, scope, repeatMgr)) {}
+			else if (handleRepeats(word, currentMasterScript, vars, ttls, ao, scope, repeatMgr)) {}
 			else if (word == "callcppcode") {
 				// and that's it... 
 				callCppCodeFunction ();
@@ -193,7 +191,7 @@ void ExpThreadWorker::analyzeMasterScript (DoCore& ttls, AoCore& ao, DdsCore& dd
 			else if (word == "rsg:") {
 				thrower ("\"rsg:\" command is deprecated! Please use the microwave system listview instead.");
 			}
-			else if (handleFunctionCall (word, currentMasterScript, vars, ttls, ao, dds, ol, warnings,
+			else if (handleFunctionCall (word, currentMasterScript, vars, ttls, ao, warnings,
 				PARENT_PARAMETER_SCOPE, operationTime, repeatMgr)) {
 			}
 			else {
@@ -215,7 +213,7 @@ void ExpThreadWorker::analyzeMasterScript (DoCore& ttls, AoCore& ao, DdsCore& dd
 
 
 void ExpThreadWorker::analyzeFunction (std::string function, std::vector<std::string> args, DoCore& ttls, 
-	AoCore& ao, DdsCore& dds, OlCore& ol, std::vector<parameterType>& params, std::string& warnings, timeType& operationTime,
+	AoCore& ao, std::vector<parameterType>& params, std::string& warnings, timeType& operationTime,
 	std::string callingScope, repeatManager& repeatMgr) {
 	/// load the file
 	std::fstream functionFile;
@@ -276,9 +274,7 @@ void ExpThreadWorker::analyzeFunction (std::string function, std::vector<std::st
 			else if (handleVariableDeclaration(word, functionStream, params, scope, warnings)) {}
 			else if (handleDoCommands(word, functionStream, params, ttls, scope, operationTime, repeatMgr)) {}
 			else if (handleAoCommands(word, functionStream, params, ao, ttls, scope, operationTime, repeatMgr)) {}
-			else if (handleDdsCommands(word, functionStream, params, dds, scope, operationTime, repeatMgr)) {}
-			else if (handleOlCommands(word, functionStream, params, ol, scope, operationTime, repeatMgr)) {}
-			else if (handleRepeats(word, functionStream, params, ttls, ao, dds, ol, scope, repeatMgr)) {}
+			else if (handleRepeats(word, functionStream, params, ttls, ao, scope, repeatMgr)) {}
 			else if (word == "callcppcode") {
 				// and that's it... 
 				callCppCodeFunction ();
@@ -288,7 +284,7 @@ void ExpThreadWorker::analyzeFunction (std::string function, std::vector<std::st
 				thrower ("\"rsg:\" command is deprecated! Please use the microwave system listview instead.");
 			}
 			/// deal with function calls.
-			else if (handleFunctionCall (word, functionStream, params, ttls, ao, dds, ol, warnings, function, operationTime, repeatMgr)) {}
+			else if (handleFunctionCall (word, functionStream, params, ttls, ao, warnings, function, operationTime, repeatMgr)) {}
 			else {
 				thrower ("unrecognized master script command inside function analysis: " + word);
 			}
@@ -316,8 +312,8 @@ double ExpThreadWorker::convertToTime (timeType time, std::vector<parameterType>
 	return variableTime + time.second;
 }
 
-void ExpThreadWorker::handleDebugPlots (DoCore& ttls, AoCore& aoSys, OlCore& olSys, unsigned variation) {
-	emit doAoOlData(ttls.getPlotData (variation), aoSys.getPlotData (variation), olSys.getPlotData(variation));
+void ExpThreadWorker::handleDebugPlots (DoCore& ttls, AoCore& aoSys, unsigned variation) {
+	emit doAoOlData(ttls.getPlotData (variation), aoSys.getPlotData (variation));
 	//emit notification (qstr (ttls.getTtlSequenceMessage (variation)), 2);
 	//emit notification (qstr (aoSys.getDacSequenceMessage (variation)), 2);
 }
@@ -812,220 +808,10 @@ bool ExpThreadWorker::handleAoCommands (std::string word, ScriptStream& stream,	
 }
 
 /* returns true if handles word, false otherwise. */
-bool ExpThreadWorker::handleDdsCommands(std::string word, ScriptStream& stream, std::vector<parameterType>& vars,
-	DdsCore& ddss, std::string scope, timeType& operationTime, repeatManager& repeatMgr)
-{
-	repeatInfoId repeatId = repeatMgr.getCurrentActiveID();
-	if (word == "ddsamp:") //ddsamp: name amp
-	{
-		DdsCommandForm command;
-		std::string name;
-		stream >> name >> command.initVal;
-		command.initVal.assertValid(vars, scope);
-		command.time = operationTime;
-		command.commandName = "ddsamp:";
-		command.finalVal.expressionStr = "__NONE__";
-		command.rampTime.expressionStr = "__NONE__";
-		command.numSteps.expressionStr = "__NONE__";
-		command.repeatId = repeatId;
-		try
-		{
-			ddss.handleDDSScriptCommand(command, name, vars);
-		}
-		catch (ChimeraError& err)
-		{
-			throwNested("Error handling \"ddsamp:\" command inside main script");
-		}
-	}
-	else if (word == "ddsfreq:") //ddsfreq: name freq
-	{
-		DdsCommandForm command;
-		std::string name;
-		stream >> name >> command.initVal;
-		command.initVal.assertValid(vars, scope);
-		command.time = operationTime;
-		command.commandName = "ddsfreq:";
-		command.finalVal.expressionStr = "__NONE__";
-		command.rampTime.expressionStr = "__NONE__";
-		command.numSteps.expressionStr = "__NONE__";
-		command.repeatId = repeatId;
-		try
-		{
-			ddss.handleDDSScriptCommand(command, name, vars);
-		}
-		catch (ChimeraError& err)
-		{
-			throwNested("Error handling \"ddsfreq:\" command inside main script");
-		}
-	}
-	else if (word == "ddslinspaceamp:") //ddslinspaceamp: name initAmp finalAmp rampTime numSteps
-	{
-		DdsCommandForm command;
-		std::string name;
-		stream >> name >> command.initVal >> command.finalVal >> command.rampTime >> command.numSteps;
-		command.initVal.assertValid(vars, scope);
-		command.finalVal.assertValid(vars, scope);
-		command.rampTime.assertValid(vars, scope);
-		command.numSteps.assertValid(vars, scope);
-		command.time = operationTime;
-		command.commandName = "ddslinspaceamp:";
-		command.repeatId = repeatId;
-		try
-		{
-			ddss.handleDDSScriptCommand(command, name, vars);
-		}
-		catch (ChimeraError& err)
-		{
-			throwNested("Error handling \"ddslinspaceamp:\" command inside main script");
-		}
-	}
-	else if (word == "ddslinspacefreq:")  //ddslinspacefreq: name initFreq finalFreq rampTime numSteps
-	{
-		DdsCommandForm command;
-		std::string name;
-		stream >> name >> command.initVal >> command.finalVal >> command.rampTime >> command.numSteps;
-		command.initVal.assertValid(vars, scope);
-		command.finalVal.assertValid(vars, scope);
-		command.rampTime.assertValid(vars, scope);
-		command.numSteps.assertValid(vars, scope);
-		command.time = operationTime;
-		command.commandName = "ddslinspacefreq:";
-		command.repeatId = repeatId;
-		try
-		{
-			ddss.handleDDSScriptCommand(command, name, vars);
-		}
-		catch (ChimeraError& err)
-		{
-			throwNested("Error handling \"ddslinspacefreq:\" command inside main script");
-		}
-	}
-	else if (word == "ddsrampamp:") // ddsrampamp: name intiAmp finalAmp rampTime
-	{
-		DdsCommandForm command;
-		std::string name;
-		stream >> name >> command.initVal >> command.finalVal >> command.rampTime;
-		command.initVal.assertValid(vars, scope);
-		command.finalVal.assertValid(vars, scope);
-		command.rampTime.assertValid(vars, scope);
-		command.time = operationTime;
-		command.commandName = "ddsrampamp:";
-		command.numSteps.expressionStr = "__NONE__";
-		command.repeatId = repeatId;
-		try
-		{
-			ddss.handleDDSScriptCommand(command, name, vars);
-		}
-		catch (ChimeraError& err)
-		{
-			throwNested("Error handling \"ddsrampamp:\" command inside main script");
-		}
-	}
-	else if (word == "ddsrampfreq:") // ddsrampfreq: name intiFreq finalFreq rampTime
-	{
-		DdsCommandForm command;
-		std::string name;
-		stream >> name >> command.initVal >> command.finalVal >> command.rampTime;
-		command.initVal.assertValid(vars, scope);
-		command.finalVal.assertValid(vars, scope);
-		command.rampTime.assertValid(vars, scope);
-		command.time = operationTime;
-		command.commandName = "ddsrampfreq:";
-		command.numSteps.expressionStr = "__NONE__";
-		command.repeatId = repeatId;
-		try
-		{
-			ddss.handleDDSScriptCommand(command, name, vars);
-		}
-		catch (ChimeraError& err)
-		{
-			throwNested("Error handling \"ddsrampfreq:\" command inside main script");
-		}
-	}
-	else
-	{
-		return false;
-	}
-	return true;
-}
 
-/* returns true if handles word, false otherwise. */
-bool ExpThreadWorker::handleOlCommands(std::string word, ScriptStream& stream, std::vector<parameterType>& vars,
-	OlCore& ols, std::string scope, timeType& operationTime, repeatManager& repeatMgr)
-{
-	repeatInfoId repeatId = repeatMgr.getCurrentActiveID();
-	if (word == "ol:") //ddsamp: name amp
-	{
-		OlCommandForm command;
-		std::string name;
-		stream >> name >> command.initVal;
-		command.initVal.assertValid(vars, scope);
-		command.time = operationTime;
-		command.commandName = "ol:";
-		command.finalVal.expressionStr = "__NONE__";
-		command.rampTime.expressionStr = "__NONE__";
-		command.numSteps.expressionStr = "__NONE__";
-		command.repeatId = repeatId;
-		try
-		{
-			ols.handleOLScriptCommand(command, name, vars);
-		}
-		catch (ChimeraError& err)
-		{
-			throwNested("Error handling \"ol:\" command inside main script");
-		}
-	}
-	else if (word == "olramp:")  //ddslinspacefreq: name initFreq finalFreq rampTime numSteps
-	{
-		OlCommandForm command;
-		std::string name;
-		stream >> name >> command.initVal >> command.finalVal >> command.rampTime /*>> command.numSteps*/;
-		command.initVal.assertValid(vars, scope);
-		command.finalVal.assertValid(vars, scope);
-		command.rampTime.assertValid(vars, scope);
-		//command.numSteps.assertValid(vars, scope);
-		command.time = operationTime;
-		command.commandName = "olramp:";
-		command.repeatId = repeatId;
-		try
-		{
-			ols.handleOLScriptCommand(command, name, vars);
-		}
-		catch (ChimeraError& err)
-		{
-			throwNested("Error handling \"olramp:\" command inside main script");
-		}
-	}
-	else if (word == "ollinspace:") {
-		OlCommandForm command;
-		std::string name;
-		stream >> name >> command.initVal >> command.finalVal >> command.rampTime >> command.numSteps;
-		command.initVal.assertValid(vars, scope);
-		command.finalVal.assertValid(vars, scope);
-		command.rampTime.assertValid(vars, scope);
-		command.numSteps.assertValid(vars, scope);
-		command.time = operationTime;
-		command.commandName = "ollinspace:";
-		command.repeatId = repeatId;
-		// not used here.
-		command.rampInc.expressionStr = "__NONE__";
-		//
-		try {
-			ols.handleOLScriptCommand(command, name, vars);
-		}
-		catch (ChimeraError&) {
-			throwNested("Error handling \"ollinspace:\" command.");
-		}
-	}
-	else
-	{
-		return false;
-	}
-	return true;
-}
 
 bool ExpThreadWorker::handleRepeats(std::string word, ScriptStream& stream, std::vector<parameterType>& params, 
-	DoCore& ttls, AoCore& ao, DdsCore& dds, OlCore& ol,
+	DoCore& ttls, AoCore& ao,
 	std::string scope, repeatManager& repeatMgr)
 {
 	if (word == "repeat:") {
@@ -1045,12 +831,6 @@ bool ExpThreadWorker::handleRepeats(std::string word, ScriptStream& stream, std:
 		}
 		if (!ao.repeatsExistInCommandForm(repeatId)) {
 			ao.addPlaceholderRepeatCommand(repeatId);
-		}
-		if (!dds.repeatsExistInCommandForm(repeatId)) {
-			dds.addPlaceholderRepeatCommand(repeatId);
-		}
-		if (!ol.repeatsExistInCommandForm(repeatId)) {
-			ol.addPlaceholderRepeatCommand(repeatId);
 		}
 		// handle end of repeat
 		repeatMgr.fininshCurrentRepeat();
@@ -1158,32 +938,6 @@ void ExpThreadWorker::checkTriggerNumbers (std::vector<parameterType>& expParams
 					}
 				}
 			}
-
-			auto& uwaveCore = input->devices.getSingleDevice<MicrowaveCore>();
-			if (uwaveCore.experimentActive) {
-				if (variationInc == 0) {
-					emit notification("Running consistency checks for Microwave system: " + qstr(uwaveCore.queryIdentity()), 2);
-				}
-				auto actualTrigs = input->ttls.countTriggers(uwaveCore.getUWaveTriggerLine(), variationInc);
-				auto expectedTrigs = uwaveCore.getNumTriggers(uwaveCore.experimentSettings);
-				if (actualTrigs != expectedTrigs) {
-					// this is a serious low-level/user error. throw, don't warn.
-					std::string infoString = "Actual/Expected Microwave Triggers: " + str(actualTrigs) + "/"
-						+ str(expectedTrigs) + ".";
-					thrower("The number of Microwave triggers that the ttl system sends to the Microwave does not "
-						"match the list size in microwave control! " + infoString + ", seen in variation #"
-						+ str(variationInc) + "\r\n");
-				}
-			}
-			else {
-				auto triggerLine = uwaveCore.getUWaveTriggerLine();
-				auto actualTrigs = input->ttls.countTriggers(triggerLine, variationInc);
-				if (actualTrigs != 0 && variationInc == 0) {
-					emit warn("There are " + qstr(actualTrigs) + " triggers sent to Microwave trigger in ttl line ("
-						+ qstr(triggerLine.first) + "," + qstr(triggerLine.second) + "), but the Microwave system: " + qstr(uwaveCore.queryIdentity())
-						+ " is not active." + "Make sure that this is what you actually want.\r\n", 0);
-				}
-			}
 			
 			/// check Agilents
 			for (auto& arbGen : input->devices.getDevicesByClass<ArbGenCore>()) {
@@ -1195,7 +949,7 @@ void ExpThreadWorker::checkTriggerNumbers (std::vector<parameterType>& expParams
 }
 
 bool ExpThreadWorker::handleFunctionCall (std::string word, ScriptStream& stream, std::vector<parameterType>& vars,
-	DoCore& ttls, AoCore& ao, DdsCore& dds, OlCore& ol, std::string& warnings,
+	DoCore& ttls, AoCore& ao, std::string& warnings,
 	std::string callingFunction, timeType& operationTime, repeatManager& repeatMgr) {
 	if (word != "call") {
 		return false;
@@ -1230,7 +984,7 @@ bool ExpThreadWorker::handleFunctionCall (std::string word, ScriptStream& stream
 			" infinite recursion\r\n");
 	}
 	try {
-		analyzeFunction (functionName, args, ttls, ao, dds, ol, vars, warnings, operationTime, callingFunction, repeatMgr);
+		analyzeFunction (functionName, args, ttls, ao, vars, warnings, operationTime, callingFunction, repeatMgr);
 	}
 	catch (ChimeraError&) {
 		throwNested ("Error handling Function call to function " + functionName + ".");
@@ -1243,13 +997,9 @@ void ExpThreadWorker::calculateAdoVariations (ExpRuntimeData& runtime) {
 		auto variations = determineVariationNumber (runtime.expParams);
 		input->ao.resetDacEvents ();
 		input->ttls.resetTtlEvents ();
-		input->dds.resetDDSEvents();
-		input->ol.resetOLEvents();
 
 		input->ao.initializeDataObjects (0);
 		input->ttls.initializeDataObjects (0);
-		input->dds.initializeDataObjects(0);
-		input->ol.initializeDataObjects(0);
 
 		input->zynqExp.sendCommand("initExp");
 
@@ -1258,7 +1008,7 @@ void ExpThreadWorker::calculateAdoVariations (ExpRuntimeData& runtime) {
 		std::string warnings;
 		repeatMgrPtr = std::make_unique<repeatManager>(); //repeatManager repeatMgr;
 		repeatManager& repeatMgr = *(repeatMgrPtr.get());
-		analyzeMasterScript (input->ttls, input->ao,input->dds, input->ol, runtime.expParams, runtime.masterScript,
+		analyzeMasterScript (input->ttls, input->ao, runtime.expParams, runtime.masterScript,
 			runtime.mainOpts.atomSkipThreshold != UINT_MAX, warnings, operationTime, loadSkipTime, repeatMgr);
 		
 		emit notification("Calcualting Repeat Manager variations...\n", 1);
@@ -1267,19 +1017,13 @@ void ExpThreadWorker::calculateAdoVariations (ExpRuntimeData& runtime) {
 		input->ttls.calculateVariations (runtime.expParams, this);
 		emit notification ("Calcualting AO system variations...\n", 1);
 		input->ao.calculateVariations (runtime.expParams, this, input->calibrations);
-		emit notification("Calcualting DDS system variations...\n", 1);
-		input->dds.calculateVariations(runtime.expParams, this, input->calibrations);
-		emit notification("Calcualting OL system variations...\n", 1);
-		input->ol.calculateVariations(runtime.expParams, this);
+
 
 		emit notification("Constructing repeatitions for DO system...\n", 1);
 		input->ttls.constructRepeats(repeatMgr);
 		emit notification("Constructing repeatitions for AO system...\n", 1);
 		input->ao.constructRepeats(repeatMgr);
-		emit notification("Constructing repeatitions for DDS system...\n", 1);
-		input->dds.constructRepeats(repeatMgr);
-		emit notification("Constructing repeatitions for OL system...\n", 1);
-		input->ol.constructRepeats(repeatMgr);
+		
 		
 		emit notification ("Preparing DO, AO, DDS, OL for experiment and Running final ado checks...\n");
 		for (auto variationInc : range (variations)) {
@@ -1287,8 +1031,6 @@ void ExpThreadWorker::calculateAdoVariations (ExpRuntimeData& runtime) {
 			double& currLoadSkipTime = loadSkipTimes[variationInc];
 			currLoadSkipTime = convertToTime (loadSkipTime, runtime.expParams, variationInc);
 			input->aoSys.standardExperimentPrep (variationInc, runtime.expParams, currLoadSkipTime);
-			input->ddsSys.standardExperimentPrep(variationInc);
-			input->olSys.standardExperimentPrep(variationInc, input->ttls, warnings);
 			input->ttlSys.standardExperimentPrep(variationInc, currLoadSkipTime, runtime.expParams);//make sure this is the last one, since offsetlock can insert in ttl sequence 
 			
 			input->ao.checkTimingsWork(variationInc);
@@ -1366,7 +1108,7 @@ void ExpThreadWorker::initVariation (unsigned variationInc,std::vector<parameter
 	//waitForAndorFinish ();
 	bool skipOption = input->skipNext == nullptr ? false : input->skipNext->load ();
 	if (true /*runMaster*/) { /*input->ttls.ftdi_write (variationInc, skipOption);*/ }
-	handleDebugPlots(input->ttls, input->ao, input->ol, variationInc);
+	handleDebugPlots(input->ttls, input->ao, variationInc);
 }
 
 void ExpThreadWorker::waitForAndorFinish () {
@@ -1393,12 +1135,6 @@ void ExpThreadWorker::errorFinish (std::atomic<bool>& isAborting, ChimeraError& 
 		Sleep(50);
 		input->aoSys.setDACs();
 		Sleep(50);
-		input->ddsSys.setDDSs();
-		Sleep(50);
-		input->olSys.setOLs(input->ttls, input->ttlSys.getCurrentStatus());
-		Sleep(50);
-		input->ddsSys.relockPLL();
-		Sleep(100);
 		input->ttls.FPGAForceOutput(input->ttlSys.getCurrentStatus());
 	}
 	catch (ChimeraError& e) {
@@ -1433,12 +1169,6 @@ void ExpThreadWorker::normalFinish (ExperimentType& expType, bool runMaster,
 		Sleep(50);
 		input->aoSys.setDACs();
 		Sleep(50);
-		input->ddsSys.setDDSs();
-		Sleep(50);
-		input->olSys.setOLs(input->ttls, input->ttlSys.getCurrentStatus());
-		Sleep(50);
-		input->ddsSys.relockPLL();
-		Sleep(100);
 		input->ttls.FPGAForceOutput(input->ttlSys.getCurrentStatus());
 	}
 	catch (ChimeraError& e) {
@@ -1472,8 +1202,6 @@ void ExpThreadWorker::startRep (unsigned repInc, unsigned variationInc, bool ski
 		//input->aoSys.stopDacs();
 		//input->aoSys.configureClocks(variationInc, skip);
 		input->ao.writeDacs(variationInc, skip);
-		input->dds.writeDDSs(variationInc, skip);
-		input->ol.writeOLs(variationInc);
 		input->ttls.writeTtlDataToFPGA(variationInc, skip);
 		//emit notification("0.1: " + qstr(timer.elapsed()) + "\t");
 		Sleep(50); /// have to sleep for this amount of time to make TCP connect smoothly?????? zzp 2021/06/04 very annoying
@@ -1592,33 +1320,22 @@ void ExpThreadWorker::inExpCalibrationProcedure(ExpRuntimeData& runtime, bool ca
 	input->ttls.calculateVariations(runtime.expParams, this);
 	emit notification("In-Exp Calibration: Re-Calcualting AO system variations...\n", 2);
 	input->ao.calculateVariations(runtime.expParams, this, input->calibrations);
-	emit notification("In-Exp Calibration: Re-Calcualting DDS system variations...\n", 2);
-	input->dds.calculateVariations(runtime.expParams, this, input->calibrations);
-	emit notification("In-Exp Calibration: Re-Calcualting OL system variations...\n", 2);
-	input->ol.calculateVariations(runtime.expParams, this);
-	
 	emit notification("Constructing repeatitions for DO system...\n", 2);
 	input->ttls.constructRepeats(repeatMgr);
 	emit notification("Constructing repeatitions for AO system...\n", 2);
 	input->ao.constructRepeats(repeatMgr);
-	emit notification("Constructing repeatitions for DDS system...\n", 2);
-	input->dds.constructRepeats(repeatMgr);
-	emit notification("Constructing repeatitions for OL system...\n", 2);
-	input->ol.constructRepeats(repeatMgr);
 
-	emit notification("In-Exp Calibration: Preparing DO, AO, DDS, OL for experiment and Running final ado checks...\n", 1);
+	emit notification("In-Exp Calibration: Preparing DO, AO,for experiment and Running final ado checks...\n", 1);
 	std::string warnings;
 	for (auto variationInc : range(variations)) {
 		double& currLoadSkipTime = loadSkipTimes[variationInc];
 		currLoadSkipTime = convertToTime(loadSkipTime, runtime.expParams, variationInc);
 		input->aoSys.standardExperimentPrep(variationInc, runtime.expParams, currLoadSkipTime);
-		input->ddsSys.standardExperimentPrep(variationInc);
-		input->olSys.standardExperimentPrep(variationInc, input->ttls, warnings);
 		input->ttlSys.standardExperimentPrep(variationInc, currLoadSkipTime, runtime.expParams);//make sure this is the last one, since offsetlock can insert in ttl sequence 
 		input->ao.checkTimingsWork(variationInc);
 	}
 	emit warn(qstr(warnings), 2);
-	emit notification("In-Exp Calibration: Finished Re-Calcualting DAC/DDS system variations", 1);
+	emit notification("In-Exp Calibration: Finished Re-Calcualting DAC system variations", 1);
 }
 
 void ExpThreadWorker::inExpCalibrationRun(ExpRuntimeData& runtime)
@@ -1643,14 +1360,10 @@ void ExpThreadWorker::setExperimentGUIcolor()
 {
 	emit input->ttlSys.setExperimentActiveColor(std::vector<DoCommand>(), true);
 	emit input->aoSys.setExperimentActiveColor(std::vector<AoCommand>(), true);
-	emit input->ddsSys.setExperimentActiveColor(std::vector<DdsCommand>(), true);
-	emit input->olSys.setExperimentActiveColor(std::vector<OlCommand>(), true);
 
 	try {
 		emit input->ttlSys.setExperimentActiveColor(input->ttls.getTtlCommand(input->numVariations - 1), true);
 		emit input->aoSys.setExperimentActiveColor(input->ao.getDacCommand(input->numVariations - 1), true);
-		emit input->ddsSys.setExperimentActiveColor(input->dds.getDdsCommand(input->numVariations - 1), true);
-		emit input->olSys.setExperimentActiveColor(input->ol.getOlCommand(input->numVariations - 1), true);
 	}
 	catch (ChimeraError& e) {
 		emit warn("Error happens when resetting the GUI edit colors \n" + e.qtrace());

@@ -303,22 +303,6 @@ void CommandModulator::setDAC(QString name, QString value, ErrorStatus& status)
 
 }
 
-void CommandModulator::setOL(ErrorStatus& status)
-{
-	auxWin->reportStatus("----------------------\r\nSetting Offsetlocks... ");
-	try {
-		status.error = false;
-		auxWin->reportStatus("Setting Ols...\r\n");
-		auxWin->getOlSys().handleSetOlsButtonPress(auxWin->getTtlSystem().getCore(), auxWin->getTtlSystem().getCurrentStatus());
-		auxWin->reportStatus("Finished Setting Offsetlocks.\r\n");
-	}
-	catch (ChimeraError& err) {
-		mainWin->reportStatus(": " + err.qtrace() + "\r\n");
-		mainWin->reportErr(err.qtrace());
-		status.error = true;
-		status.errorMsg = err.trace();
-	}
-}
 
 void CommandModulator::setDDS(ErrorStatus& status)
 {

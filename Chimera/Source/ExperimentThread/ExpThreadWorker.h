@@ -27,7 +27,7 @@ class ExpThreadWorker : public QObject
 		static void loadGMoogScript(std::string scriptAddress, ScriptStream& gmoogScript);
 		static void loadArbGenScript(std::string scriptAddress, ScriptStream& agilentScript);
 		void checkTriggerNumbers (std::vector<parameterType>& expParams);
-		void analyzeMasterScript (DoCore& ttls, AoCore& ao, DdsCore& dds, OlCore& ol,
+		void analyzeMasterScript (DoCore& ttls, AoCore& ao,
 			std::vector<parameterType>& vars,
 			ScriptStream& currentMasterScript, bool expectsLoadSkip,
 			std::string& warnings, timeType& operationTime,
@@ -46,15 +46,11 @@ class ExpThreadWorker : public QObject
 		bool handleAoCommands (std::string word, ScriptStream& stream, std::vector<parameterType>& params,
 			AoCore& ao, DoCore& ttls, std::string scope,
 			timeType& operationTime, repeatManager& repeatMgr);
-		bool handleDdsCommands(std::string word, ScriptStream& stream, std::vector<parameterType>& params,
-			DdsCore& dds, std::string scope, timeType& operationTime, repeatManager& repeatMgr);
-		bool handleOlCommands(std::string word, ScriptStream& stream, std::vector<parameterType>& params,
-			OlCore& ol, std::string scope, timeType& operationTime, repeatManager& repeatMgr);
 		bool handleRepeats(std::string word, ScriptStream& stream, std::vector<parameterType>& params,
-			DoCore& ttls, AoCore& ao, DdsCore& dds, OlCore& ol,
+			DoCore& ttls, AoCore& ao,
 			std::string scope, repeatManager& repeatMgr);
 		bool handleFunctionCall (std::string word, ScriptStream& stream, std::vector<parameterType>& params,
-			DoCore& ttls, AoCore& ao, DdsCore& dds, OlCore& ol, std::string& warnings, std::string callingFunction, timeType& operationTime, repeatManager& repeatMgr);
+			DoCore& ttls, AoCore& ao, std::string& warnings, std::string callingFunction, timeType& operationTime, repeatManager& repeatMgr);
 		static bool handleVariableDeclaration (std::string word, ScriptStream& stream, std::vector<parameterType>& params,
 			std::string scope, std::string& warnings);
 		static bool handleVectorizedValsDeclaration (std::string word, ScriptStream& stream,
@@ -62,7 +58,7 @@ class ExpThreadWorker : public QObject
 		void experimentThreadProcedure ();
 		void analyzeFunctionDefinition (std::string defLine, std::string& functionName, std::vector<std::string>& args);
 		static unsigned determineVariationNumber (std::vector<parameterType> vars);
-		void handleDebugPlots (DoCore& ttls, AoCore& ao, OlCore& ol, unsigned variation);
+		void handleDebugPlots (DoCore& ttls, AoCore& ao, unsigned variation);
 		double convertToTime (timeType time, std::vector<parameterType> variables, unsigned variation);
 		void calculateAdoVariations (ExpRuntimeData& runtime);
 		static std::vector<parameterType> getLocalParameters (ScriptStream& stream);
@@ -99,7 +95,7 @@ class ExpThreadWorker : public QObject
 		// the master script file contents get dumped into this.
 		const std::string functionsFolderLocation = FUNCTIONS_FOLDER_LOCATION;
 		// called by analyzeMasterScript functions only.
-		void analyzeFunction (std::string function, std::vector<std::string> args, DoCore& ttls, AoCore& ao, DdsCore& dds, OlCore& ol,
+		void analyzeFunction (std::string function, std::vector<std::string> args, DoCore& ttls, AoCore& ao,
 			std::vector<parameterType>& vars, std::string& warnings, timeType& operationTime, std::string callingScope, repeatManager& repeatMgr);
 		timeType operationTime;
 		HANDLE runningThread;
@@ -119,8 +115,7 @@ class ExpThreadWorker : public QObject
 		void prepareAnalysis();
         void plot_Xvals_determined (std::vector<double>);
         void doAoOlData (const std::vector<std::vector<plotDataVec>>& doData,
-                         const std::vector<std::vector<plotDataVec>>& aoData,
-						 const std::vector<std::vector<plotDataVec>>& olData);
+                         const std::vector<std::vector<plotDataVec>>& aoData);
         void normalExperimentFinish (QString, profileSettings);
 		void calibrationFinish (QString, profileSettings);
         void errorExperimentFinish (QString, profileSettings);
