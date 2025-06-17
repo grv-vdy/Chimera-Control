@@ -134,7 +134,7 @@
 	const int STATICAO_IPPORT = 804;
 
 	//static DDS
-	const bool STATICDDS_SAFEMODE = false;
+	const bool STATICDDS_SAFEMODE = true;
 	const std::string STATICDDS_PORT = "COM3";
 	const unsigned int STATICDDS_BAUDRATE = 9600;
 
