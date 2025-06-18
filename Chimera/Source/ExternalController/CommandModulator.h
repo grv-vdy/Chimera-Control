@@ -35,8 +35,6 @@ public slots:
 	void setStaticDDS(QString ddsfreqStr, QString ddslevelStr, QString channelStr, QString portStr, ErrorStatus& status);
 	void setTTL(QString name, QString value, ErrorStatus& status);
 	void setDAC(QString name, QString value, ErrorStatus& status);
-	void setOL(ErrorStatus& status);
-	void setDDS(ErrorStatus& status);
 
 	void startMako(QString whichMako, ErrorStatus& status);
 	void stopMako(QString whichMako, ErrorStatus& status);

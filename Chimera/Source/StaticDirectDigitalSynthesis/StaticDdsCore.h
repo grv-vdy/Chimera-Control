@@ -1,6 +1,10 @@
 #pragma once
 #include <GeneralObjects/IDeviceCore.h>
 #include <ParameterSystem/ParameterSystemStructures.h>
+#include "StaticDirectDigitalSynthesis/StaticDdsStructures.h" // Include the definition of StaticDDSSettings
+#include "StaticDirectDigitalSynthesis/StaticDdsFlume.h" // Include the definition of StaticDDSFlume
+
+
 
 class ConfigStream;
 class ExpThreadWorker;

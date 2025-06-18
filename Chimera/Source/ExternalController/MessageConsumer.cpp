@@ -129,18 +129,6 @@ void MessageConsumer::consume()
                 }, Qt::BlockingQueuedConnection);
             connection->do_write(compileReply("Finished setting DAC", status));
         }
-        else if (stratWith(message, "Set-DDS")) {
-            QMetaObject::invokeMethod(&modulator_, [&]() {
-                modulator_.setDDS(status);
-                }, Qt::BlockingQueuedConnection);
-            connection->do_write(compileReply("Finished setting DDS", status));
-        }
-        else if (stratWith(message, "Set-OL")) {
-            QMetaObject::invokeMethod(&modulator_, [&]() {
-                modulator_.setOL(status);
-                }, Qt::BlockingQueuedConnection);
-            connection->do_write(compileReply("Finished setting OL", status));
-        }
         else if (stratWith(message, "Start-MAKO")) {
             auto args = getArguments(message, 1, argValid, connection);
             if (!argValid) continue;

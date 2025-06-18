@@ -304,24 +304,6 @@ void CommandModulator::setDAC(QString name, QString value, ErrorStatus& status)
 }
 
 
-void CommandModulator::setDDS(ErrorStatus& status)
-{
-	auxWin->reportStatus("----------------------\r\nSetting DDSs... ");
-	try {
-		status.error = false;
-		auxWin->reportStatus("Setting Ddss...\r\n");
-		auxWin->getDdsSys().handleSetDdsButtonPress(true);
-		auxWin->getTtlSystem().setTtlStatus(auxWin->getTtlSystem().getCurrentStatus());
-		auxWin->reportStatus("Finished Setting DDSs.\r\n");
-	}
-	catch (ChimeraError& err) {
-		mainWin->reportStatus(": " + err.qtrace() + "\r\n");
-		mainWin->reportErr(err.qtrace());
-		status.error = true;
-		status.errorMsg = err.trace();
-	}
-}
-
 void CommandModulator::startMako(QString whichMako, ErrorStatus& status)
 {
 	auto* cam = getMakoCameraPtr(whichMako, status);
