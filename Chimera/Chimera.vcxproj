@@ -131,9 +131,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Source\ElliptecRotationStage\ElliptecSystem.cpp" />
-    <ClCompile Include="Source\ElliptecRotationStage\ElliptecCore.cpp" />
-    <ClCompile Include="Source\ElliptecRotationStage\ElliptecFlume.cpp" />
     <ClCompile Include="Source\GeneralFlumes\BoostSyncSerial.cpp" />
     <ClCompile Include="Source\GeneralFlumes\BoostSyncUDP.cpp" />
     <ClCompile Include="Source\GeneralFlumes\BoostSyncTCP.cpp" />
@@ -192,23 +189,15 @@
     <ClCompile Include="Source\CustomQtControls\LineEditCompleter.cpp" />
     <ClCompile Include="Source\CustomQtControls\TickSlider.cpp" />
     <ClCompile Include="Source\ExternalController\TCPServerSystem.cpp" />
-    <ClCompile Include="Source\StaticAnalogOutput\StaticAoCore.cpp" />
-    <ClCompile Include="Source\StaticAnalogOutput\StaticAoSystem.cpp" />
     <ClCompile Include="Source\StaticDirectDigitalSynthesis\StaticDdsCore.cpp" />
     <ClCompile Include="Source\StaticDirectDigitalSynthesis\StaticDDSFlume.cpp" />
     <ClCompile Include="Source\StaticDirectDigitalSynthesis\StaticDdsSystem.cpp" />
-    <QtMoc Include="Source\ElliptecRotationStage\ElliptecCore.h" />
-    <QtMoc Include="Source\ElliptecRotationStage\ElliptecSystem.h" />
-    <ClInclude Include="Source\ElliptecRotationStage\ElliptecFlume.h" />
-    <ClInclude Include="Source\ElliptecRotationStage\ElliptecSettings.h" />
     <ClInclude Include="Source\GeneralFlumes\BoostSyncSerial.h" />
     <ClInclude Include="Source\GeneralFlumes\BoostSyncUDP.h" />
     <ClInclude Include="Source\GeneralFlumes\BoostSyncTCP.h" />
-    <ClInclude Include="Source\StaticAnalogOutput\StaticAoCore.h" />
     <ClInclude Include="Source\StaticDirectDigitalSynthesis\StaticDdsCore.h" />
     <ClInclude Include="Source\StaticDirectDigitalSynthesis\StaticDDSFlume.h" />
     <QtMoc Include="Source\StaticDirectDigitalSynthesis\StaticDdsSystem.h" />
-    <QtMoc Include="Source\StaticAnalogOutput\StaticAoSystem.h" />
     <QtMoc Include="Source\ExternalController\MessageConsumer.h" />
     <QtMoc Include="Source\ExternalController\TCPServerSystem.h" />
     <QtMoc Include="Source\CustomQtControls\TickSlider.h" />
@@ -492,7 +481,6 @@
     <ClInclude Include="Source\Rearrangement\rearrangeStructures.h" />
     <ClInclude Include="Source\Scripts\ScriptableDevices.h" />
     <ClInclude Include="Source\Scripts\ScriptStream.h" />
-    <ClInclude Include="Source\StaticAnalogOutput\StaticAoStructures.h" />
     <ClInclude Include="Source\StaticDirectDigitalSynthesis\StaticDdsStructures.h" />
     <ClInclude Include="Source\stdafx.h" />
     <ClInclude Include="Source\ZynqTCP\ZynqTCP.h" />

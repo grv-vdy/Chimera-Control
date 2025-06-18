@@ -3,8 +3,6 @@
 #include "ExperimentThread/ExperimentThreadInput.h"
 #include <RealTimeMOTAnalysis/MOTAnalysisSystem.h>
 #include <ExperimentMonitoringAndStatus/ExperimentSeqPlotter.h>
-#include <StaticAnalogOutput/StaticAoSystem.h>
-#include <ElliptecRotationStage/ElliptecSystem.h>
 #include "StaticDirectDigitalSynthesis/StaticDdsSystem.h" // Ensure the header file is included
 
 
@@ -38,9 +36,7 @@ private:
 public:
 	MOTAnalysisSystem MOTAnalySys;
 	ExperimentSeqPlotter SeqPlotter;
-	StaticAoSystem staticDac;
 	StaticDdsSystem staticDds;
-	ElliptecSystem elliptec;
 
 private:
 	Ui::QtAnalysisWindow* ui;
