@@ -10,7 +10,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Link>
-      <AdditionalDependencies>NIDAQmx.lib;atmcd64m.lib;legacy_stdio_definitions.lib;%(AdditionalDependencies);python37.lib;libhdf5_hl_cpp.lib;libhdf5_hl.lib;libhdf5_tools.lib;libszip.lib;libzlib.lib;libhdf5_cpp.lib;libhdf5.lib;ftd2xx.lib;visa64.lib;visa32.lib;nivisa64.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Charts.lib</AdditionalDependencies>
+      <AdditionalDependencies>NIDAQmx.lib;atmcd64m.lib;legacy_stdio_definitions.lib;%(AdditionalDependencies);python37.lib;libhdf5_hl_cpp.lib;libhdf5_hl.lib;libhdf5_tools.lib;libszip.lib;libzlib.lib;libhdf5_cpp.lib;libhdf5.lib;ftd2xx.lib;visa64.lib;visa32.lib;nivisa64.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Charts.lib;NIDAQmx.lib;</AdditionalDependencies>
     </Link>
     <ClCompile>
       <LanguageStandard>stdcpp17</LanguageStandard>

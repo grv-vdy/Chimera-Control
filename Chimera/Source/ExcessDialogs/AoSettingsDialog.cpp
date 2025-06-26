@@ -11,7 +11,7 @@ AoSettingsDialog::AoSettingsDialog (AoSystem* inputPtr)
 	this->setModal(false);
 	QVBoxLayout* layoutWiget = new QVBoxLayout(this);
 	QHBoxLayout* layout = new QHBoxLayout();
-	auto daclayout = std::array<QGridLayout*,2>({ new QGridLayout(),new QGridLayout() });
+	auto daclayout = std::array<QGridLayout*,1>({ new QGridLayout()});
 	short cnts = 0;
 	for (auto* lay : daclayout)
 	{

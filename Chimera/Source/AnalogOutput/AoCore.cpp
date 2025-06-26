@@ -1,8 +1,10 @@
 #include "stdafx.h"
+#include "NIDAQmx.h"
 #include "AoCore.h"
 #include "ExperimentThread/ExpThreadWorker.h"
 #include "GeneralObjects/CodeTimer.h"
 #include <ExperimentMonitoringAndStatus/ExperimentSeqPlotter.h>
+#include <set>
 
 
 AoCore::AoCore() : dacTriggerTime(DAC_TIME_RESOLUTION)
@@ -388,7 +390,7 @@ void AoCore::calculateVariations(std::vector<parameterType>& params, ExpThreadWo
 				// pass the ramp points and time directly to a single or two dacCommandList element
 				long long int codeInit = long long int((initValue / 20 + 0.5) * 65535); // ((dacval+10)/20*65535), [-10,10]->[0,65535], 65536 pts and 65535 intervals
 				long long int codeFinl = long long int((finalValue / 20 + 0.5) * 65535);
-				long long int incr = ((codeFinl << 16) - (codeInit << 16)) / numStepsInt; // https://stackoverflow.com/questions/7221409/is-unsigned-integer-subtraction-defined-behavior The result of a subtraction generating a negative number in an unsigned type is well-defined: //[...] A computation involving unsigned operands can never overflow, because a result that cannot be represented by the resulting unsigned integer type is reduced modulo the number that is one greater than the largest value that can be represented by the resulting type. (ISO / IEC 9899:1999 (E)§6.2.5 / 9) //As you can see, (unsigned)0 - (unsigned)1 equals - 1 modulo UINT_MAX + 1, or in other words, UINT_MAX.
+				long long int incr = ((codeFinl << 16) - (codeInit << 16)) / numStepsInt; // https://stackoverflow.com/questions/7221409/is-unsigned-integer-subtraction-defined-behavior The result of a subtraction generating a negative number in an unsigned type is well-defined: //[...] A computation involving unsigned operands can never overflow, because a result that cannot be represented by the resulting unsigned integer type is reduced modulo the number that is one greater than the largest value that can be represented by the resulting type. (ISO / IEC 9899:1999 (E)ï¿½6.2.5 / 9) //As you can see, (unsigned)0 - (unsigned)1 equals - 1 modulo UINT_MAX + 1, or in other words, UINT_MAX.
 				long long int res = ((codeFinl << 16) - (codeInit << 16)) % numStepsInt; // https://stackoverflow.com/questions/7594508/modulo-operator-with-negative-values, (-7/3) => -2;-2 * 3 = > -6;so a % b = > -1; (7 / -3) = > -2;- 2 * -3 = > 6;so a % b = > 1
 				if (res == 0) { 
 					if (incr == 0) { // so the starting point and ending point of the ramp is the same, will ignore the ramp
@@ -774,30 +776,64 @@ void AoCore::formatDacForFPGA(UINT variation, AoSnapshot initSnap)
 	}
 }
 
-void AoCore::writeDacs(unsigned variation, bool loadSkip) 
-{
-	if (getNumberEvents(variation) != 0) {
-		int tcp_connect;
-		try
-		{
-			tcp_connect = zynq_tcp.connectTCP(ZYNQ_ADDRESS);
-		}
-		catch (ChimeraError& err)
-		{
-			tcp_connect = 1;
-			thrower(err.what());
-		}
+// void AoCore::writeDacs(unsigned variation, bool loadSkip) 
+// {
+// 	if (getNumberEvents(variation) != 0) {
+// 		int tcp_connect;
+// 		try
+// 		{
+// 			tcp_connect = zynq_tcp.connectTCP(ZYNQ_ADDRESS);
+// 		}
+// 		catch (ChimeraError& err)
+// 		{
+// 			tcp_connect = 1;
+// 			thrower(err.what());
+// 		}
 
-		if (tcp_connect == 0)
-		{
-			zynq_tcp.writeDACs(finalDacSnapshots[variation]);
-			zynq_tcp.disconnect();
-		}
-		else
-		{
-			thrower("connection to zynq failed. can't write DAC data\n");
-		}
-	}
+// 		if (tcp_connect == 0)
+// 		{
+// 			zynq_tcp.writeDACs(finalDacSnapshots[variation]);
+// 			zynq_tcp.disconnect();
+// 		}
+// 		else
+// 		{
+// 			thrower("connection to zynq failed. can't write DAC data\n");
+// 		}
+// 	}
+// }
+
+void AoCore::writeDacs(unsigned variation, bool loadSkip)
+{
+    if (getNumberEvents(variation) == 0) return;
+
+    // Example: Use a config flag or runtime setting to select device
+    bool useNI = true; // Set this based on your configuration
+
+    if (useNI) 
+	{
+        // Replace with your actual device and lines
+        writeDacsToNI(variation, "Dev1", "/Dev1/RTSI0", "/Dev1/RTSI1");
+    } 
+	
+	else 
+	{
+        int tcp_connect;
+        try {
+            tcp_connect = zynq_tcp.connectTCP(ZYNQ_ADDRESS);
+        }
+        catch (ChimeraError& err) {
+            tcp_connect = 1;
+            thrower(err.what());
+        }
+
+        if (tcp_connect == 0) {
+            zynq_tcp.writeDACs(finalDacSnapshots[variation]);
+            zynq_tcp.disconnect();
+        }
+        else {
+            thrower("connection to zynq failed. can't write DAC data\n");
+        }
+    }
 }
 
 // channelSnapShot[0] contains changes that need to make for dac channels, do no call this during experiment interpretation.
@@ -978,3 +1014,91 @@ void AoCore::checkValuesAgainstLimits(unsigned variation, const std::array<Analo
 	}
 }
 
+void AoCore::writeDacsToNI(unsigned variation, const std::string& deviceName, const std::string& clockSource, const std::string& triggerSource)
+{
+    if (getNumberEvents(variation) == 0 || finalDacSnapshots[variation].empty())
+        return;
+
+    const auto& snapshots = finalDacSnapshots[variation];
+
+    // Gather all unique channels used
+    std::set<int> channelsUsed;
+    for (const auto& snap : snapshots) {
+        channelsUsed.insert(snap.channel);
+    }
+    if (channelsUsed.empty()) return;
+
+    // Organize snapshots by channel
+    std::map<int, std::vector<std::pair<double, double>>> channelData;
+    for (const auto& snap : snapshots) {
+        channelData[snap.channel].emplace_back(snap.time, snap.dacValue);
+    }
+
+    // Get all unique time points
+    std::set<double> allTimes;
+    for (const auto& ch : channelData) {
+        for (const auto& tv : ch.second) {
+            allTimes.insert(tv.first);
+        }
+    }
+    std::vector<double> sortedTimes(allTimes.begin(), allTimes.end());
+    size_t numSamples = sortedTimes.size();
+    size_t numChannels = channelsUsed.size();
+
+    // === Single snapshot case: use software-timed write ===
+    if (numSamples == 1) {
+        // Write each channel individually
+        for (int ch : channelsUsed) {
+            const auto& vec = channelData[ch];
+            double val = vec.empty() ? 0.0 : vec.front().second;
+            TaskHandle taskHandle = 0;
+            std::string chanStr = deviceName + "/ao" + std::to_string(ch);
+
+            DAQmxCreateTask("", &taskHandle);
+            DAQmxCreateAOVoltageChan(taskHandle, chanStr.c_str(), "", -10.0, 10.0, DAQmx_Val_Volts, NULL);
+            DAQmxWriteAnalogScalarF64(taskHandle, 1, 10.0, val, NULL);
+            DAQmxStopTask(taskHandle);
+            DAQmxClearTask(taskHandle);
+        }
+        return;
+    }
+
+    // === Multi-snapshot case: use clocked, triggered write ===
+    int minCh = *channelsUsed.begin();
+    int maxCh = *channelsUsed.rbegin();
+    std::string channelStr = deviceName + "/ao" + std::to_string(minCh) + ":" + std::to_string(maxCh);
+
+    // Build output buffer: scan-major order
+    std::vector<float64> writeBuffer(numSamples * numChannels, 0.0);
+    for (size_t tIdx = 0; tIdx < numSamples; ++tIdx) {
+        double t = sortedTimes[tIdx];
+        size_t chIdx = 0;
+        for (int ch : channelsUsed) {
+            const auto& vec = channelData[ch];
+            double lastVal = 0.0;
+            for (const auto& tv : vec) {
+                if (tv.first <= t)
+                    lastVal = tv.second;
+                else
+                    break;
+            }
+            writeBuffer[tIdx * numChannels + chIdx] = lastVal;
+            ++chIdx;
+        }
+    }
+
+    // Create and configure task
+    TaskHandle taskHandle = 0;
+    DAQmxCreateTask("", &taskHandle);
+    DAQmxCreateAOVoltageChan(taskHandle, channelStr.c_str(), "", -10.0, 10.0, DAQmx_Val_Volts, NULL);
+    DAQmxCfgSampClkTiming(taskHandle, clockSource.c_str(), 10000, DAQmx_Val_Rising, DAQmx_Val_FiniteSamps, numSamples);
+    DAQmxCfgDigEdgeStartTrig(taskHandle, triggerSource.c_str(), DAQmx_Val_Rising);
+
+    // Write data
+    int32 written = 0;
+    DAQmxWriteAnalogF64(taskHandle, numSamples, 0, 10.0, DAQmx_Val_GroupByScanNumber, writeBuffer.data(), &written, NULL);
+    DAQmxStartTask(taskHandle);
+    DAQmxWaitUntilTaskDone(taskHandle, 10.0);
+    DAQmxStopTask(taskHandle);
+    DAQmxClearTask(taskHandle);
+}

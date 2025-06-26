@@ -184,13 +184,17 @@ void AoSystem::initialize( IChimeraQtWindow* parent )
 
 	QGridLayout* AOGridLayout = new QGridLayout();
 	unsigned runningCount = 0;
+	const int cols = 4; // 4 columns
+	const int rows = 8; // 8 rows per column
 	std::array<std::string, size_t(AOGrid::total)> dacNames;
-	for ( auto& out : outputs )	
+	for (auto& out : outputs)
 	{
-		out.initialize ( parent, runningCount);
-		AOGridLayout->addLayout(out.getLayout(),
-			runningCount % (size_t(AOGrid::numPERunit) / 2),
-			runningCount / (size_t(AOGrid::numPERunit) / 2));
+		out.initialize(parent, runningCount);
+		AOGridLayout->addLayout(
+			out.getLayout(),
+			runningCount % rows,         // row index (0-7)
+			runningCount / rows          // column index (0-3)
+		);
 		dacNames[runningCount] = out.info.name;
 		runningCount++;
 		

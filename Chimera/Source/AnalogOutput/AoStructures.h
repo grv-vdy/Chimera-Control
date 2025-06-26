@@ -8,8 +8,8 @@
 
 enum class AOGrid : size_t
 {
-	numPERunit = 16,
-	numOFunit = 2,
+	numPERunit = 32,
+	numOFunit = 1,
 	total = numPERunit*numOFunit
 };
 

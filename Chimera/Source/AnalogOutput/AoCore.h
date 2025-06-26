@@ -2,6 +2,7 @@
 
 #include "AoStructures.h"
 #include "AnalogOutput.h"
+#include "NIDAQmx.h"
 #include <Plotting/PlotInfo.h>
 #include <AnalogInput/calInfo.h>
 #include <ParameterSystem/ParameterSystemStructures.h>
@@ -42,6 +43,8 @@ public:
 	void sizeDataStructures(unsigned variations);
 	void resetDacEvents();
 	void prepareForce();
+
+	void writeDacsToNI(unsigned variation, const std::string& deviceName, const std::string& clockSource, const std::string& triggerSource);
 
 	void calculateVariations(std::vector<parameterType>& params, 
 		ExpThreadWorker* threadworker, std::vector<calSettings>& calibrationSettings);
