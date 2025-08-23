@@ -8,144 +8,119 @@
 #include <bitset>
 #include <iterator>
 #include <algorithm>
+#include <thread>
+#include <chrono>
 
-DoCore::DoCore()
-	//: names(size_t(DOGrid::numPERunit), size_t(DOGrid::numOFunit), "")
-{
-	//try	{
-	//	connectType = ftdiConnectionOption::Async;
-	//	ftdi_connectasync ("FT2E722BB");
-	//}
-	//catch (ChimeraError &)	{
-	//	throwNested ("Failed to initialize DO Core!?!");
-	//}
+DoCore::DoCore() {
+	
+}
+DoCore::~DoCore () {
+	rio.close();
 }
 
-DoCore::~DoCore () { /*ftdi_disconnect ();*/ }
+void DoCore::init() {
+	rio.initialize("RIO0");
+}
 
 void DoCore::setNames (std::array<std::string, size_t(DOGrid::total)> namesIn)
 {
-	std::for_each(namesIn.begin(), namesIn.end(), [&](auto& name) {
-		std::transform(name.begin(), name.end(), name.begin(), ::tolower); });
-	//std::transform(names[doInc].begin(), names[doInc].end(), names[doInc].begin(), ::tolower);
-	names = std::move(namesIn);
+    std::for_each(namesIn.begin(), namesIn.end(), [&](auto& name) {
+        std::transform(name.begin(), name.end(), name.begin(), ::tolower); });
+    names = std::move(namesIn);
 }
 
 DOStatus DoCore::getFinalSnapshot ()
 {
-	auto numVar = ttlSnapshots.size();
-	if (numVar > 0){
-		if (ttlSnapshots [numVar - 1].size () > 0){
-			return ttlSnapshots [ numVar - 1 ].back ().ttlStatus;
-		}
-	}
-	thrower ("Attempted to get final snapshot from dio system but no snapshots!");
+    auto numVar = ttlSnapshots.size();
+    if (numVar > 0){
+        if (ttlSnapshots [numVar - 1].size () > 0){
+            return ttlSnapshots [ numVar - 1 ].back ().ttlStatus;
+        }
+    }
+    thrower ("Attempted to get final snapshot from dio system but no snapshots!");
 }
-
-
-//std::string DoCore::getDoSystemInfo (){
-//	unsigned numDev;
-//	std::string msg = "";
-//	try{
-//		numDev = ftFlume.getNumDevices ();
-//		msg += "Number ft devices: " + str (numDev) + "\n";
-//	}
-//	catch (ChimeraError & err){
-//		msg += "Failed to Get number ft Devices! Error was: " + err.trace ();
-//	}
-//	msg += ftFlume.getDeviceInfoList ();
-//	return msg;
-//}
 
 /* mostly if not entirely used for setting dacs */
 void DoCore::standardNonExperimentStartDoSequence (DoSnapshot initSnap){
-	organizeTtlCommands (0, initSnap);
-	std::vector<parameterType> variables = std::vector<parameterType>();
-	findLoadSkipSnapshots (0, variables, 0);
-	//convertToFtdiSnaps (0);
-	//convertToFinalFtdiFormat (0);
-
+    organizeTtlCommands (0, initSnap);
+    std::vector<parameterType> variables = std::vector<parameterType>();
+    findLoadSkipSnapshots (0, variables, 0);
 }
 
 void DoCore::ttlOn (unsigned row, unsigned column, timeType time, repeatInfoId repeatId){
-	ttlCommandFormList.push_back ({ {row, column}, time, {}, true, repeatId });
+    ttlCommandFormList.push_back ({ {row, column}, time, {}, true, repeatId });
 }
-
 
 void DoCore::ttlOff (unsigned row, unsigned column, timeType time, repeatInfoId repeatId){
-	ttlCommandFormList.push_back ({ {row, column}, time, {}, false, repeatId });
+    ttlCommandFormList.push_back ({ {row, column}, time, {}, false, repeatId });
 }
-
 
 void DoCore::ttlOnDirect (unsigned row, unsigned column, double timev, unsigned variation){
-	DoCommand command;
-	command.line = { row, column };
-	command.time = timev;
-	command.value = true;
-	ttlCommandList [variation].push_back (command);
+    DoCommand command;
+    command.line = { row, column };
+    command.time = timev;
+    command.value = true;
+    ttlCommandList [variation].push_back (command);
 }
 
-
 void DoCore::ttlOffDirect (unsigned row, unsigned column, double timev, unsigned variation){
-	DoCommand command;
-	command.line = { row, column };
-	command.time = timev;
-	command.value = false;
-	ttlCommandList [variation].push_back (command);
+    DoCommand command;
+    command.line = { row, column };
+    command.time = timev;
+    command.value = false;
+    ttlCommandList [variation].push_back (command);
 }
 
 void DoCore::ttlPulseDirect(unsigned row, unsigned column, double timev, double dur, unsigned variation)
 {
-	if (dur < DIO_TIME_RESOLUTION) {
-		thrower("The duration for ttl direct pulse: " + str(dur) + " is smaller than Zynq resolution 10ns! \r\n");
-		return;
-	}
-	ttlOnDirect(row, column, timev, variation);
-	ttlOffDirect(row, column, timev + dur, variation);
+    if (dur < DIO_TIME_RESOLUTION) {
+        thrower("TTL direct pulse duration < resolution.");
+        return;
+    }
+    ttlOnDirect(row, column, timev, variation);
+    ttlOffDirect(row, column, timev + dur, variation);
 }
 
-
 void DoCore::restructureCommands (){
-	/* this is to be done after key interpretation. */
-	if (ttlCommandFormList.size () == 0){
-		thrower ("No TTL Commands???");
-	}
-	ttlCommandList.clear();
-	ttlCommandList.resize (ttlCommandFormList[0].timeVals.size ()); // resize to variation number
-	for (auto varInc : range (ttlCommandList.size ())){
-		for (auto& cmd : ttlCommandFormList){
-			DoCommand nCmd;
-			nCmd.line = cmd.line;
-			nCmd.time = cmd.timeVals[varInc];
-			nCmd.value = cmd.value;
-			nCmd.repeatId = cmd.repeatId;
-			ttlCommandList [varInc].push_back (nCmd);
-		}
-	}
+    if (ttlCommandFormList.size () == 0){
+        thrower ("No TTL Commands???");
+    }
+    ttlCommandList.clear();
+    ttlCommandList.resize (ttlCommandFormList[0].timeVals.size ());
+    for (auto varInc : range (ttlCommandList.size ())){
+        for (auto& cmd : ttlCommandFormList){
+            DoCommand nCmd;
+            nCmd.line = cmd.line;
+            nCmd.time = cmd.timeVals[varInc];
+            nCmd.value = cmd.value;
+            nCmd.repeatId = cmd.repeatId;
+            ttlCommandList [varInc].push_back (nCmd);
+        }
+    }
 }
 
 void DoCore::prepareForce()
 {
-	// purposefully preserve ttlCommandFormList, for inExpCal
-	sizeDataStructures(1);
+    sizeDataStructures(1);
 }
 
 void DoCore::sizeDataStructures (unsigned variations){
-	/// imporantly, this sizes the relevant structures.
-	doFPGA.clear();
-	doFPGA.resize(variations);
+    doFPGATimes.clear();
+    doFPGATimes.resize(variations);
 
-	ttlCommandList.clear();
-	ttlCommandList.resize(variations);
+    doFPGAData.clear();
+    doFPGAData.resize(variations);
 
-	ttlSnapshots.clear();
-	ttlSnapshots.resize(variations);
+    ttlCommandList.clear();
+    ttlCommandList.resize(variations);
 
+    ttlSnapshots.clear();
+    ttlSnapshots.resize(variations);
 }
 
 void DoCore::initializeDataObjects(unsigned variationNum) {
-	ttlCommandFormList = std::vector<DoCommandForm>(variationNum);
-	sizeDataStructures(variationNum);
+    ttlCommandFormList = std::vector<DoCommandForm>(variationNum);
+    sizeDataStructures(variationNum);
 }
 
 /*
@@ -469,197 +444,106 @@ void DoCore::checkLongTimeRun(unsigned variation)
 
 void DoCore::FPGAForceOutput(DOStatus status)
 {
-	prepareForce();
-	ttlSnapshots[0].push_back({ 0.1, status });
-	formatForFPGA(0);
-	writeTtlDataToFPGA(0, false);
-
-	int tcp_connect;
-	try
-	{
-		tcp_connect = zynq_tcp.connectTCP(ZYNQ_ADDRESS);
-	}
-	catch (ChimeraError& err)
-	{
-		tcp_connect = 1;
-		thrower(err.what());
-	}
-
-	if (tcp_connect == 0)
-	{
-		Sleep(1);
-		zynq_tcp.writeCommand("trigger");
-		zynq_tcp.disconnect();
-	}
-	else
-	{
-		thrower("connection to zynq failed. can't write TTL data\n");
-	}
-
+    prepareForce();
+    ttlSnapshots[0].push_back({ 0.1, status });
+    formatForFPGA(0);
+    writeTtlDataToFPGA(0, false);
 }
 
 void DoCore::FPGAForcePulse(DOStatus status, std::vector<std::pair<unsigned, unsigned>> rowcol, double dur)
 {
-	prepareForce();
-	ttlSnapshots[0].push_back({ 0.1, status });
-	for (auto& rc : rowcol)
-	{
-		status[rc.first][rc.second] = !status[rc.first][rc.second];		
-	}
-	ttlSnapshots[0].push_back({ 0.1 + dur, status });
-	for (auto& rc : rowcol)
-	{
-		status[rc.first][rc.second] = !status[rc.first][rc.second];
-	}
-	ttlSnapshots[0].push_back({ 0.1 + dur + dur, status });
-	formatForFPGA(0);
-	writeTtlDataToFPGA(0, false);
+    prepareForce();
+    ttlSnapshots[0].push_back({ 0.1, status });
+    for (auto& rc : rowcol)
+        status[rc.first][rc.second] = !status[rc.first][rc.second];
+    ttlSnapshots[0].push_back({ 0.1 + dur, status });
+    for (auto& rc : rowcol)
+        status[rc.first][rc.second] = !status[rc.first][rc.second];
+    ttlSnapshots[0].push_back({ 0.1 + dur + dur, status });
 
-	int tcp_connect;
-	try {
-		tcp_connect = zynq_tcp.connectTCP(ZYNQ_ADDRESS);
-	}
-	catch (ChimeraError& err) {
-		tcp_connect = 1;
-		thrower(err.what());
-	}
-	Sleep(15); // somehow has to wait 15ms, have to sleep for this amount of time to make TCP connect smoothly??????,  same for ExpThreadWorker::startRep zzp 2022/06/10 very annoying
-	if (tcp_connect == 0) {
-		zynq_tcp.writeCommand("trigger");
-		zynq_tcp.disconnect();
-	}
-	else {
-		thrower("connection to zynq failed. can't write TTL data\n");
-	}
+    formatForFPGA(0);
+    writeTtlDataToFPGA(0, false);
+    rio.trigger();
 
-
-	// set up a sequence that will just flush out the current static output so that when dac gui get updated, 
-	// the sequencer does not run the triggering sequence but this static sequence to avoid unexpected triggering 
-	// for example, the gigamood will froze if receive a trigger but not a data beforehand
-	Sleep(0.1 + dur + dur);
-	FPGAForceOutput(status);
-
+    Sleep(0.1 + dur + dur);
+    FPGAForceOutput(status);
 }
 
 void DoCore::formatForFPGA(UINT variation)
 {
-	typedef unsigned long long l64;
-	int snapIndex = 0;
-	const l64 timeConv = 100000; // DIO time given in multiples of 10 ns
-	std::array<char[DIO_LEN_BYTE_BUF], 1> byte_buf;
-	std::array<bool, size_t(DOGrid::numPERunit)> bankA;
-	std::array<bool, size_t(DOGrid::numPERunit)> bankB;
-	//char byte_buf[DIO_LEN_BYTE_BUF];
-	unsigned int time;
-	unsigned int outputA;
-	unsigned int outputB;
+    typedef unsigned long long l64;
+    const l64 timeConv = 40000; // 25 ns units for 40 MHz clock
+    unsigned int outputA;
+    unsigned int outputB;
+    l64 time48;
 
-	const l64 rewindTime = l64(1) << 32; // 0xFFFFFFFF + 1, correspond to 32 bit time 
-	int durCounter = l64(std::llround(ttlSnapshots[variation][0].time * timeConv)) / rewindTime;
-	if (durCounter > 0) {// the first time stamp is larger than a rewind, shouldn't happen after organizeTTL, otherwise it is impossible to know the ttl state before exp
-		thrower("The TTL didn't start at ZYNQ_DEADTIME, which is " + str(ZYNQ_DEADTIME) + ". Something low level wrong.");
-	}
-	for (const auto& snapshot : ttlSnapshots[variation])
-	{
-		while (l64(std::llround(snapshot.time * timeConv)) / rewindTime > durCounter) {
-			durCounter++;
-			unsigned int windTime = (l64(durCounter) * rewindTime - 1) & l64(0xffffffff);
-			sprintf_s(byte_buf[0], DIO_LEN_BYTE_BUF, "t%08X_b%08X%08X", windTime, outputB, outputA); // use the output from previous loop
-			doFPGA[variation].push_back(byte_buf);
-		}
-		if (snapIndex != 0) {
-			const auto& snapShotPre = ttlSnapshots[variation][snapIndex - 1];
-			if (snapshot.ttlStatus == snapShotPre.ttlStatus) { // ignoring command that does not change the output state
-				snapIndex++;
-				continue;
-			}
-		}
-		time = l64(std::llround(snapshot.time * timeConv)) & l64(0xffffffff);
-		//for each DIO bank convert the boolean array to a byte
-		outputA = 0;
-		outputB = 0;
+    doFPGATimes[variation].clear();
+    doFPGAData[variation].clear();
 
-		for (unsigned i = 0; i < 4; i++)
-		{
-			bankA = snapshot.ttlStatus[i]; //bank here is set of 8 booleans
-			bankB = snapshot.ttlStatus[i + 4]; //bank here is set of 8 booleans
-			for (int j = 0; j < 8; j++)
-			{
-				outputA |= (unsigned int)(bankA[j]) << 8 * i << j;
-				outputB |= (unsigned int)(bankB[j]) << 8 * i << j;
+    int snapIndex = 0;
+    const l64 rewindTime = l64(1) << 48; // 48-bit wrap
+    int durCounter = l64(std::llround(ttlSnapshots[variation][0].time * timeConv)) / rewindTime;
+    if (durCounter > 0) {
+        thrower("TTL start time too large, invalid sequence.");
+    }
 
-				//outputAtest += pow(256, i) * pow(2, j) * bankA[j];
-				//outputBtest += pow(256, i) * pow(2, j) * bankB[j];
-				//if (outputA != outputAtest || outputB != outputBtest)
-				//	qDebug() << "not equal!!!!";
-			}
-		}
+    for (const auto& snapshot : ttlSnapshots[variation])
+    {
+        while (l64(std::llround(snapshot.time * timeConv)) / rewindTime > durCounter)
+        {
+            durCounter++;
+            l64 windTime = (l64(durCounter) * rewindTime - 1) & ((l64(1) << 48) - 1);
+            doFPGATimes[variation].push_back(windTime);
+            doFPGAData[variation].push_back(0ULL); // Use 0 for data during wrapping
+        }
 
+        if (snapIndex != 0)
+        {
+            const auto& snapShotPre = ttlSnapshots[variation][snapIndex - 1];
+            if (snapshot.ttlStatus == snapShotPre.ttlStatus)
+            {
+                snapIndex++;
+                continue;
+            }
+        }
 
-		
-		sprintf_s(byte_buf[0], DIO_LEN_BYTE_BUF, "t%08X_b%08X%08X", time, outputB, outputA);
-		doFPGA[variation].push_back(byte_buf);
-		snapIndex++;
-	}
+        time48 = l64(std::llround(snapshot.time * timeConv)) & ((l64(1) << 48) - 1);
+        outputA = 0;
+        outputB = 0;
+
+        // Pack 64 TTL channels
+        for (unsigned i = 0; i < 4; i++)
+        {
+            auto bankA = snapshot.ttlStatus[i];
+            auto bankB = snapshot.ttlStatus[i + 4];
+            for (int j = 0; j < 8; j++)
+            {
+                outputA |= (unsigned int)(bankA[j]) << (8 * i + j);
+                outputB |= (unsigned int)(bankB[j]) << (8 * i + j);
+            }
+        }
+
+        doFPGATimes[variation].push_back(time48);
+        doFPGAData[variation].push_back(((uint64_t)outputB << 32) | outputA);
+
+        snapIndex++;
+    }
+
+    // Add final zero entry
+    doFPGATimes[variation].push_back(0ULL & ((1ULL<<48)-1));
+    doFPGAData[variation].push_back(0ULL);
 }
 
-void DoCore::writeTtlDataToFPGA(UINT variation, bool loadSkip) //arguments unused, just paralleling original DIO structure
+void DoCore::writeTtlDataToFPGA(UINT variation, bool /*loadSkip*/)
 {
-
-	//dioFPGA[variation].write();
-	int tcp_connect;
-	try
-	{
-		tcp_connect = zynq_tcp.connectTCP(ZYNQ_ADDRESS);
-	}
-	catch (ChimeraError& err)
-	{
-		tcp_connect = 1;
-		thrower(err.what());
-	}
-
-	if (tcp_connect == 0)
-	{
-		zynq_tcp.writeDIO(doFPGA[variation]);
-		zynq_tcp.disconnect();
-	}
-	else
-	{
-		thrower("connection to zynq failed. can't write Ttl data\n");
-	}
-
-
+	rio.reset();
+	std::this_thread::sleep_for(std::chrono::milliseconds(5));
+	rio.untrigger();
+    rio.writeTTL(doFPGATimes[variation], doFPGAData[variation]);
+	rio.waitForMemLoaded();
+	rio.trigger();
+	rio.waitForFinish();
 }
-
-
-void DoCore::findLoadSkipSnapshots (double time, std::vector<parameterType>& variables, unsigned variation)
-{
-	// find the splitting time and set the loadSkip snapshots to have everything after that time.
-	//auto& snaps = ttlSnapshots [variation];
-	//auto& loadSkipSnaps = loadSkipTtlSnapshots [variation];
-	//for (auto snapshotInc : range (ttlSnapshots [variation].size () - 1))
-	//{
-	//	if (snaps[snapshotInc].time < time && snaps[snapshotInc + 1].time >= time)
-	//	{
-	//		loadSkipSnaps = std::vector<DoSnapshot> (snaps.begin () + snapshotInc + 1, snaps.end ());
-	//		break;
-	//	}
-	//}
-	//// need to zero the times.
-	//for (auto& snapshot : loadSkipSnaps)
-	//{
-	//	snapshot.time -= time;
-	//}
-}
-
-
-std::vector<std::vector<DoSnapshot>> DoCore::getTtlSnapshots ()
-{
-	/* used in the unit testing suite */
-	return ttlSnapshots;
-}
-
-
 
 void DoCore::organizeTtlCommands (unsigned variation, DoSnapshot initSnap)
 {
@@ -853,11 +737,29 @@ void DoCore::handleTtlScriptCommand (std::string command, timeType time, std::st
 	handleTtlScriptCommand (command, time, name, Expression (), vars, scope, repeatId);
 }
 
-//void DoCore::standardExperimentPrep (unsigned variationInc, double currLoadSkipTime, std::vector<parameterType>& expParams){
-//	organizeTtlCommands (variationInc);
-//	findLoadSkipSnapshots (currLoadSkipTime, expParams, variationInc);
-//	//convertToFtdiSnaps (variationInc);
-//	//convertToFinalFtdiFormat (variationInc);
-//	convertToFinalFormat(variationInc);/*seems useless*/
-//	formatForFPGA(variationInc);
-//}
+void DoCore::findLoadSkipSnapshots (double time, std::vector<parameterType>& variables, unsigned variation)
+{
+	// find the splitting time and set the loadSkip snapshots to have everything after that time.
+	//auto& snaps = ttlSnapshots [variation];
+	//auto& loadSkipSnaps = loadSkipTtlSnapshots [variation];
+	//for (auto snapshotInc : range (ttlSnapshots [variation].size () - 1))
+	//{
+	//	if (snaps[snapshotInc].time < time && snaps[snapshotInc + 1].time >= time)
+	//	{
+	//		loadSkipSnaps = std::vector<DoSnapshot> (snaps.begin () + snapshotInc + 1, snaps.end ());
+	//		break;
+	//	}
+	//}
+	//// need to zero the times.
+	//for (auto& snapshot : loadSkipSnaps)
+	//{
+	//	snapshot.time -= time;
+	//}
+}
+
+
+std::vector<std::vector<DoSnapshot>> DoCore::getTtlSnapshots ()
+{
+	/* used in the unit testing suite */
+	return ttlSnapshots;
+}

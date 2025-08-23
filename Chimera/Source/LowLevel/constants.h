@@ -49,10 +49,11 @@
 	// location where wave data can be outputted for analyzing with another computer.
 
 
-	// Zynq realated
+	// Zynq realated/ RIO FPGA related -- this version used a NI PCIE 7820. To migrate to ZYNQ see Zhenpu's original Repo
 	const double ZYNQ_DEADTIME = 0.1; // give zynq 0.1ms to avoid sending zero at t=0 for ttl
 	
 	const bool ZYNQ_SAFEMODE = true;
+	const bool RIO_SAFEMODE = false;
 	const auto ZYNQ_ADDRESS = "10.10.0.2";
 	const auto ZYNQ_PORT = "8080";
 	const int ZYNQ_MAX_BUFF = 64;

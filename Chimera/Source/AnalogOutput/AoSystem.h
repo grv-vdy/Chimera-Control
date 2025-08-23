@@ -12,6 +12,7 @@
 #include <GeneralObjects/IChimeraSystem.h>
 #include "ConfigurationSystems/Version.h"
 #include "ZynqTCP/ZynqTCP.h"
+#include "RIO/RIO.h"
 
 #include "qlabel.h"
 #include <qpushbutton.h>

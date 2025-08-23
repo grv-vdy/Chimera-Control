@@ -22,6 +22,7 @@
 #include <AnalogInput/CalibrationManager.h>
 #include <CMOSCamera/CMOSSetting.h>
 #include "ZynqTcp/ZynqTcp.h"
+#include "RIO/RIO.h"
 
 
 #include <chrono>

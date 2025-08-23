@@ -9,6 +9,7 @@
 //#include "ParameterSystem/ParameterSystem.h"
 //#include "ConfigurationSystems/Version.h"
 #include "ZynqTCP/ZynqTCP.h"
+#include "RIO/RIO.h"
 //#include <GeneralObjects/IDeviceCore.h>
 
 #include <vector>

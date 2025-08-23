@@ -7,6 +7,7 @@
 #include <AnalogInput/calInfo.h>
 #include <Plotting/QCustomPlotCtrl.h>
 #include <ZynqTCP/ZynqTCP.h>
+#include <RIO/RIO.h>
 
 class CalibrationManager; 
 class AiSystem;

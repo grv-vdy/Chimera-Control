@@ -49,6 +49,8 @@
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <LibraryPath>C:\Users\yb2\Chimera-Control\Chimera\3rd_Party\NI\Lib;$(LibraryPath)</LibraryPath>
+    <ExecutablePath>C:\Users\yb2\Chimera-Control\Chimera\3rd_Party\NI\include;$(ExecutablePath)</ExecutablePath>
+    <IncludePath>C:\Program Files %28x86%29\National Instruments\Shared\ExternalCompilerSupport\C\lib64\msvc;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
   </PropertyGroup>
@@ -370,6 +372,10 @@
     <ClCompile Include="Source\Scripts\ScriptStream.cpp" />
     <ClCompile Include="Source\Scripts\SyntaxHighlighter.cpp" />
     <ClCompile Include="Source\ZynqTCP\ZynqTCP.cpp" />
+    <ClCompile Include="3rd_Party\NI\include\NiFpga.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\RIO\RIO.cpp" />
     <ClInclude Include="Source\GeneralFlumes\WinSockFlume.h" />
   </ItemGroup>
   <ItemGroup>
@@ -485,6 +491,9 @@
     <ClInclude Include="Source\StaticDirectDigitalSynthesis\StaticDdsStructures.h" />
     <ClInclude Include="Source\stdafx.h" />
     <ClInclude Include="Source\ZynqTCP\ZynqTCP.h" />
+    <ClInclude Include="3rd_Party\NI\include\NiFpga.h" />
+    <ClInclude Include="3rd_Party\NI\include\NiFpga_chimerasequencer.h" />
+    <ClInclude Include="Source\RIO\RIO.h" />
     <QtMoc Include="Source\Scripts\SyntaxHighlighter.h" />
     <QtMoc Include="Source\Scripts\Script.h" />
     <QtMoc Include="Source\CustomQtControls\CQCodeEdit.h" />

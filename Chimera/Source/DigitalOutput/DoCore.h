@@ -1,107 +1,100 @@
 #pragma once
-//#include "GeneralFlumes/ftdiFlume.h"
-//#include "GeneralFlumes/ftdiStructures.h"
 #include <ParameterSystem/ParameterSystemStructures.h>
 #include "GeneralObjects/ExpWrap.h"
 #include <GeneralObjects/Matrix.h>
 #include <Plotting/PlotInfo.h>
+#include <windows.h>
 
 #include "DoStructures.h"
-#include "ZynqTCP/ZynqTCP.h"
+#include "RIO/RIO.h"
 
 class ExpThreadWorker;
 
 /*
-	(Stands for DigitalOutput Core)
+    (Stands for DigitalOutput Core)
 */
 class DoCore
 {
-	public:
-		// THIS CLASS IS NOT COPYABLE.
-		DoCore& operator=(const DoCore&) = delete;
-		DoCore (const DoCore&) = delete;
-		DoCore();
-		~DoCore ();
+public:
+    // THIS CLASS IS NOT COPYABLE.
+    DoCore& operator=(const DoCore&) = delete;
+    DoCore (const DoCore&) = delete;
+    DoCore();
+    ~DoCore ();
 
-		const std::string configDelim = "TTL_SYSTEM";
-		std::string getDelim() { return configDelim; }
+    void init();
 
-		//void ftdi_connectasync (const char devSerial[]);
-		//void ftdi_disconnect ();
-		//DWORD ftdi_write (unsigned variation, bool loadSkipf);
-		//DWORD ftdi_trigger ();
-		
-		void standardNonExperimentStartDoSequence (DoSnapshot initSnap);
-		void restructureCommands ();
-		void initializeDataObjects (unsigned variationNum);
+    const std::string configDelim = "TTL_SYSTEM";
+    std::string getDelim() { return configDelim; }
 
-		void ttlOn (unsigned row, unsigned column, timeType time, repeatInfoId repeatId);
-		void ttlOff (unsigned row, unsigned column, timeType time, repeatInfoId repeatId);
-		void ttlOnDirect (unsigned row, unsigned column, double timev, unsigned variation);
-		void ttlOffDirect (unsigned row, unsigned column, double timev, unsigned variation);
-		void ttlPulseDirect(unsigned row, unsigned column, double timev, double dur, unsigned variation);
-		
-		void sizeDataStructures (unsigned variations);
-		void calculateVariations (std::vector<parameterType>& params, ExpThreadWorker* threadworker);
-		void constructRepeats(repeatManager& repeatMgr);
-		bool repeatsExistInCommandForm(repeatInfoId repeatId);
-		void addPlaceholderRepeatCommand(repeatInfoId repeatId);
-		std::vector<std::vector<plotDataVec>> getPlotData (unsigned variation );
-		std::string getTtlSequenceMessage (unsigned variation);
-		std::vector<double> getFinalTimes ();
-		unsigned countTriggers (std::pair<unsigned, unsigned> which, unsigned variation);
-		
-		void checkLongTimeRun(unsigned variation);
-		// returns -1 if not a name.
-		bool isValidTTLName (std::string name);
-		int getNameIdentifier (std::string name, unsigned& row, unsigned& number);
-		void organizeTtlCommands (unsigned variation, DoSnapshot initSnap = { 0,0 });
+    void standardNonExperimentStartDoSequence (DoSnapshot initSnap);
+    void restructureCommands ();
+    void initializeDataObjects (unsigned variationNum);
 
-		unsigned long getNumberEvents (unsigned variation);
-		std::vector<DoCommand> getTtlCommand(unsigned variation);
+    void ttlOn (unsigned row, unsigned column, timeType time, repeatInfoId repeatId);
+    void ttlOff (unsigned row, unsigned column, timeType time, repeatInfoId repeatId);
+    void ttlOnDirect (unsigned row, unsigned column, double timev, unsigned variation);
+    void ttlOffDirect (unsigned row, unsigned column, double timev, unsigned variation);
+    void ttlPulseDirect(unsigned row, unsigned column, double timev, double dur, unsigned variation);
+    
+    void sizeDataStructures (unsigned variations);
+    void calculateVariations (std::vector<parameterType>& params, ExpThreadWorker* threadworker);
+    void constructRepeats(repeatManager& repeatMgr);
+    bool repeatsExistInCommandForm(repeatInfoId repeatId);
+    void addPlaceholderRepeatCommand(repeatInfoId repeatId);
+    std::vector<std::vector<plotDataVec>> getPlotData (unsigned variation );
+    std::string getTtlSequenceMessage (unsigned variation);
+    std::vector<double> getFinalTimes ();
+    unsigned countTriggers (std::pair<unsigned, unsigned> which, unsigned variation);
+    
+    void checkLongTimeRun(unsigned variation);
+    bool isValidTTLName (std::string name);
+    int getNameIdentifier (std::string name, unsigned& row, unsigned& number);
+    void organizeTtlCommands (unsigned variation, DoSnapshot initSnap = { 0,0 });
 
-		void resetTtlEvents ();
+    unsigned long getNumberEvents (unsigned variation);
+    std::vector<DoCommand> getTtlCommand(unsigned variation);
 
-		void wait2 (double time);
-		void prepareForce ();
-		void findLoadSkipSnapshots (double time, std::vector<parameterType>& variables, unsigned variation);
+    void resetTtlEvents ();
 
-		std::vector<std::vector<DoSnapshot>> getTtlSnapshots ();
+    void wait2 (double time);
+    void prepareForce ();
+    void findLoadSkipSnapshots (double time, std::vector<parameterType>& variables, unsigned variation);
 
-		void handleTtlScriptCommand (std::string command, timeType time, std::string name, Expression pulseLength,
-			std::vector<parameterType>& vars, std::string scope, repeatInfoId repeatId);
-		void handleTtlScriptCommand (std::string command, timeType time, std::string name,
-			std::vector<parameterType>& vars, std::string scope, repeatInfoId repeatID);
-		void setNames (std::array<std::string, size_t(DOGrid::total)> namesIn);
-		std::array<std::string, size_t(DOGrid::total)> getAllNames ();
-		//void standardExperimentPrep (unsigned variationInc, double currLoadSkipTime, std::vector<parameterType>& expParams);
+    std::vector<std::vector<DoSnapshot>> getTtlSnapshots ();
 
-		void DoCore::formatForFPGA(UINT variation);
-		void DoCore::writeTtlDataToFPGA(UINT variation, bool loadSkip);
-		void FPGAForceOutput(DOStatus status);
-		void FPGAForcePulse(DOStatus status, std::vector<std::pair<unsigned, unsigned>> rowcol, double dur);
+    void handleTtlScriptCommand (std::string command, timeType time, std::string name, Expression pulseLength,
+        std::vector<parameterType>& vars, std::string scope, repeatInfoId repeatId);
+    void handleTtlScriptCommand (std::string command, timeType time, std::string name,
+        std::vector<parameterType>& vars, std::string scope, repeatInfoId repeatID);
+    void setNames (std::array<std::string, size_t(DOGrid::total)> namesIn);
+    std::array<std::string, size_t(DOGrid::total)> getAllNames ();
 
-		DOStatus getFinalSnapshot();
+    void formatForFPGA(UINT variation);
+    void writeTtlDataToFPGA(UINT variation, bool loadSkip);
+    void FPGAForceOutput(DOStatus status);
+    void FPGAForcePulse(DOStatus status, std::vector<std::pair<unsigned, unsigned>> rowcol, double dur);
 
-	private:
-		std::array<std::string, size_t(DOGrid::total)> names;
-		//Matrix<std::string> names;
+    DOStatus getFinalSnapshot();
 
-		//Zynq tcp connection
-		ZynqTCP zynq_tcp;
+private:
+    std::array<std::string, size_t(DOGrid::total)> names;
 
-		std::vector<std::vector<std::array<char[DIO_LEN_BYTE_BUF], 1>>> doFPGA;
-		std::vector<DoCommandForm> ttlCommandFormList;
+    // Replaced ZynqTCP with RIO
+    RIO rio;
+
+    // Store final FPGA-formatted words (time, data)
+    std::vector<std::vector<uint64_t>> doFPGATimes;
+    std::vector<std::vector<uint64_t>> doFPGAData;
+
+    std::vector<DoCommandForm> ttlCommandFormList;
 		// Each element of first vector is for each variation.
-		std::vector<std::vector<DoCommand>> ttlCommandList;
+    std::vector<std::vector<DoCommand>> ttlCommandList;
 		// Each element of first vector is for each variation.
-		std::vector<std::vector<DoSnapshot>> ttlSnapshots, loadSkipTtlSnapshots;
+    std::vector<std::vector<DoSnapshot>> ttlSnapshots, loadSkipTtlSnapshots;
 		// Each element of first vector is for each variation.
-		std::vector<std::vector<std::array<WORD, 6>>> formattedTtlSnapshots, loadSkipFormattedTtlSnapshots;
+    std::vector<std::vector<std::array<WORD, 6>>> formattedTtlSnapshots, loadSkipFormattedTtlSnapshots;
 		// this is just a flattened version of the above snapshots. This is what gets directly sent to the dio64 card.
-		std::vector<std::vector<WORD>> finalFormatTtlData, loadSkipFinalFormatTtlData;
-		DOStatus defaultTtlState;
-
-
-
+    std::vector<std::vector<WORD>> finalFormatTtlData, loadSkipFinalFormatTtlData;
+    DOStatus defaultTtlState;
 };

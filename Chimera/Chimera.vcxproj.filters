@@ -312,6 +312,12 @@
     <ClCompile Include="Source\ZynqTCP\ZynqTCP.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="3rd_Party\NI\include\NiFpga.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\RIO\RIO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="Source\GeneralFlumes\QtSocketFlume.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -997,7 +1003,16 @@
     <ClInclude Include="Source\Scripts\ScriptStream.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\ZynqTCP\ZynqTCP.h">
+    <ClInclude Include="Source\RIO\ZynqTCP.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="3rd_Party\NI\include\NiFpga.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="3rd_Party\NI\include\NiFpga_chimerasequencer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\RIO\RIO.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\stdafx.h">

@@ -157,6 +157,8 @@ void DoSystem::initialize(IChimeraQtWindow* parent) {
 	unsigned runningCount = 0;
 	auto names = core.getAllNames();
 	
+	// Initialize RIO
+	core.init();
 	for (auto row : range(size_t(DOGrid::numOFunit))) 
 	{
 		runningCount++;
@@ -279,6 +281,9 @@ allDigitalOutputs& DoSystem::getDigitalOutputs ( ){
 void DoSystem::zeroBoard( ){
 	for ( auto& out : outputs ){
 		out.set(0, false);
+		if (out.check) {
+            out.check->setChecked(false);      // update GUI checkbox state
+        }
 	}
 	core.FPGAForceOutput(getCurrentStatus());
 }
