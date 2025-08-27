@@ -16,7 +16,11 @@ public:
     StaticDdsCore(const StaticDdsCore&) = delete;
     StaticDdsCore& operator=(const StaticDdsCore&) = delete;
 
-    StaticDdsCore(bool safemode, const std::string& port, unsigned baudrate);
+    StaticDdsCore(
+    const bool safemode,
+    const std::array<std::string, STATICDDS_NUMBER>& port,
+    const std::array<unsigned int, STATICDDS_NUMBER>& baudrate
+    );
 
     virtual void loadExpSettings(ConfigStream& stream) override;
     virtual void logSettings(DataLogger& logger, ExpThreadWorker* threadworker) override;
@@ -29,15 +33,15 @@ public:
 
     StaticDDSSettings getSettingsFromConfig(ConfigStream& file);
 
-    std::string getDeviceInfo();
+    std::string getDeviceInfo(unsigned int port);
     void setStaticDDSExpSetting(StaticDDSSettings tmpSetting); // used only for ProgramNow in StaticAOSystem
 
     const std::string configDelim = "STATIC_DDS_SYSTEM";
     const bool safemode;
 private:
     std::string getDDSCommand(double ddsfreqVal);
-    void writeDDSs(std::array<std::array<double, 2>, size_t(StaticDDSGrid::total)> outputs_frequency,
-	std::array<std::array<double, 2>, size_t(StaticDDSGrid::total)> outputs_level);
+    void writeDDSs(std::array<std::array<double, size_t(StaticDDSGrid::numPERunit)>, size_t(StaticDDSGrid::numOFunit)> outputs_frequency,
+	std::array<std::array<double, size_t(StaticDDSGrid::numPERunit)>, size_t(StaticDDSGrid::numOFunit)> outputs_level);
     bool checkBoundFreq(double ddsfreqVal);
     bool checkBoundLevel(double ddslevelVal);
 
@@ -47,11 +51,11 @@ public:
     const double minFreqVal = 20;
     const double maxFreqVal = 6400;
     const double minLevelVal = 0;
-    const double maxLevelVal = 31.5;
+    const double maxLevelVal = 63;
 
 
 private:
-    StaticDDSFlume sddsFlume;
+    std::array<StaticDDSFlume, STATICDDS_NUMBER> sddsFlume;
     StaticDDSSettings expSettings;    
 };
 

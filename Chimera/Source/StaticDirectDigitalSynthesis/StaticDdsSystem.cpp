@@ -27,13 +27,14 @@ void StaticDdsSystem::initialize()
 
     auto programNowButton = new QPushButton("Program DDS Now", this);
     connect(programNowButton, &QPushButton::released, [this]() {
-        try {
+        try 
+        {
             handleProgramNowPress(parentWin->auxWin->getUsableConstants());
         }
         catch (ChimeraError& err) {
             parentWin->reportErr("Failed to program Static DDS system! \n" + err.qtrace());
         }
-    });
+        });
     ctrlButton = new QCheckBox("Ctrl?", this);
     ctrlButton->setChecked(false);
     connect(ctrlButton, &QCheckBox::clicked, [this]() {
@@ -44,7 +45,7 @@ void StaticDdsSystem::initialize()
         catch (ChimeraError& err) {
             parentWin->reportErr(err.qtrace());
         }
-    });
+        });
 
     layout1->addWidget(programNowButton, 0);
     layout1->addWidget(ctrlButton, 0);
@@ -63,12 +64,13 @@ void StaticDdsSystem::initialize()
     layout->addLayout(layout2);
 
     QGridLayout* layout3 = new QGridLayout();
+    layout3->setSpacing(10); // Add vertical spacing between port rows
     layout3->setContentsMargins(0, 0, 0, 0);
 
-    for (auto port : range(size_t(StaticDDSGrid::total))) {
-        auto strChan = qstr(core.getDeviceInfo());
+    for (auto port : range(size_t(StaticDDSGrid::numOFunit))) {
+        auto strChan = qstr(core.getDeviceInfo(port));
         labels_port[port] = new QLabel("Port " + strChan + ":", this);
-        for (auto ch : range(2)) {
+        for (auto ch : range(size_t(StaticDDSGrid::numPERunit))) {
             labels_channel[port][ch] = new QLabel(qstr(ch) + ":", this);
             edits_frequency[port][ch] = new QLineEdit(this);
             edits_level[port][ch] = new QLineEdit(this);
@@ -78,18 +80,18 @@ void StaticDdsSystem::initialize()
             connect(edits_level[port][ch], &QLineEdit::textChanged, [this]() { parentWin->configUpdated(); });
         }
     }
-	
-    for (auto port : range(size_t(StaticDDSGrid::total))) {
+
+    for (size_t port = 0; port < STATICDDS_NUMBER; ++port) {
         QHBoxLayout* lay = new QHBoxLayout();
         lay->setContentsMargins(0, 0, 0, 0);
         lay->addWidget(labels_port[port], 0);
-        for (auto ch : range(2)) {
+        for (int ch = 0; ch < size_t(StaticDDSGrid::numPERunit); ++ch) {
             lay->addWidget(labels_channel[port][ch], 0);
             lay->addWidget(edits_frequency[port][ch], 0);
             lay->addWidget(edits_level[port][ch], 0);
-            lay->addStretch(1);
-            layout3->addLayout(lay, ch / 4, ch % 4);
         }
+        lay->addStretch(1);
+        layout3->addLayout(lay, port, 0);
     }
     layout->addLayout(layout3);
 }
@@ -97,8 +99,8 @@ void StaticDdsSystem::initialize()
 void StaticDdsSystem::handleOpenConfig(ConfigStream& configFile)
 {
     auto configVals = core.getSettingsFromConfig(configFile);
-    for (auto port : range(size_t(StaticDDSGrid::total))) {
-        for (auto ch : range(size_t(StaticDDSGrid::total))) {
+    for (auto port : range(size_t(StaticDDSGrid::numOFunit))) {
+        for (auto ch : range(size_t(StaticDDSGrid::numPERunit))) {
             edits_frequency[port][ch]->setText(qstr(configVals.staticDDSs[ch*port + ch][0].expressionStr));
             edits_level[port][ch]->setText(qstr(configVals.staticDDSs[ch*port + ch][1].expressionStr));
         }
@@ -110,8 +112,8 @@ void StaticDdsSystem::handleOpenConfig(ConfigStream& configFile)
 void StaticDdsSystem::handleSaveConfig(ConfigStream& configFile)
 {
     configFile << core.configDelim;
-    for (auto port : range(size_t(StaticDDSGrid::total))) {
-        for (auto ch : range(2)) {
+    for (auto port : range(size_t(StaticDDSGrid::numOFunit))) {
+        for (auto ch : range(size_t(StaticDDSGrid::numPERunit))) {
             configFile << "\n/* DDS-" + str(ch*port+ch) + " Frequency:*/\t\t" << Expression(str(edits_frequency[port][ch]->text()));
             configFile << "\n/* DDS-" + str(ch*port+ch) + " Level:*/\t\t" << Expression(str(edits_level[port][ch]->text()));
         }
@@ -136,44 +138,43 @@ void StaticDdsSystem::updateCtrlEnable()
 void StaticDdsSystem::handleProgramNowPress(std::vector<parameterType> constants)
 {
     StaticDDSSettings tmpSetting;
-    for (auto port : range(size_t(StaticDDSGrid::total))) {
-        for (auto ch : range(2)) {
-            tmpSetting.staticDDSs[port * ch + ch][0].expressionStr = str(edits_frequency[port][ch]->text());
-            tmpSetting.staticDDSs[port * ch + ch][1].expressionStr = str(edits_level[port][ch]->text());
+    for (auto port : range(size_t(StaticDDSGrid::numOFunit))) {
+        for (auto ch : range(size_t(StaticDDSGrid::numPERunit))) {
+            tmpSetting.staticDDSs[port*size_t(StaticDDSGrid::numPERunit)+ch][0].expressionStr = str(edits_frequency[port][ch]->text());
+            tmpSetting.staticDDSs[port*size_t(StaticDDSGrid::numPERunit)+ch][1].expressionStr = str(edits_level[port][ch]->text());
         }
         tmpSetting.ctrlDDS = true;
 
-        core.setStaticDDSExpSetting(tmpSetting);
-        core.calculateVariations(constants, nullptr);
-        core.programVariation(0, constants, nullptr);
-
-        emit notification("Finished programming Static DDS system!\n", 0);
     }
+    core.setStaticDDSExpSetting(tmpSetting);
+    core.calculateVariations(constants, nullptr);
+    core.programVariation(0, constants, nullptr);
+    emit notification("Finished programming Static DDS system!\n", 0);
 }
 
-std::string StaticDdsSystem::getDeviceInfo()
+std::string StaticDdsSystem::getDeviceInfo(unsigned int port)
 {
-    return core.getDeviceInfo();
+    return core.getDeviceInfo(port);
 }
 
 void StaticDdsSystem::setDdsEditFrequencyValue(std::string ddsfreq, unsigned channel, unsigned port)
 {
-    if (port >= size_t(StaticDDSGrid::total)) {
-        thrower("Port " + str(port) + " outside range of static DDS " + str(size_t(StaticDDSGrid::total)));
+    if (port >= size_t(StaticDDSGrid::numOFunit)) {
+        thrower("Port " + str(port) + " outside range of static DDS " + str(size_t(StaticDDSGrid::numOFunit)));
     }
-	if (channel >= size_t(2)) {
-		thrower("Channel " + str(channel) + " outside range of static DDS " + str(size_t(StaticDDSGrid::total)));
+	if (channel >= size_t(StaticDDSGrid::numPERunit)) {
+		thrower("Channel " + str(channel) + " outside range of static DDS " + str(size_t(StaticDDSGrid::numPERunit)));
     }
 	edits_frequency[port][channel]->setText(qstr(ddsfreq));
 }
 
 void StaticDdsSystem::setDdsEditLevelValue(std::string ddsfreq, unsigned channel, unsigned port)
 {
-    if (port >= size_t(StaticDDSGrid::total)) {
-        thrower("Port " + str(port) + " outside range of static DDS " + str(size_t(StaticDDSGrid::total)));
+    if (port >= size_t(StaticDDSGrid::numOFunit)) {
+        thrower("Port " + str(port) + " outside range of static DDS " + str(size_t(StaticDDSGrid::numOFunit)));
     }
-	if (channel >= size_t(2)) {
-		thrower("Channel " + str(channel) + " outside range of static DDS " + str(size_t(StaticDDSGrid::total)));
+	if (channel >= size_t(StaticDDSGrid::numPERunit)) {
+		thrower("Channel " + str(channel) + " outside range of static DDS " + str(size_t(StaticDDSGrid::numPERunit)));
     }
 	edits_level[port][channel]->setText(qstr(ddsfreq));
 }

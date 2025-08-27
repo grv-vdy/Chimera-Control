@@ -104,7 +104,6 @@ StaticDDSFlume::StaticDDSFlume(std::string portAddress, unsigned baudrate, bool 
     boostFlume.setReadCallback(boost::bind(&StaticDDSFlume::readCallback, this, _1));
     boostFlume.setErrorCallback(boost::bind(&StaticDDSFlume::errorCallback, this, _1));
 }
-
 void StaticDDSFlume::write(std::string msg)
 {
     readRegister.clear();
@@ -180,15 +179,24 @@ void StaticDDSFlume::errorCallback(std::string error)
 
 // --- Valon 5009B Specific Commands ---
 
-void StaticDDSFlume::setFrequency(double frequencyMHz)
+void StaticDDSFlume::setFrequency(double frequencyMHz, int ch)
 {
-    std::string cmd = "FREQ " + std::to_string(frequencyMHz);
+    // Command: Source ch; Frequency frequencyMHzM
+    std::string cmd = "Source " + std::to_string(ch+1) + "; F " + std::to_string(frequencyMHz) + "\r";
     write(cmd);
 }
 
-void StaticDDSFlume::setOutputLevel(int leveldBm)
+void StaticDDSFlume::setOutputLevel(double plevel, int ch)
 {
-    std::string cmd = "LEVEL " + std::to_string(leveldBm);
+    // Command: Source <1|2>; PLEVel <AUTO|0|1|2|…|63>
+    std::string plevelStr;
+    if (plevel < 0) {
+        plevelStr = "AUTO";
+    }
+    else {
+        plevelStr = std::to_string(static_cast<int>(plevel));
+    }
+    std::string cmd = "Source " + std::to_string(ch) + "; PLEV " + plevelStr + "\r";
     write(cmd);
 }
 
@@ -201,6 +209,7 @@ void StaticDDSFlume::setReferenceFrequency(double refMHz)
 std::string StaticDDSFlume::getSerialNumberOnly()
 {
     write("ID?\r"); // sends ID?/r
+    sleep(5);
     read();
     std::string idn(readRegister.begin(), readRegister.end());
     // Split by commas

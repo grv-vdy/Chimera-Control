@@ -21,9 +21,13 @@ std::string QtAnalysisWindow::getSystemStatusString()
 {
 	std::string msg;
 	msg += "Static DDS System:\n";
-	if (!STATICDDS_SAFEMODE) {
-		msg += str("\tStatic DDS System is Active at port") + STATICDDS_PORT + ", with baudrate " + str(STATICDDS_BAUDRATE) + "\n";
-		msg += "\t" + staticDds.getDeviceInfo() + "\n";
+	if (!STATICDDS_SAFEMODE) { // Check the first device, or loop and check all if needed
+		for (size_t i = 0; i < STATICDDS_PORT.size(); ++i) {
+			msg += "\tStatic DDS System " + str(i) + " is Active at port " + STATICDDS_PORT[i]
+				+ ", with baudrate " + str(STATICDDS_BAUDRATE[i]) + "\n";
+			/*msg += "\t" + staticDds.getDeviceInfo(i) + "\n";*/
+		}
+		
 	}
 	else {
 		msg += "\tStatic DDS System is disabled! Enable in \"constants.h\"\n";

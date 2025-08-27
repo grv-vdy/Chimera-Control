@@ -11,8 +11,8 @@ public:
 	void resetConnection();
 	const bool SAFEMODE;
 	std::string getSerialNumberOnly();
-	void setFrequency(double frequencyMHz);
-	void setOutputLevel(int leveldBm);
+	void setFrequency(double frequencyMHz, int ch);
+	void setOutputLevel(double leveldBm, int ch);
 	void setReferenceFrequency(double refMHz);
 private:
 	void readCallback(int byte);
