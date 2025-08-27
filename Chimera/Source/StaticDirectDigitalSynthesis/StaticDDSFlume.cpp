@@ -188,15 +188,20 @@ void StaticDDSFlume::setFrequency(double frequencyMHz, int ch)
 
 void StaticDDSFlume::setOutputLevel(double plevel, int ch)
 {
-    // Command: Source <1|2>; PLEVel <AUTO|0|1|2|…|63>
+    // Command: Source <1|2>; ATT <0|31.5>
     std::string plevelStr;
-    if (plevel < 0) {
-        plevelStr = "AUTO";
-    }
-    else {
-        plevelStr = std::to_string(static_cast<int>(plevel));
-    }
-    std::string cmd = "Source " + std::to_string(ch) + "; PLEV " + plevelStr + "\r";
+
+   
+    // Compute attenuation from 15 dBm
+    double diff = 15.0 - plevel;
+
+    // Round to nearest 0.25
+    double att = std::round(diff / 0.25) * 0.25;
+
+    plevelStr = std::to_string(att);
+
+
+    std::string cmd = "Source " + std::to_string(ch + 1) + "; ATT " + plevelStr + "\r";
     write(cmd);
 }
 
@@ -208,24 +213,27 @@ void StaticDDSFlume::setReferenceFrequency(double refMHz)
 
 std::string StaticDDSFlume::getSerialNumberOnly()
 {
-    write("ID?\r"); // sends ID?/r
-    sleep(5);
-    read();
-    std::string idn(readRegister.begin(), readRegister.end());
-    // Split by commas
-    size_t first = idn.find(',');
-    if (first == std::string::npos) return "Unknown";
-    size_t second = idn.find(',', first + 1);
-    if (second == std::string::npos) return "Unknown";
-    size_t third = idn.find(',', second + 1);
-    if (third == std::string::npos) return "Unknown";
+    for (int attempt = 0; attempt < 2; ++attempt) {
+        write("ID?\r"); // sends ID?/r
+        Sleep(5);
+        read();
+        std::string idn(readRegister.begin(), readRegister.end());
+        // Split by commas
+        size_t first = idn.find(',');
+        if (first == std::string::npos) continue;
+        size_t second = idn.find(',', first + 1);
+        if (second == std::string::npos) continue;
+        size_t third = idn.find(',', second + 1);
+        if (third == std::string::npos) continue;
 
-    // Serial number is between second and third comma
-    std::string serial = idn.substr(second + 1, third - second - 1);
+        // Serial number is between second and third comma
+        std::string serial = idn.substr(second + 1, third - second - 1);
 
-    // Trim whitespace
-    serial.erase(0, serial.find_first_not_of(" \t\r\n"));
-    serial.erase(serial.find_last_not_of(" \t\r\n") + 1);
+        // Trim whitespace
+        serial.erase(0, serial.find_first_not_of(" \t\r\n"));
+        serial.erase(serial.find_last_not_of(" \t\r\n") + 1);
 
-    return serial;
+        return serial;
+    }
+    return "Unknown";
 }

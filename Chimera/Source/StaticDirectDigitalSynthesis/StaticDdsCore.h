@@ -50,8 +50,8 @@ public:
     const int numFreqDigits = static_cast<int>(abs(round(log10(ddsResolutionInst) - 0.49)));
     const double minFreqVal = 20;
     const double maxFreqVal = 6400;
-    const double minLevelVal = 0;
-    const double maxLevelVal = 63;
+    const double minLevelVal = -15;
+    const double maxLevelVal = +15;
 
 
 private:

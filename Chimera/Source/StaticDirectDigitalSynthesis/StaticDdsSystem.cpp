@@ -57,7 +57,7 @@ void StaticDdsSystem::initialize()
     layout2->addWidget(new QLabel(""), 0, 0); // Empty top-left cell for port label
     for (int ch = 0; ch < 2; ++ch) {
         QLabel* freqtitle = new QLabel("Frequency (MHz)", this);
-        QLabel* leveltitle = new QLabel("Attenuation (dB)", this);
+        QLabel* leveltitle = new QLabel("Level (dBm)", this);
         layout2->addWidget(freqtitle, 0, ch * 2 + 1);
         layout2->addWidget(leveltitle, 0, ch * 2 + 2);
     }
@@ -101,8 +101,8 @@ void StaticDdsSystem::handleOpenConfig(ConfigStream& configFile)
     auto configVals = core.getSettingsFromConfig(configFile);
     for (auto port : range(size_t(StaticDDSGrid::numOFunit))) {
         for (auto ch : range(size_t(StaticDDSGrid::numPERunit))) {
-            edits_frequency[port][ch]->setText(qstr(configVals.staticDDSs[ch*port + ch][0].expressionStr));
-            edits_level[port][ch]->setText(qstr(configVals.staticDDSs[ch*port + ch][1].expressionStr));
+            edits_frequency[port][ch]->setText(qstr(configVals.staticDDSs[port*size_t(StaticDDSGrid::numPERunit) + ch][0].expressionStr));
+            edits_level[port][ch]->setText(qstr(configVals.staticDDSs[port*size_t(StaticDDSGrid::numPERunit) + ch][1].expressionStr));
         }
     }
     ctrlButton->setChecked(configVals.ctrlDDS);
@@ -114,8 +114,8 @@ void StaticDdsSystem::handleSaveConfig(ConfigStream& configFile)
     configFile << core.configDelim;
     for (auto port : range(size_t(StaticDDSGrid::numOFunit))) {
         for (auto ch : range(size_t(StaticDDSGrid::numPERunit))) {
-            configFile << "\n/* DDS-" + str(ch*port+ch) + " Frequency:*/\t\t" << Expression(str(edits_frequency[port][ch]->text()));
-            configFile << "\n/* DDS-" + str(ch*port+ch) + " Level:*/\t\t" << Expression(str(edits_level[port][ch]->text()));
+            configFile << "\n/* DDS-" + str(port*size_t(StaticDDSGrid::numPERunit)+ch) + " Frequency:*/\t\t" << Expression(str(edits_frequency[port][ch]->text()));
+            configFile << "\n/* DDS-" + str(port*size_t(StaticDDSGrid::numPERunit)+ch) + " Level:*/\t\t" << Expression(str(edits_level[port][ch]->text()));
         }
     }
     configFile << "\n/*Control?*/\t\t\t" << ctrlButton->isChecked()
