@@ -1,5 +1,5 @@
 Version 1.0
-do1_0
+andor
 1
 do1_1
 1
@@ -15,7 +15,7 @@ xyzmotshutter
 1
 prbshutter
 1
-prbcoolshutter
+test
 1
 tarepshutter
 1

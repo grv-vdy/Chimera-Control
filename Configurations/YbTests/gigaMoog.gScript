@@ -1,0 +1,125 @@
+% set DAC, channel, amp, freq, phase
+%%% 20230926 5x5 uneven grid
+% after 1st round trap balance, dac0 is column
+set DAC0 0  89.72  87.60  36.10
+set DAC0 1  89.72  87.60  36.10
+set DAC0 2  82.69  91.20 143.80
+set DAC0 3  82.69  91.20 143.80
+set DAC0 4  75.10  96.00 216.00
+set DAC0 5  75.10  96.00 216.00
+set DAC0 6  82.14  98.40 143.90
+set DAC0 7  82.14  98.40 143.90
+set DAC0 8  99.98 105.60 216.00
+set DAC0 9  99.98 105.60 216.00
+
+%set DAC1 0  92.22  87.60  36.10
+%set DAC1 1  92.22  87.60  36.10
+%set DAC1 2  89.96  91.20 143.80
+%set DAC1 3  89.96  91.20 143.80
+set DAC1 4  87.05  96.00 216.00
+set DAC1 5  87.05  96.00 216.00
+set DAC1 6  91.92  98.40 143.90
+set DAC1 7  91.92  98.40 143.90
+%set DAC1 8  99.98 105.60 216.00
+%set DAC1 9  99.98 105.60 216.00
+
+
+%set DAC0 0  100  50  0
+%setmove 0 DAC0 0 0 0 100 1 100 1 0
+%setmove 1 DAC0 0 0 0 100 1 110 1 0
+%setmove 2 DAC0 0 0 0 100 1 100 -1 0
+%setmove 3 DAC0 0 0 0 0.01 -1 50 -1 0
+
+%set DAC0 0  100  50  0
+%set DAC0 1  100  60  0
+
+%setmove 0 DAC0 0 0 0 100 1 150 1 0
+%setmove 0 DAC0 1 0 0 100 1 70 1 0
+
+%setmove 1 DAC0 0 0 0 50 -1 60 -1 0
+%setmove 1 DAC0 1 0 0 100 1 70 0 0
+
+%setmove 2 DAC0 0 0 0 100 1 100 1 0
+%setmove 2 DAC0 1 0 0 100 1 110 1 0
+
+%setmove 3 DAC0 0 0 0 0.01 -1 50 -1 0
+
+
+
+
+%set DAC0 0 100 50 0
+%set DAC0 1 100 52 0
+%set DAC0 2 100 54 0
+%set DAC0 3 100 56 0
+%set DAC0 4 100 58 0
+%set DAC0 5 100 60 0
+%set DAC0 6 100 62 0
+%set DAC0 7 100 64 0
+%set DAC0 8 100 66 0
+%set DAC0 9 100 68 0
+%set DAC0 10 100 70 0
+%set DAC0 11 100 72 0
+%
+%setmove 0 DAC0 0 0 0 100 1 100 1 0
+%setmove 0 DAC0 1 0 0 100 1 102 1 0
+%setmove 0 DAC0 2 0 0 100 1 104 1 0
+%setmove 0 DAC0 3 0 0 100 1 106 1 0
+%setmove 0 DAC0 4 0 0 100 1 108 1 0
+%setmove 0 DAC0 5 0 0 100 1 110 1 0
+%setmove 0 DAC0 6 0 0 100 1 112 1 0
+%setmove 0 DAC0 7 0 0 100 1 114 1 0
+%setmove 0 DAC0 8 0 0 100 1 116 1 0
+%setmove 0 DAC0 9 0 0 100 1 118 1 0
+%setmove 0 DAC0 10 0 0 100 1 120 1 0
+%setmove 0 DAC0 11 0 0 100 1 122 1 0
+%setmove 1 DAC0 0 0 0 100 1 120 1 0
+%setmove 1 DAC0 1 0 0 100 1 122 1 0
+%setmove 1 DAC0 2 0 0 100 1 124 1 0
+%setmove 1 DAC0 3 0 0 100 1 126 1 0
+%setmove 1 DAC0 4 0 0 100 1 128 1 0
+%setmove 1 DAC0 5 0 0 100 1 130 1 0
+%setmove 1 DAC0 6 0 0 100 1 132 1 0
+%setmove 1 DAC0 7 0 0 100 1 134 1 0
+%setmove 1 DAC0 8 0 0 100 1 136 1 0
+%setmove 1 DAC0 9 0 0 100 1 138 1 0
+%setmove 1 DAC0 10 0 0 100 1 140 1 0
+%setmove 1 DAC0 11 0 0 100 1 142 1 0
+%setmove 2 DAC0 0 0 0 100 1 100 -1 0
+%setmove 2 DAC0 1 0 0 100 1 102 -1 0
+%setmove 2 DAC0 2 0 0 100 1 104 -1 0
+%setmove 2 DAC0 3 0 0 100 1 106 -1 0
+%setmove 2 DAC0 4 0 0 100 1 108 -1 0
+%setmove 2 DAC0 5 0 0 100 1 110 -1 0
+%setmove 2 DAC0 6 0 0 100 1 112 -1 0
+%setmove 2 DAC0 7 0 0 100 1 114 -1 0
+%setmove 2 DAC0 8 0 0 100 1 116 -1 0
+%setmove 2 DAC0 9 0 0 100 1 118 -1 0
+%setmove 2 DAC0 10 0 0 100 1 120 -1 0
+%setmove 2 DAC0 11 0 0 100 1 122 -1 0
+%setmove 3 DAC0 0 0 0 0.01 -1 50 -1 0
+%setmove 3 DAC0 1 0 0 0.01 -1 52 -1 0
+%setmove 3 DAC0 2 0 0 0.01 -1 54 -1 0
+%setmove 3 DAC0 3 0 0 0.01 -1 56 -1 0
+%setmove 3 DAC0 4 0 0 0.01 -1 58 -1 0
+%setmove 3 DAC0 5 0 0 0.01 -1 60 -1 0
+%setmove 3 DAC0 6 0 0 0.01 -1 62 -1 0
+%setmove 3 DAC0 7 0 0 0.01 -1 64 -1 0
+%setmove 3 DAC0 8 0 0 0.01 -1 66 -1 0
+%setmove 3 DAC0 9 0 0 0.01 -1 68 -1 0
+%setmove 3 DAC0 10 0 0 0.01 -1 70 -1 0
+%setmove 3 DAC0 11 0 0 0.01 -1 72 -1 0
+
+
+
+
+
+%%%%%%%%%%%%% Full angle 1W %%%%%%%%%%%%
+%set DAC0 0 49 98 240
+%set DAC1 0 49 98 240
+%
+%set DAC0 1 49 80 60
+%set DAC1 1 49 80 60
+%
+%set DAC0 2 49 116 180
+%set DAC1 2 49 116 180
+

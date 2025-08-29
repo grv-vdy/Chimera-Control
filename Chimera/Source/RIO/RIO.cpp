@@ -96,6 +96,8 @@ void RIO::untrigger() {
 }
 
 void RIO::reset() {
+    NiFpga_Abort(session);
+    NiFpga_Run(session, 0);
     NiFpga_Status status;
     status = NiFpga_WriteBool(session, NiFpga_chimerasequencer_ControlBool_reset, 1);
 	if (status != NiFpga_Status_Success) {

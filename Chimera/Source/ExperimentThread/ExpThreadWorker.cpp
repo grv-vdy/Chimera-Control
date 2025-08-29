@@ -104,6 +104,7 @@ void ExpThreadWorker::experimentThreadProcedure () {
 					handlePause(isPaused, isAborting);
 					startRep(repInc, variationInc, input->skipNext == nullptr ? false : input->skipNext->load());
 					waitForSequenceFinish(finaltimes[variationInc]);
+					Sleep(100);
 				}
 			}
 		}
@@ -1051,7 +1052,7 @@ void ExpThreadWorker::calculateAdoVariations (ExpRuntimeData& runtime) {
 }
 
 void ExpThreadWorker::runConsistencyChecks (std::vector<parameterType> expParams, std::vector<calSettings> calibrations) {
-	Sleep (1000);
+	// Sleep (1000);
 	emit plot_Xvals_determined (ParameterSystem::getOrderedKeyValues (expParams));
 	emit expParamsSet (expParams);
 	//input->globalControl.setUsages (expParams);
@@ -1163,12 +1164,12 @@ void ExpThreadWorker::normalFinish (ExperimentType& expType, bool runMaster,
 	auto exp_t = std::chrono::duration_cast<std::chrono::seconds>((chronoClock::now () - startTime)).count ();
 	try {
 		setExperimentGUIcolor();
-		input->zynqExp.sendCommand("resetSeq"); 
-		Sleep(50);
+		// input->zynqExp.sendCommand("resetSeq"); 
+		// Sleep(50);
 		input->ttls.FPGAForceOutput(input->ttlSys.getCurrentStatus());
-		Sleep(50);
+		// Sleep(50);
 		input->aoSys.setDACs();
-		Sleep(50);
+		// Sleep(50);
 		input->ttls.FPGAForceOutput(input->ttlSys.getCurrentStatus());
 	}
 	catch (ChimeraError& e) {
@@ -1190,12 +1191,12 @@ void ExpThreadWorker::normalFinish (ExperimentType& expType, bool runMaster,
 
 void ExpThreadWorker::startRep (unsigned repInc, unsigned variationInc, bool skip) {
 	if (true /*runMaster*/) {
-		//QTime timer;
-		//timer.start();
+		QTime timer;
+		timer.start();
 		//emit notification (qstr ("Starting Repetition #" + qstr (repInc) + "\n"), 2);
 		emit repUpdate (repInc + 1);
-		input->zynqExp.sendCommand("initExp");
-		Sleep(10);
+		// input->zynqExp.sendCommand("initExp");
+		// Sleep(10);
 		//input->aoSys.resetDacs (variationInc, skip);
 		//input->ttls.ftdi_trigger ();
 		//input->ttls.FtdiWaitTillFinished (variationInc);
@@ -1204,8 +1205,8 @@ void ExpThreadWorker::startRep (unsigned repInc, unsigned variationInc, bool ski
 		input->ao.writeDacs(variationInc, skip);
 		input->ttls.writeTtlDataToFPGA(variationInc, skip);
 		//emit notification("0.1: " + qstr(timer.elapsed()) + "\t");
-		Sleep(50); /// have to sleep for this amount of time to make TCP connect smoothly?????? zzp 2021/06/04 very annoying
-		input->zynqExp.sendCommand("trigger");
+		// Sleep(50); /// have to sleep for this amount of time to make TCP connect smoothly?????? zzp 2021/06/04 very annoying
+		// input->zynqExp.sendCommand("trigger");
 		//emit notification("0.2: " + qstr(timer.elapsed()) + "\n");
 	}
 }

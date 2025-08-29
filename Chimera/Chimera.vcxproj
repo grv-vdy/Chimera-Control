@@ -64,6 +64,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <ShowIncludes>false</ShowIncludes>
+      <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -92,7 +93,7 @@
     <QtQMakeTemplate>app</QtQMakeTemplate>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" Label="QtSettings">
-    <QtInstall>5.15.2_msvc2019_64</QtInstall>
+    <QtInstall>5.15.18_msvc2019_64</QtInstall>
     <QtModules>charts;concurrent;core;gui;network;printsupport;serialport;uitools;widgets</QtModules>
     <QtBuildConfig>release</QtBuildConfig>
   </PropertyGroup>
@@ -374,6 +375,7 @@
     <ClCompile Include="Source\ZynqTCP\ZynqTCP.cpp" />
     <ClCompile Include="3rd_Party\NI\include\NiFpga.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Source\RIO\RIO.cpp" />
     <ClInclude Include="Source\GeneralFlumes\WinSockFlume.h" />

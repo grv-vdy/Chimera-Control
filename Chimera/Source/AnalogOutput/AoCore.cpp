@@ -812,7 +812,7 @@ void AoCore::writeDacs(unsigned variation, bool loadSkip)
     if (useNI) 
 	{
         // Replace with your actual device and lines
-        writeDacsToNI(variation, "Dev1", "/Dev1/RTSI0", "/Dev1/RTSI1");
+        // writeDacsToNI(variation, "Dev1", "/Dev1/RTSI0", "/Dev1/RTSI1");
     } 
 	
 	else 

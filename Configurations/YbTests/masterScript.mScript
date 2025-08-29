@@ -1,0 +1,45 @@
+%%%%%%%%%%%%%%%%% Start With 1ms %%%%%%%%%%%%%%%%% 
+t = 1
+t += 1
+on: andor
+dac: opamp 5
+t += 5
+t += 5
+on: pixis_trg 
+t += 2
+off: pixis_trg
+t += 1
+on: pixis_trg
+t += 2
+off: pixis_trg
+t += 5
+off: andor
+t += 5
+on: andor
+t += 5
+off: andor
+t += 5
+on: andor
+t += 5
+off: andor
+
+t += 5
+on: andor
+t += 5
+off: andor
+
+t += 5
+on: andor
+t += 5
+off: andor
+
+t += 5
+on: andor
+t += 5
+off: andor
+
+
+
+
+
+
