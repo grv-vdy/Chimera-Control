@@ -104,7 +104,7 @@ void ExpThreadWorker::experimentThreadProcedure () {
 					handlePause(isPaused, isAborting);
 					startRep(repInc, variationInc, input->skipNext == nullptr ? false : input->skipNext->load());
 					waitForSequenceFinish(finaltimes[variationInc]);
-					Sleep(100);
+					Sleep(10);
 				}
 			}
 		}
@@ -1202,8 +1202,14 @@ void ExpThreadWorker::startRep (unsigned repInc, unsigned variationInc, bool ski
 		//input->ttls.FtdiWaitTillFinished (variationInc);
 		//input->aoSys.stopDacs();
 		//input->aoSys.configureClocks(variationInc, skip);
+		
+		
+		// input->ttls.writeTtlDataToFPGA(variationInc, skip);
 		input->ao.writeDacs(variationInc, skip);
+		
+		//AO and TTL
 		input->ttls.writeTtlDataToFPGA(variationInc, skip);
+		
 		//emit notification("0.1: " + qstr(timer.elapsed()) + "\t");
 		// Sleep(50); /// have to sleep for this amount of time to make TCP connect smoothly?????? zzp 2021/06/04 very annoying
 		// input->zynqExp.sendCommand("trigger");

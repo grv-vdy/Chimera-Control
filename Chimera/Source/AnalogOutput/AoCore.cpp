@@ -716,12 +716,9 @@ void AoCore::findLoadSkipSnapshots(double time, std::vector<parameterType>& vari
 void AoCore::formatDacForFPGA(UINT variation, AoSnapshot initSnap)
 {
 	typedef unsigned long long l64;
-	const l64 timeConv = 100000; // DIO time given in multiples of 10 ns, this is different from the ramp time, which uses timeConvDAC
-	const l64 rewindTime = l64(1) << 32; // 0xFFFFFFFF + 1, correspond to 32 bit time 
-	int durCounter = l64(std::llround(dacSnapshots[variation][0].time * timeConv)) / rewindTime;
-	if (durCounter > 0) {// the first time stamp is larger than a rewind, shouldn't happen after organizeDAC, otherwise it is impossible to know the dac state before exp
-		thrower("The DAC start time is beyond 42.9s and is started instead at " + str(dacSnapshots[variation][0].time) + ". Make sure you input a DAC command in the experiment.");
-	}
+	// For NI usage we want finalDacSnapshots times in milliseconds so they match the expectations
+	// in writeDacsToNI (which treats times as ms). Convert seconds -> milliseconds here.
+	const l64 timeConv = 1; // convert seconds to milliseconds
 	//std::array<double, size_t(AOGrid::total)> dacValuestmp = initSnap.dacValues;
 	for (int i = 0; i < dacSnapshots[variation].size(); ++i)
 	{
@@ -753,16 +750,12 @@ void AoCore::formatDacForFPGA(UINT variation, AoSnapshot initSnap)
 			}
 		}
 
-		//for each channel with a changed voltage add a dacSnapshot to the final list
+		// for each channel with a changed voltage add a dacSnapshot to the final list
+		// NOTE: produce times in milliseconds so that writeDacsToNI can consume them directly.
 		for (int channel : channels) {
-			while (l64(std::llround(snapshot.time * timeConv)) / rewindTime > durCounter) {
-				durCounter++;
-				unsigned int windTime = (l64(durCounter) * rewindTime - 3000) & l64(0xffffffff); // 3000*10ns=30us away from rewind to avoid the ramp time round up in sequencer.py
-				finalDacSnapshots[variation].push_back({ DAC_REWIND[0], static_cast<double>(windTime) / timeConv, static_cast<double>(durCounter % 5),static_cast<double>(durCounter % 5),0.0 });
-				finalDacSnapshots[variation].push_back({ DAC_REWIND[1], static_cast<double>(windTime) / timeConv, static_cast<double>(durCounter % 5),static_cast<double>(durCounter % 5),0.0 });
-			}
+			// Skip FPGA-specific rewind entries here so the NI path receives only channel snapshots.
 
-			channelSnapshot.time = snapshot.time;
+			channelSnapshot.time = snapshot.time * static_cast<double>(timeConv);
 			channelSnapshot.channel = channel;
 			channelSnapshot.dacValue = snapshot.dacValues[channel];
 			channelSnapshot.dacEndValue = snapshot.dacEndValues[channel];
@@ -812,7 +805,7 @@ void AoCore::writeDacs(unsigned variation, bool loadSkip)
     if (useNI) 
 	{
         // Replace with your actual device and lines
-        // writeDacsToNI(variation, "Dev1", "/Dev1/RTSI0", "/Dev1/RTSI1");
+        writeDacsToNI(variation, "Dev1", "/Dev1/RTSI0", "/Dev1/RTSI0");
     } 
 	
 	else 
@@ -1014,7 +1007,10 @@ void AoCore::checkValuesAgainstLimits(unsigned variation, const std::array<Analo
 	}
 }
 
-void AoCore::writeDacsToNI(unsigned variation, const std::string& deviceName, const std::string& clockSource, const std::string& triggerSource)
+void AoCore::writeDacsToNI(unsigned variation,
+                           const std::string& deviceName,
+                           const std::string& clockSource,
+                           const std::string& triggerSource)
 {
     if (getNumberEvents(variation) == 0 || finalDacSnapshots[variation].empty())
         return;
@@ -1023,82 +1019,149 @@ void AoCore::writeDacsToNI(unsigned variation, const std::string& deviceName, co
 
     // Gather all unique channels used
     std::set<int> channelsUsed;
-    for (const auto& snap : snapshots) {
+    for (const auto& snap : snapshots)
         channelsUsed.insert(snap.channel);
-    }
     if (channelsUsed.empty()) return;
 
     // Organize snapshots by channel
-    std::map<int, std::vector<std::pair<double, double>>> channelData;
-    for (const auto& snap : snapshots) {
+    std::map<int, std::vector<std::pair<double,double>>> channelData;
+    for (const auto& snap : snapshots)
         channelData[snap.channel].emplace_back(snap.time, snap.dacValue);
-    }
 
-    // Get all unique time points
+    // Get all unique time points (ms)
     std::set<double> allTimes;
-    for (const auto& ch : channelData) {
-        for (const auto& tv : ch.second) {
+    for (const auto& kv : channelData)
+        for (const auto& tv : kv.second)
             allTimes.insert(tv.first);
-        }
-    }
+
     std::vector<double> sortedTimes(allTimes.begin(), allTimes.end());
     size_t numSamples = sortedTimes.size();
     size_t numChannels = channelsUsed.size();
 
-    // === Single snapshot case: use software-timed write ===
+    // === Single snapshot case: software-timed ===
     if (numSamples == 1) {
-        // Write each channel individually
         for (int ch : channelsUsed) {
             const auto& vec = channelData[ch];
             double val = vec.empty() ? 0.0 : vec.front().second;
-            TaskHandle taskHandle = 0;
+            TaskHandle th = 0;
             std::string chanStr = deviceName + "/ao" + std::to_string(ch);
 
-            DAQmxCreateTask("", &taskHandle);
-            DAQmxCreateAOVoltageChan(taskHandle, chanStr.c_str(), "", -10.0, 10.0, DAQmx_Val_Volts, NULL);
-            DAQmxWriteAnalogScalarF64(taskHandle, 1, 10.0, val, NULL);
-            DAQmxStopTask(taskHandle);
-            DAQmxClearTask(taskHandle);
+            DAQmxCreateTask("", &th);
+            DAQmxCreateAOVoltageChan(th, chanStr.c_str(), "", -10.0, 10.0, DAQmx_Val_Volts, NULL);
+            DAQmxWriteAnalogScalarF64(th, 1, 10.0, val, NULL);
+            DAQmxStopTask(th);
+            DAQmxClearTask(th);
         }
         return;
     }
 
-    // === Multi-snapshot case: use clocked, triggered write ===
+       // === Multi-snapshot case: hardware-timed ===
+    const double clkRate = 320000;       // external clock rate
+    const double msToSamples = clkRate * 1e-3;
+
+    // Convert each time into a sample index
+    std::vector<uint64_t> sampleIndices;
+    for (double t_ms : sortedTimes)
+        sampleIndices.push_back(static_cast<uint64_t>(std::llround(t_ms * msToSamples)));
+
+    uint64_t totalSamples = sampleIndices.back() + 1;
+
+    // Build expanded output buffer with ramp support
+    std::vector<float64> writeBuffer(totalSamples * numChannels, 0.0);
+
+    for (size_t seg = 0; seg < sortedTimes.size(); ++seg) {
+        uint64_t startIdx = sampleIndices[seg];
+        uint64_t endIdx   = (seg + 1 < sortedTimes.size()) ? sampleIndices[seg+1] : totalSamples;
+
+        for (int ch : channelsUsed) {
+            // Find the current and next snapshot for this channel
+            double startVal = 0.0, endVal = 0.0;
+            double rampTime = 0.0;
+            
+            for (size_t i = 0; i < snapshots.size(); i++) {
+                const auto& snap = snapshots[i];
+                if (snap.channel == ch && std::abs(snap.time - sortedTimes[seg]) < 1e-6) {
+                    startVal = snap.dacValue;
+                    endVal = snap.dacEndValue;
+                    rampTime = snap.dacRampTime;
+                    break;
+                }
+            }
+
+            size_t chPos = std::distance(channelsUsed.begin(), channelsUsed.find(ch));
+            
+            // If there's a ramp, interpolate values
+            if (rampTime > 0) {
+                uint64_t rampEndSample = startIdx + static_cast<uint64_t>(std::llround(rampTime * msToSamples));
+                rampEndSample = std::min(rampEndSample, endIdx);
+                
+                for (uint64_t k = startIdx; k < rampEndSample; ++k) {
+                    double fraction = static_cast<double>(k - startIdx) / (rampEndSample - startIdx);
+                    writeBuffer[k * numChannels + chPos] = startVal + fraction * (endVal - startVal);
+                }
+                
+                // Fill remaining samples with end value
+                for (uint64_t k = rampEndSample; k < endIdx; ++k) {
+                    writeBuffer[k * numChannels + chPos] = endVal;
+                }
+            }
+            else {
+                // No ramp - use constant value
+                for (uint64_t k = startIdx; k < endIdx; ++k) {
+                    writeBuffer[k * numChannels + chPos] = startVal;
+                }
+        }
+    }
+
     int minCh = *channelsUsed.begin();
     int maxCh = *channelsUsed.rbegin();
     std::string channelStr = deviceName + "/ao" + std::to_string(minCh) + ":" + std::to_string(maxCh);
 
-    // Build output buffer: scan-major order
-    std::vector<float64> writeBuffer(numSamples * numChannels, 0.0);
-    for (size_t tIdx = 0; tIdx < numSamples; ++tIdx) {
-        double t = sortedTimes[tIdx];
-        size_t chIdx = 0;
-        for (int ch : channelsUsed) {
-            const auto& vec = channelData[ch];
-            double lastVal = 0.0;
-            for (const auto& tv : vec) {
-                if (tv.first <= t)
-                    lastVal = tv.second;
-                else
-                    break;
-            }
-            writeBuffer[tIdx * numChannels + chIdx] = lastVal;
-            ++chIdx;
-        }
-    }
+	DAQmxStopTask(taskHandle);
+    DAQmxClearTask(taskHandle);
 
-    // Create and configure task
-    TaskHandle taskHandle = 0;
     DAQmxCreateTask("", &taskHandle);
     DAQmxCreateAOVoltageChan(taskHandle, channelStr.c_str(), "", -10.0, 10.0, DAQmx_Val_Volts, NULL);
-    DAQmxCfgSampClkTiming(taskHandle, clockSource.c_str(), 10000, DAQmx_Val_Rising, DAQmx_Val_FiniteSamps, numSamples);
+
+    // // External 0.32 MHz sample clock
+    DAQmxCfgSampClkTiming(taskHandle, clockSource.c_str(), clkRate,
+                          DAQmx_Val_Rising, DAQmx_Val_FiniteSamps, totalSamples);
+	// DAQmxExportSignal(taskHandle,
+    //               DAQmx_Val_SampleClock,  // What to export
+    //               "/Dev1/PFI1");           // Where to export it (no backslash!)
+
+
+
+    // // External trigger
     DAQmxCfgDigEdgeStartTrig(taskHandle, triggerSource.c_str(), DAQmx_Val_Rising);
 
-    // Write data
-    int32 written = 0;
-    DAQmxWriteAnalogF64(taskHandle, numSamples, 0, 10.0, DAQmx_Val_GroupByScanNumber, writeBuffer.data(), &written, NULL);
-    DAQmxStartTask(taskHandle);
-    DAQmxWaitUntilTaskDone(taskHandle, 10.0);
-    DAQmxStopTask(taskHandle);
+
+	// Use an internal clock rate (Hz)
+	int status;
+	// const double internalRateHz = 320000.0; // choose suitable rate
+	// DAQmxCfgSampClkTiming(taskHandle, /*source*/ "", internalRateHz,
+	// 					DAQmx_Val_Rising, DAQmx_Val_FiniteSamps, totalSamples);
+
+	// IMPORTANT: Remove the hardware trigger setup call (do NOT call DAQmxCfgDigEdgeStartTrig)
+
+	// Write data
+	int32 written = 0;
+	status = DAQmxWriteAnalogF64(taskHandle, totalSamples, 0, 10.0,
+						DAQmx_Val_GroupByScanNumber, writeBuffer.data(), &written, NULL);
+
+
+	// Start in software (this is the software trigger)
+	status = DAQmxStartTask(taskHandle);
+
+	// Wait for completion (if desired)
+	
+
+	
+}
+
+
+void AoCore::handleFinish()
+{
+	DAQmxStopTask(taskHandle);
     DAQmxClearTask(taskHandle);
 }

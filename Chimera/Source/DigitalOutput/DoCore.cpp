@@ -545,6 +545,19 @@ void DoCore::writeTtlDataToFPGA(UINT variation, bool /*loadSkip*/)
 	rio.waitForFinish();
 }
 
+void DoCore::writeTtlAoDataToFPGA(UINT variation, bool /*loadSkip*/, AoCore& ao)
+{
+	rio.reset();
+	std::this_thread::sleep_for(std::chrono::milliseconds(5));
+	rio.untrigger();
+    rio.writeTTL(doFPGATimes[variation], doFPGAData[variation]);
+	rio.waitForMemLoaded();
+	ao.writeDacs(variation, false);
+	rio.trigger();
+	rio.waitForFinish();
+	ao.handleFinish();
+}
+
 void DoCore::organizeTtlCommands (unsigned variation, DoSnapshot initSnap)
 {
 	// each element of this is a different time (the double), and associated with each time is a vector which locates 

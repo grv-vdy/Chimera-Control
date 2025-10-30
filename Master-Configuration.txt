@@ -127,7 +127,7 @@ ryd420awgchswitch
 1
 uvlamptrg
 1
-tarepamp
+galvo
 -9.9 - 10
 0
 dac0_0

@@ -70,6 +70,9 @@ public:
 	void checkValuesAgainstLimits(unsigned variation, const std::array<AnalogOutput, size_t(AOGrid::total)>& outputs);
 
 	void setGUIDacChange(std::vector<std::vector<AoChannelSnapshot>> channelSnapShot);
+	void handleFinish();
+
+	TaskHandle taskHandle = 0;
 
 private:
 	std::array<std::string, size_t(AOGrid::total)> names;

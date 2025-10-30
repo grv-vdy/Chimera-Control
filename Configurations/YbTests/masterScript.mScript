@@ -2,9 +2,13 @@
 t = 1
 t += 1
 on: andor
-dac: opamp 5
+dac: galvo 9
 t += 5
-t += 5
+off: andor
+dacramp: galvo 9 5 100
+t += 100
+t += 1
+dac: galvo 0
 on: pixis_trg 
 t += 2
 off: pixis_trg
@@ -13,30 +17,29 @@ on: pixis_trg
 t += 2
 off: pixis_trg
 t += 5
-off: andor
 t += 5
-on: andor
+on: tweezerhold
 t += 5
-off: andor
+off: tweezerhold
 t += 5
-on: andor
+on: tweezerhold
 t += 5
-off: andor
+off: tweezerhold
 
 t += 5
-on: andor
+on: tweezerhold
 t += 5
-off: andor
+off: tweezerhold
 
 t += 5
-on: andor
+on: tweezerhold
 t += 5
-off: andor
+off: tweezerhold
 
 t += 5
-on: andor
+on: tweezerhold
 t += 5
-off: andor
+off: tweezerhold
 
 
 

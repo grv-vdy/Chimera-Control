@@ -61,8 +61,8 @@
 	const int DAC_LEN_BYTE_BUF = 44;
 	const int DDS_LEN_BYTE_BUF = 46;
 
-	const double DIO_TIME_RESOLUTION = 1e-5; // in ms, 10ns
-	const double DAC_TIME_RESOLUTION = 0.02; // in ms, 20us for 50kHz update rate
+	const double DIO_TIME_RESOLUTION = 2.5e-5; // in ms, 25ns
+	const double DAC_TIME_RESOLUTION = 0.003125; // in ms, 3.125us for 320kHz update rate
 	//const int DAC_RAMP_MAX_PTS = 0xffff; // 65535 ???
 	const double DDS_TIME_RESOLUTION = 1.6; // in ms
 	const double DDS_MAX_AMP = 1.25; // in mW
@@ -100,9 +100,9 @@
 
 	//Mako camera
 	const unsigned MAKO_NUMBER = 4;
-	const std::array<bool, MAKO_NUMBER> MAKO_SAFEMODE = { true,true,true,true};
+	const std::array<bool, MAKO_NUMBER> MAKO_SAFEMODE = { false,true,true,true};
 	const std::array<std::string, MAKO_NUMBER> MAKO_DELIMS = { "MAKO1_CAM"/*MOT G125*/, "MAKO2_CAM"/*MOT G319*/, "MAKO3_CAM"/*420 MON*/, "MAKO4_CAM"/*1013 MON*/};
-	const std::array<std::string, MAKO_NUMBER> MAKO_IPADDRS = { "10.10.0.6", "10.10.0.7","10.10.0.12","10.10.0.11" };
+	const std::array<std::string, MAKO_NUMBER> MAKO_IPADDRS = { "192.168.105.2", "10.10.0.7","10.10.0.12","10.10.0.11" };
 	const std::vector<std::pair<unsigned, unsigned>> MAKO_TRIGGER_LINE
 		= { std::make_pair(3 - 1,4),std::make_pair(3 - 1,5),std::make_pair(5 - 1,3),std::make_pair(5 - 1,7) };
 	/*the first is the label on the box minus 1, has minus'd 1 explicitly and this is not used in the code, just a reminder*/

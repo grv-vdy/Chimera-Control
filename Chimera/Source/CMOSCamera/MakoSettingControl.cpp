@@ -2062,6 +2062,10 @@ dataType MakoSettingControl::getFeatureValue(std::string feaName, std::string& e
         return dataType(); //means in SAFEMODE
     }
     FeaturePtr feature = getFeaturePtrFromMap(qstr(feaName));
+    if (!feature) {
+       errstr += "Feature " + feaName + " not found.\n";
+       return dataType();
+   }
     VmbErrorType error;
     dataType val;
     error = feature->GetValue(val);
@@ -2078,6 +2082,10 @@ void MakoSettingControl::setFeatureValue(std::string feaName, dataType val, std:
         return; //means in SAFEMODE
     }
     FeaturePtr feature = getFeaturePtrFromMap(qstr(feaName));
+    if (!feature) {
+       errstr += "Feature " + feaName + " not found.\n";
+       return;
+   }
     VmbErrorType error;
     error = feature->SetValue(val);
     if (VmbErrorSuccess != error) {
