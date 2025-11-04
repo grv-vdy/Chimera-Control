@@ -1110,6 +1110,7 @@ void AoCore::writeDacsToNI(unsigned variation,
                 for (uint64_t k = startIdx; k < endIdx; ++k) {
                     writeBuffer[k * numChannels + chPos] = startVal;
                 }
+			}
         }
     }
 
