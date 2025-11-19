@@ -29,6 +29,11 @@ private:
 	bool expActive;
 	StaticDdsCore core;
 	QCheckBox* ctrlButton;
+	// Per-channel sweep buttons and parameters
+	std::array<std::array<QPushButton*, size_t(StaticDDSGrid::numPERunit)>, size_t(StaticDDSGrid::numOFunit)> sweepButtons;
+	std::array<std::array<double, size_t(StaticDDSGrid::numPERunit)>, size_t(StaticDDSGrid::numOFunit)> sweepStartFreqMHz;
+	std::array<std::array<double, size_t(StaticDDSGrid::numPERunit)>, size_t(StaticDDSGrid::numOFunit)> sweepStopFreqMHz;
+	std::array<std::array<double, size_t(StaticDDSGrid::numPERunit)>, size_t(StaticDDSGrid::numOFunit)> sweepTimeSec;
 	std::array<QLabel*, size_t(StaticDDSGrid::total)> labels_port;
 	std::array<std::array<QLabel*, size_t(StaticDDSGrid::numPERunit)>, size_t(StaticDDSGrid::numOFunit)> labels_channel;
 	std::array<std::array<QLineEdit*, size_t(StaticDDSGrid::numPERunit)>, size_t(StaticDDSGrid::numOFunit)> edits_frequency;

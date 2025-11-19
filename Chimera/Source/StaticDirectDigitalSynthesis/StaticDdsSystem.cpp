@@ -5,6 +5,9 @@
 #include <PrimaryWindows/QtAuxiliaryWindow.h>
 #include <qpushbutton.h>
 #include <qlayout.h>
+#include <QDialog>
+#include <QFormLayout>
+#include <QDialogButtonBox>
 
 StaticDdsSystem::StaticDdsSystem(IChimeraQtWindow* parent) :
 	IChimeraSystem(parent),
@@ -19,13 +22,13 @@ void StaticDdsSystem::initialize()
     layout->setContentsMargins(0, 0, 0, 0);
     this->setMaximumWidth(600);
 
-    QLabel* title = new QLabel("STATIC VALON DDS", this);
+    QLabel* title = new QLabel("STATIC VALON PLL", this);
     layout->addWidget(title, 0);
 
     QHBoxLayout* layout1 = new QHBoxLayout();
     layout1->setContentsMargins(0, 0, 0, 0);
 
-    auto programNowButton = new QPushButton("Program DDS Now", this);
+    auto programNowButton = new QPushButton("Program PLL Now", this);
     connect(programNowButton, &QPushButton::released, [this]() {
         try 
         {
@@ -51,6 +54,7 @@ void StaticDdsSystem::initialize()
     layout1->addWidget(ctrlButton, 0);
     layout1->addStretch(1);
     layout->addLayout(layout1, 0);
+    // Per-channel sweep buttons are created below next to each channel's edits
 
     QGridLayout* layout2 = new QGridLayout();
     layout2->setContentsMargins(0, 0, 0, 0);
@@ -74,10 +78,92 @@ void StaticDdsSystem::initialize()
             labels_channel[port][ch] = new QLabel(qstr(ch) + ":", this);
             edits_frequency[port][ch] = new QLineEdit(this);
             edits_level[port][ch] = new QLineEdit(this);
+            // create per-channel sweep toggle button (press to configure/start, press again to stop)
+            sweepButtons[port][ch] = new QPushButton("Sweep", this);
+            // Ensure the button behaves as a persistent toggle and is visibly different when checked
+            sweepButtons[port][ch]->setCheckable(true);
+            sweepButtons[port][ch]->setChecked(false);
+            sweepButtons[port][ch]->setAutoDefault(false);
+            sweepButtons[port][ch]->setDefault(false);
+            sweepButtons[port][ch]->setStyleSheet("QPushButton:checked { background-color: #d9534f; color: white; }");
             edits_frequency[port][ch]->setText("0.0");
             edits_level[port][ch]->setText("0.0");
             connect(edits_frequency[port][ch], &QLineEdit::textChanged, [this]() { parentWin->configUpdated(); });
             connect(edits_level[port][ch], &QLineEdit::textChanged, [this]() { parentWin->configUpdated(); });
+
+            // connect sweep button: toggled ON -> open dialog and start native sweep; toggled OFF -> stop sweep
+            connect(sweepButtons[port][ch], &QPushButton::toggled, [this, port, ch](bool checked) {
+                if (!checked) {
+                    // stop sweep on this channel
+                    try {
+                        core.stopFrequencySweep(port, ch);
+                    }
+                    catch (...) {}
+                    sweepButtons[port][ch]->setText("Sweep");
+                    return;
+                }
+
+                // when toggled on, open dialog to configure and start
+                QDialog dlg(this);
+                dlg.setWindowTitle("Frequency sweep parameters (port " + QString::number(port) + ", ch " + QString::number(ch) + ")");
+                QFormLayout* form = new QFormLayout(&dlg);
+
+                QLineEdit* startEdit = new QLineEdit(&dlg);
+                QLineEdit* stopEdit = new QLineEdit(&dlg);
+                QLineEdit* timeEdit = new QLineEdit(&dlg);
+
+                // populate with previously set values if any
+                startEdit->setText(QString::number(sweepStartFreqMHz[port][ch]));
+                stopEdit->setText(QString::number(sweepStopFreqMHz[port][ch]));
+                timeEdit->setText(QString::number(sweepTimeSec[port][ch] > 0 ? sweepTimeSec[port][ch] : 1.0));
+
+                form->addRow("Start frequency (MHz):", startEdit);
+                form->addRow("Stop frequency (MHz):", stopEdit);
+                form->addRow("Sweep time (s):", timeEdit);
+
+                QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+                form->addRow(buttonBox);
+
+                connect(buttonBox, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+                connect(buttonBox, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+
+                if (dlg.exec() == QDialog::Accepted) {
+                    bool ok1 = false, ok2 = false, ok3 = false;
+                    double s = startEdit->text().toDouble(&ok1);
+                    double e = stopEdit->text().toDouble(&ok2);
+                    double t = timeEdit->text().toDouble(&ok3);
+                    if (ok1 && ok2 && ok3 && t > 0.0) {
+                        sweepStartFreqMHz[port][ch] = s;
+                        sweepStopFreqMHz[port][ch] = e;
+                        sweepTimeSec[port][ch] = t;
+                        parentWin->configUpdated();
+                        // start native sweep now
+                        try {
+                            core.startFrequencySweep(port, ch, s, e, t, 0);
+                            sweepButtons[port][ch]->setText("Stop");
+                        }
+                        catch (ChimeraError& err) {
+                            parentWin->reportErr("Failed to start sweep: " + err.qtrace());
+                            // revert toggle
+                            sweepButtons[port][ch]->setChecked(false);
+                            sweepButtons[port][ch]->setText("Sweep");
+                        }
+                    }
+                    else {
+                        // invalid input: clear stored values and revert toggle
+                        sweepStartFreqMHz[port][ch] = 0.0;
+                        sweepStopFreqMHz[port][ch] = 0.0;
+                        sweepTimeSec[port][ch] = 0.0;
+                        sweepButtons[port][ch]->setChecked(false);
+                        sweepButtons[port][ch]->setText("Sweep");
+                    }
+                }
+                else {
+                    // user cancelled: revert toggle state
+                    sweepButtons[port][ch]->setChecked(false);
+                    sweepButtons[port][ch]->setText("Sweep");
+                }
+            });
         }
     }
 
@@ -89,6 +175,7 @@ void StaticDdsSystem::initialize()
             lay->addWidget(labels_channel[port][ch], 0);
             lay->addWidget(edits_frequency[port][ch], 0);
             lay->addWidget(edits_level[port][ch], 0);
+            lay->addWidget(sweepButtons[port][ch], 0);
         }
         lay->addStretch(1);
         layout3->addLayout(lay, port, 0);
@@ -149,7 +236,28 @@ void StaticDdsSystem::handleProgramNowPress(std::vector<parameterType> constants
     core.setStaticDDSExpSetting(tmpSetting);
     core.calculateVariations(constants, nullptr);
     core.programVariation(0, constants, nullptr);
-    emit notification("Finished programming Static DDS system!\n", 0);
+    // Start device-native sweeps for any channel that has sweep parameters set
+    for (auto port : range(size_t(StaticDDSGrid::numOFunit))) {
+        for (auto ch : range(size_t(StaticDDSGrid::numPERunit))) {
+            double s = sweepStartFreqMHz[port][ch];
+            double e = sweepStopFreqMHz[port][ch];
+            double t = sweepTimeSec[port][ch];
+            if (t > 0.0 && fabs(e - s) > 1e-12) {
+                try {
+                    // ensure any previous sweep on this channel is halted first
+                    core.stopFrequencySweep(port, ch);
+                }
+                catch (...) {}
+                try {
+                    core.startFrequencySweep(port, ch, s, e, t, 0);
+                }
+                catch (ChimeraError& err) {
+                    parentWin->reportErr("Failed to start sweep on port " + qstr(str(port)) + " ch " + qstr(str(ch)) + ": " + err.qtrace());
+                }
+            }
+        }
+    }
+    emit notification("Finished programming Static PLL system!\n", 0);
 }
 
 std::string StaticDdsSystem::getDeviceInfo(unsigned int port)
@@ -160,10 +268,10 @@ std::string StaticDdsSystem::getDeviceInfo(unsigned int port)
 void StaticDdsSystem::setDdsEditFrequencyValue(std::string ddsfreq, unsigned channel, unsigned port)
 {
     if (port >= size_t(StaticDDSGrid::numOFunit)) {
-        thrower("Port " + str(port) + " outside range of static DDS " + str(size_t(StaticDDSGrid::numOFunit)));
+        thrower("Port " + str(port) + " outside range of static PLL " + str(size_t(StaticDDSGrid::numOFunit)));
     }
 	if (channel >= size_t(StaticDDSGrid::numPERunit)) {
-		thrower("Channel " + str(channel) + " outside range of static DDS " + str(size_t(StaticDDSGrid::numPERunit)));
+		thrower("Channel " + str(channel) + " outside range of static PLL " + str(size_t(StaticDDSGrid::numPERunit)));
     }
 	edits_frequency[port][channel]->setText(qstr(ddsfreq));
 }
@@ -171,10 +279,10 @@ void StaticDdsSystem::setDdsEditFrequencyValue(std::string ddsfreq, unsigned cha
 void StaticDdsSystem::setDdsEditLevelValue(std::string ddsfreq, unsigned channel, unsigned port)
 {
     if (port >= size_t(StaticDDSGrid::numOFunit)) {
-        thrower("Port " + str(port) + " outside range of static DDS " + str(size_t(StaticDDSGrid::numOFunit)));
+        thrower("Port " + str(port) + " outside range of static PLL " + str(size_t(StaticDDSGrid::numOFunit)));
     }
 	if (channel >= size_t(StaticDDSGrid::numPERunit)) {
-		thrower("Channel " + str(channel) + " outside range of static DDS " + str(size_t(StaticDDSGrid::numPERunit)));
+		thrower("Channel " + str(channel) + " outside range of static PLL " + str(size_t(StaticDDSGrid::numPERunit)));
     }
 	edits_level[port][channel]->setText(qstr(ddsfreq));
 }

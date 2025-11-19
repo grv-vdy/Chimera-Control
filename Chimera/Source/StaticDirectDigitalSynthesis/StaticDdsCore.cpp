@@ -116,6 +116,62 @@ void StaticDdsCore::setStaticDDSExpSetting(StaticDDSSettings tmpSetting)
 	expSettings = tmpSetting;
 }
 
+void StaticDdsCore::startFrequencySweep(unsigned port, unsigned ch, double startMHz, double stopMHz, double sweepSeconds, unsigned desiredSteps)
+{
+	if (port >= size_t(StaticDDSGrid::numOFunit) || ch >= size_t(StaticDDSGrid::numPERunit)) {
+		thrower("Invalid port/ch for sweep");
+	}
+	if (sweepSeconds <= 0.0) {
+		thrower("Sweep time must be > 0");
+	}
+
+	// Choose steps/rate so that RATE >= 10 ms (recommended by manual)
+	unsigned steps = desiredSteps;
+	unsigned rateMs = 10; // default min
+	if (steps == 0) {
+		// aim for ~100 steps by default
+		steps = 100;
+		double candidateRate = (sweepSeconds / static_cast<double>(steps)) * 1000.0;
+		if (candidateRate < 10.0) {
+			rateMs = 10;
+			steps = static_cast<unsigned>(std::ceil((sweepSeconds * 1000.0) / static_cast<double>(rateMs)));
+		}
+		else {
+			rateMs = static_cast<unsigned>(std::round(candidateRate));
+		}
+	}
+	else {
+		// compute rate to meet sweepSeconds with desiredSteps
+		double candidateRate = (sweepSeconds / static_cast<double>(steps)) * 1000.0;
+		rateMs = static_cast<unsigned>(std::max(10.0, candidateRate));
+	}
+
+	double stepMHz = (stopMHz - startMHz) / static_cast<double>(steps);
+	if (stepMHz == 0.0) {
+		// nothing to do
+		return;
+	}
+
+	// Use device-native sweep command via flume
+	try {
+		sddsFlume[port].startSweep(startMHz, stopMHz, stepMHz, rateMs, static_cast<int>(ch));
+	}
+	catch (ChimeraError& e) {
+		throwNested("Failed to start Valon sweep: " + e.trace());
+	}
+}
+
+void StaticDdsCore::stopFrequencySweep(unsigned port, unsigned ch)
+{
+	if (port >= size_t(StaticDDSGrid::numOFunit) || ch >= size_t(StaticDDSGrid::numPERunit)) return;
+	try {
+		sddsFlume[port].stopSweep(static_cast<int>(ch));
+	}
+	catch (ChimeraError& e) {
+		throwNested("Failed to stop Valon sweep: " + e.trace());
+	}
+}
+
 std::string StaticDdsCore::getDDSCommand(double ddsfreqVal)
 {
 	std::string buffCmd;

@@ -14,6 +14,9 @@ public:
 	void setFrequency(double frequencyMHz, int ch);
 	void setOutputLevel(double leveldBm, int ch);
 	void setReferenceFrequency(double refMHz);
+	// Sweep control (Valon native commands)
+	void startSweep(double startMHz, double stopMHz, double stepMHz, unsigned rateMs, int ch);
+	void stopSweep(int ch);
 private:
 	void readCallback(int byte);
 	void errorCallback(std::string error);

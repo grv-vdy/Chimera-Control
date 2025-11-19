@@ -35,6 +35,9 @@ public:
 
     std::string getDeviceInfo(unsigned int port);
     void setStaticDDSExpSetting(StaticDDSSettings tmpSetting); // used only for ProgramNow in StaticAOSystem
+    // Start/stop device-native sweep on a channel
+    void startFrequencySweep(unsigned port, unsigned ch, double startMHz, double stopMHz, double sweepSeconds, unsigned desiredSteps = 0);
+    void stopFrequencySweep(unsigned port, unsigned ch);
 
     const std::string configDelim = "STATIC_DDS_SYSTEM";
     const bool safemode;

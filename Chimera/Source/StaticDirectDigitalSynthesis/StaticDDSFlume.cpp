@@ -211,6 +211,39 @@ void StaticDDSFlume::setReferenceFrequency(double refMHz)
     write(cmd);
 }
 
+// Start a native Valon sweep on the specified source (ch is 0-based)
+void StaticDDSFlume::startSweep(double startMHz, double stopMHz, double stepMHz, unsigned rateMs, int ch)
+{
+    if (SAFEMODE) return;
+    int src = ch + 1; // Valon expects 1/2
+    // Set mode to sweep for the source
+    write("Source " + std::to_string(src) + "; MODe SWEep\r");
+
+    // STARt <F> in units -- use M for MHz
+    write("Source " + std::to_string(src) + "; STARt " + std::to_string(startMHz) + "M\r");
+
+    // STOP <F>
+    write("Source " + std::to_string(src) + "; STOP " + std::to_string(stopMHz) + "M\r");
+
+    // STEP <F>
+    write("Source " + std::to_string(src) + "; STEP " + std::to_string(stepMHz) + "M\r");
+
+    // RATE <ms>
+    write("Source " + std::to_string(src) + "; RATE " + std::to_string(rateMs) + "\r");
+
+    // Start the sweep for the source - RUN with source index
+    // Per manual: RUN 1 starts source1, RUN 2 source2, RUN 3 both
+    write("RUN " + std::to_string(src) + "\r");
+}
+
+void StaticDDSFlume::stopSweep(int ch)
+{
+    if (SAFEMODE) return;
+    int src = ch + 1;
+    // Halt command: use HALT <n> (per manual conventions)
+    write("HALT " + std::to_string(src) + "\r");
+}
+
 std::string StaticDDSFlume::getSerialNumberOnly()
 {
     for (int attempt = 0; attempt < 2; ++attempt) {
