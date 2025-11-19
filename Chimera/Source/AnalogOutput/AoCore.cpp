@@ -1097,7 +1097,7 @@ void AoCore::writeDacsToNI(unsigned variation,
 
     uint64_t totalSamples = sampleIndices.back() + 1;
 
-    // Build expanded output buffer
+    // Build expanded output buffer with ramp support
     std::vector<float64> writeBuffer(totalSamples * numChannels, 0.0);
 
     for (size_t seg = 0; seg < sortedTimes.size(); ++seg) {
@@ -1105,12 +1105,18 @@ void AoCore::writeDacsToNI(unsigned variation,
         uint64_t endIdx   = (seg + 1 < sortedTimes.size()) ? sampleIndices[seg+1] : totalSamples;
 
         for (int ch : channelsUsed) {
-            double val = 0.0;
-            for (const auto& tv : channelData[ch]) {
-                if (tv.first <= sortedTimes[seg])
-                    val = tv.second;
-                else
+            // Find the current and next snapshot for this channel
+            double startVal = 0.0, endVal = 0.0;
+            double rampTime = 0.0;
+            
+            for (size_t i = 0; i < snapshots.size(); i++) {
+                const auto& snap = snapshots[i];
+                if (snap.channel == ch && std::abs(snap.time - sortedTimes[seg]) < 1e-6) {
+                    startVal = snap.dacValue;
+                    endVal = snap.dacEndValue;
+                    rampTime = snap.dacRampTime;
                     break;
+                }
             }
 
             size_t chPos = std::distance(channelsUsed.begin(), channelsUsed.find(ch));
@@ -1164,7 +1170,7 @@ void AoCore::writeDacsToNI(unsigned variation,
 
 	// Use an internal clock rate (Hz)
 	int status;
-	// const double internalRateHz = 10000.0; // choose suitable rate
+	// const double internalRateHz = 320000.0; // choose suitable rate
 	// DAQmxCfgSampClkTiming(taskHandle, /*source*/ "", internalRateHz,
 	// 					DAQmx_Val_Rising, DAQmx_Val_FiniteSamps, totalSamples);
 
