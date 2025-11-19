@@ -151,7 +151,7 @@ scimotamp
 -9.9 - 10
 0
 dac0_5
-dac0_6
+pushbeam
 -9.9 - 10
 0
 dac0_6

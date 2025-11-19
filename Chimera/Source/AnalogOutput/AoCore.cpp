@@ -1114,11 +1114,29 @@ void AoCore::writeDacsToNI(unsigned variation,
             }
 
             size_t chPos = std::distance(channelsUsed.begin(), channelsUsed.find(ch));
-            for (uint64_t k = startIdx; k < endIdx; ++k) {
-                writeBuffer[k * numChannels + chPos] = val;
+            
+            // If there's a ramp, interpolate values
+            if (rampTime > 0) {
+                uint64_t rampEndSample = startIdx + static_cast<uint64_t>(std::llround(rampTime * msToSamples));
+                rampEndSample = std::min(rampEndSample, endIdx);
+                
+                for (uint64_t k = startIdx; k < rampEndSample; ++k) {
+                    double fraction = static_cast<double>(k - startIdx) / (rampEndSample - startIdx);
+                    writeBuffer[k * numChannels + chPos] = startVal + fraction * (endVal - startVal);
+                }
+                
+                // Fill remaining samples with end value
+                for (uint64_t k = rampEndSample; k < endIdx; ++k) {
+                    writeBuffer[k * numChannels + chPos] = endVal;
+                }
             }
-		}
-        
+            else {
+                // No ramp - use constant value
+                for (uint64_t k = startIdx; k < endIdx; ++k) {
+                    writeBuffer[k * numChannels + chPos] = startVal;
+                }
+			}
+        }
     }
 
     int minCh = *channelsUsed.begin();
