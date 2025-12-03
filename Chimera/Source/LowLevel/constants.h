@@ -39,7 +39,7 @@
 	const std::string CONFIGURATION_PATH = str(CODE_ROOT) + "\\Configurations\\";
 
 	//const std::string DATA_SAVE_LOCATION = "J:\\Data Repository\\New Data Repository\\";
-	const std::string DATA_SAVE_LOCATION = "C:\\Users\\yb2\\Chimera-Control\\tmpDataSave\\";
+	const std::string DATA_SAVE_LOCATION = "B:\\Data\\Chimera_Data";
 
 	const std::string MUSIC_LOCATION = str (CODE_ROOT) + "\\Final Fantasy VII - Victory Fanfare [HQ].mp3";
 	const std::string FUNCTIONS_FOLDER_LOCATION = str (CODE_ROOT) + "\\Functions\\";
@@ -100,11 +100,11 @@
 
 	//Mako camera
 	const unsigned MAKO_NUMBER = 4;
-	const std::array<bool, MAKO_NUMBER> MAKO_SAFEMODE = { true,true,true,true};
+	const std::array<bool, MAKO_NUMBER> MAKO_SAFEMODE = { false,false,true,true};
 	const std::array<std::string, MAKO_NUMBER> MAKO_DELIMS = { "MAKO1_CAM"/*MOT G125*/, "MAKO2_CAM"/*MOT G319*/, "MAKO3_CAM"/*420 MON*/, "MAKO4_CAM"/*1013 MON*/};
-	const std::array<std::string, MAKO_NUMBER> MAKO_IPADDRS = { "192.168.105.2", "10.10.0.19","10.10.0.12","10.10.0.11" };
+	const std::array<std::string, MAKO_NUMBER> MAKO_IPADDRS = { "192.168.105.2", "192.168.105.6","10.10.0.12","10.10.0.11" };
 	const std::vector<std::pair<unsigned, unsigned>> MAKO_TRIGGER_LINE
-		= { std::make_pair(3 - 1,4),std::make_pair(3 - 1,5),std::make_pair(5 - 1,3),std::make_pair(5 - 1,7) };
+		= { std::make_pair(1 - 1,2),std::make_pair(3 - 1,5),std::make_pair(5 - 1,3),std::make_pair(5 - 1,7) };
 	/*the first is the label on the box minus 1, has minus'd 1 explicitly and this is not used in the code, just a reminder*/
 
 	//GIGAMOOG

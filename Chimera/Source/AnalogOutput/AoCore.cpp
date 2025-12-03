@@ -235,11 +235,11 @@ void AoCore::calculateVariations(std::vector<parameterType>& params, ExpThreadWo
 				finalValue = formList.finalVal.evaluate(params, variationInc, calibrations);
 				// deal with ramp inc
 				rampInc = formList.rampInc.evaluate(params, variationInc, calibrations);
-				if (rampInc < 20.0 / pow(2, 16) && !resolutionWarningPosted) {
+				if (rampInc < 10.0 / pow(2, 16) && !resolutionWarningPosted) {
 					resolutionWarningPosted = true;
 					emit threadworker->warn(cstr("Warning: ramp increment of " + str(rampInc) + " in dac command number "
-						+ str(eventInc) + " is below the resolution of the aoSys (which is 20V/2^16 = "
-						+ str(20.0 / pow(2, 16)) + "V = 305µV). These ramp points are unnecessary.\r\n"));
+						+ str(eventInc) + " is below the resolution of the aoSys (which is 10/2^16 = "
+						+ str(10.0 / pow(2, 16)) + "). These ramp points are unnecessary.\r\n"));
 				}
 				// This might be the first not i++ usage of a for loop I've ever done... XD
 				// calculate the time increment:
@@ -258,7 +258,7 @@ void AoCore::calculateVariations(std::vector<parameterType>& params, ExpThreadWo
 				double currentTime = tempEvent.time;
 				if (timeInc < DAC_TIME_RESOLUTION) {
 					thrower("Warning: numPoints of " + str(steps) + " results in a ramp time steps of "
-						+ str(timeInc) + " is below the time resolution of the aoSys (which is 3.125us)."
+						+ str(timeInc) + " is below the time resolution of the aoSys (which is 20us)."
 						" You probably want to use dacramp instead of dacarange\r\n");
 				}
 				// handle the two directions seperately.
@@ -323,7 +323,7 @@ void AoCore::calculateVariations(std::vector<parameterType>& params, ExpThreadWo
 				double val = initValue;
 				if (timeInc < DAC_TIME_RESOLUTION) {
 					thrower("Warning: numPoints of " + str(numSteps) + " results in a ramp time steps of "
-						+ str(timeInc) + " is below the time resolution of the aoSys (which is 3.125us)."
+						+ str(timeInc) + " is below the time resolution of the aoSys (which is 20us)."
 						" You probably want to use dacramp instead of daclinspace\r\n");
 				}
 
@@ -379,7 +379,7 @@ void AoCore::calculateVariations(std::vector<parameterType>& params, ExpThreadWo
 				}
 				if (rampTime < DAC_TIME_RESOLUTION) {
 					thrower("Warning: Ramp time of "
-						+ str(rampTime) + " is below the time resolution of the aoSys (which is 3.125us)."
+						+ str(rampTime) + " is below the time resolution of the aoSys (which is 20us)."
 						" Ramp will not run. \r\n");
 				}
 				
@@ -755,43 +755,12 @@ void AoCore::formatDacForFPGA(UINT variation, AoSnapshot initSnap)
 		for (int channel : channels) {
 			// Skip FPGA-specific rewind entries here so the NI path receives only channel snapshots.
 
-            // If there's a ramp, create intermediate points
-            if (snapshot.dacRampTimes[channel] > 0) {
-                // Calculate number of intermediate points based on DAC_TIME_RESOLUTION
-                int numSteps = static_cast<int>(snapshot.dacRampTimes[channel] / DAC_TIME_RESOLUTION);
-                double timeStep = snapshot.dacRampTimes[channel] / numSteps;
-                double voltageStep = (snapshot.dacEndValues[channel] - snapshot.dacValues[channel]) / numSteps;
-                
-                // Add starting point with time converted to ms
-                channelSnapshot.time = snapshot.time * static_cast<double>(timeConv);
-                channelSnapshot.channel = channel;
-                channelSnapshot.dacValue = snapshot.dacValues[channel];
-                channelSnapshot.dacEndValue = snapshot.dacValues[channel];
-                channelSnapshot.dacRampTime = 0;  // No ramp for intermediate points
-                finalDacSnapshots[variation].push_back(channelSnapshot);
-                
-                // Add intermediate points
-                for (int step = 1; step < numSteps; step++) {
-                    channelSnapshot.time = (snapshot.time + step * timeStep) * static_cast<double>(timeConv);
-                    channelSnapshot.dacValue = snapshot.dacValues[channel] + step * voltageStep;
-                    channelSnapshot.dacEndValue = channelSnapshot.dacValue;
-                    finalDacSnapshots[variation].push_back(channelSnapshot);
-                }
-                
-                // Add final point
-                channelSnapshot.time = (snapshot.time + snapshot.dacRampTimes[channel]) * static_cast<double>(timeConv);
-                channelSnapshot.dacValue = snapshot.dacEndValues[channel];
-                channelSnapshot.dacEndValue = snapshot.dacEndValues[channel];
-                finalDacSnapshots[variation].push_back(channelSnapshot);
-            } else {
-                // No ramp - just add the single point
-                channelSnapshot.time = snapshot.time * static_cast<double>(timeConv);
-                channelSnapshot.channel = channel;
-                channelSnapshot.dacValue = snapshot.dacValues[channel];
-                channelSnapshot.dacEndValue = snapshot.dacEndValues[channel];
-                channelSnapshot.dacRampTime = 0;
-                finalDacSnapshots[variation].push_back(channelSnapshot);
-            }
+			channelSnapshot.time = snapshot.time * static_cast<double>(timeConv);
+			channelSnapshot.channel = channel;
+			channelSnapshot.dacValue = snapshot.dacValues[channel];
+			channelSnapshot.dacEndValue = snapshot.dacEndValues[channel];
+			channelSnapshot.dacRampTime = snapshot.dacRampTimes[channel];
+			finalDacSnapshots[variation].push_back(channelSnapshot);
 		}
 	}
 	if (finalDacSnapshots[variation].size() > maxCommandNum) {
@@ -1074,14 +1043,16 @@ void AoCore::writeDacsToNI(unsigned variation,
         for (int ch : channelsUsed) {
             const auto& vec = channelData[ch];
             double val = vec.empty() ? 0.0 : vec.front().second;
-            TaskHandle th = 0;
             std::string chanStr = deviceName + "/ao" + std::to_string(ch);
 
-            DAQmxCreateTask("", &th);
-            DAQmxCreateAOVoltageChan(th, chanStr.c_str(), "", -10.0, 10.0, DAQmx_Val_Volts, NULL);
-            DAQmxWriteAnalogScalarF64(th, 1, 10.0, val, NULL);
-            DAQmxStopTask(th);
-            DAQmxClearTask(th);
+            DAQmxStopTask(taskHandle);
+    		DAQmxClearTask(taskHandle);
+
+    		DAQmxCreateTask("", &taskHandle);
+            DAQmxCreateAOVoltageChan(taskHandle, chanStr.c_str(), "", -10.0, 10.0, DAQmx_Val_Volts, NULL);
+            DAQmxWriteAnalogScalarF64(taskHandle, 1, 10.0, val, NULL);
+            DAQmxStopTask(taskHandle);
+            DAQmxClearTask(taskHandle);
         }
         return;
     }

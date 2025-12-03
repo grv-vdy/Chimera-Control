@@ -4,6 +4,7 @@
         "array": "cpp",
         "any": "cpp",
         "xstring": "cpp",
-        "vector": "cpp"
+        "vector": "cpp",
+        "functional": "cpp"
     }
 }

@@ -1,13 +1,13 @@
 Version 1.0
-andor
+pushbeam
 1
-do1_1
+blue3dmot
 1
-opshutter
+mako1
 1
-do1_3
+broken
 1
-dipolepushshutter
+greenmot
 1
 pixis_trg
 1
@@ -39,7 +39,7 @@ d1lgmtrg
 1
 do3_3
 1
-mako1
+motcamera
 1
 mako2
 1
@@ -127,12 +127,12 @@ ryd420awgchswitch
 1
 uvlamptrg
 1
-galvo
--9.9 - 10
+greenmot
+0 - 2
 0
 dac0_0
-prbrepamp
--9.9 - 10
+greenpushbeam
+0 - 2
 0
 dac0_1
 opamp
@@ -147,16 +147,16 @@ prbamp
 -9.9 - 10
 0
 dac0_4
-scimotamp
--9.9 - 10
+blue3dmot
+0 - 2
 0
 dac0_5
 pushbeam
--9.9 - 10
+0 - 2
 0
 dac0_6
-srcmotamp
--9.9 - 10
+blue2dmot
+0 - 2
 0
 dac0_7
 tweezerintensity
