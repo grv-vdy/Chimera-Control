@@ -1,0 +1,23 @@
+%%%%%%%%%%%%%%%%% Start With 1ms %%%%%%%%%%%%%%%%% 
+t = 1
+dac: blue2dmot blue2dmotpower
+dac: greenmot greenmotpower
+dac: greenpushbeam greennarrowpushpower
+%dac: greenpushbeam 0.17
+dac: pushbeam 0.1
+dac: blue3dmot 0
+
+
+on: mako1
+t += 10
+off: mako1
+t += 800
+on: pixis_trg 
+t += 2
+off: pixis_trg
+t += 1
+on: pixis_trg
+t += 2
+off: pixis_trg
+t += 5
+

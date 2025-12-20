@@ -43,17 +43,26 @@ void MakoCamera::initialize()
     namelabel->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
     QLabel* repLabel = new QLabel("PicsPerRep: ");
     m_picsPerRep = new QSpinBox(this);
+    QLabel* analyzeLabel = new QLabel("AnalyzeIdx: ");
+    m_analyzeImageIndex = new QSpinBox(this);
+    m_analyzeImageIndex->setRange(0, 99);
+    m_analyzeImageIndex->setValue(core.getRunningSettings().picsPerRep > 0 ? core.getRunningSettings().analyzeImageIndex : 1);
     m_picsPerRep->setRange(0, 999);
     QLabel* activeLabel = new QLabel("Exp. Active?", this);
     m_expActive = new QCheckBox(this);
     nameLayout->addWidget(namelabel, 1);
     nameLayout->addWidget(repLabel, 0);
     nameLayout->addWidget(m_picsPerRep, 0);
+    nameLayout->addWidget(analyzeLabel, 0);
+    nameLayout->addWidget(m_analyzeImageIndex, 0);
     nameLayout->addWidget(activeLabel, 0);
     nameLayout->addWidget(m_expActive, 0);
     layout->addLayout(nameLayout, 0);
     connect(m_picsPerRep, qOverload<int>(&QSpinBox::valueChanged), [this](int pics) {
         core.setPicsPerRep(pics); });
+    connect(m_analyzeImageIndex, qOverload<int>(&QSpinBox::valueChanged), [this](int idx) {
+        core.setAnalyzeImageIndex(idx);
+    });
     connect(m_expActive, &QCheckBox::clicked, [this](bool checked) {
         core.setExpActive(checked);
         imgCThread.setExpActive(checked); });
@@ -722,6 +731,10 @@ void MakoCamera::updateStatusBar()
     m_CameraGainButton->setText("Gain (dB): " + qstr(ms.rawGain, 0));
     m_TrigOnOffButton->setText(ms.trigOn ? "Trig: On" : "Trig: Off");
     m_TrigSourceButton->setText("TrigSource: " + qstr(MakoTrigger::toStr(ms.triggerMode)));
+    // keep Analyze index UI in sync with running settings
+    if (m_analyzeImageIndex) {
+        m_analyzeImageIndex->setValue(ms.analyzeImageIndex);
+    }
 
 }
 

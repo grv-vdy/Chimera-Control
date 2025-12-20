@@ -301,6 +301,14 @@
     <ClCompile Include="Source\ArbGen\SegmentEnd.cpp" />
     <ClCompile Include="Source\ArbGen\SiglentCore.cpp" />
     <ClCompile Include="Source\ArbGen\whichAg.cpp" />
+    <ClCompile Include="Source\WieserlabsDDS\WieserlabsDDSCore.cpp">
+    </ClCompile>
+    <ClCompile Include="Source\WieserlabsDDS\WieserlabsDDSSystem.cpp">
+    </ClCompile>
+    <ClCompile Include="Source\WieserlabsDDS\ScriptedWieserlabsDDSWaveform.cpp" />
+    <ClCompile Include="Source\WieserlabsDDS\WieserlabsClient.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Source\ConfigurationSystems\ConfigStream.cpp" />
     <ClCompile Include="Source\ConfigurationSystems\ConfigSystem.cpp" />
     <ClCompile Include="Source\ConfigurationSystems\MasterConfiguration.cpp" />
@@ -418,6 +426,12 @@
     <ClInclude Include="Source\ArbGen\segmentStructs.h" />
     <ClInclude Include="Source\ArbGen\SiglentCore.h" />
     <ClInclude Include="Source\ArbGen\whichAg.h" />
+    <ClInclude Include="Source\WieserlabsDDS\WieserlabsDDSCore.h" />
+    <ClInclude Include="Source\WieserlabsDDS\WieserlabsDDSSystem.h" />
+    <ClInclude Include="Source\WieserlabsDDS\WieserlabsDDSStructures.h" />
+    <ClInclude Include="Source\WieserlabsDDS\WieserlabsDDSSettings.h" />
+    <ClInclude Include="Source\WieserlabsDDS\ScriptedWieserlabsDDSWaveform.h" />
+    <ClInclude Include="Source\WieserlabsDDS\WieserlabsClient.h" />
     <ClInclude Include="Source\ConfigurationSystems\ConfigStream.h" />
     <ClInclude Include="Source\ConfigurationSystems\MasterConfiguration.h" />
     <ClInclude Include="Source\ConfigurationSystems\profileSettings.h" />

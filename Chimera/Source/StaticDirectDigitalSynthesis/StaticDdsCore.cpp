@@ -87,7 +87,12 @@ void StaticDdsCore::programVariation(unsigned variation, std::vector<parameterTy
 			outputs_level[port][ch] = expSettings.staticDDSs[port*size_t(StaticDDSGrid::numPERunit)+ch][1].getValue(variation);
 		}
 	}
-	writeDDSs(outputs_frequency, outputs_level);
+	try {
+		writeDDSs(outputs_frequency, outputs_level);
+	}
+	catch (ChimeraError& e) {
+		throwNested("Failed to program Static DDS (Valon communication error): " + e.trace());
+	}
 }
 
 StaticDDSSettings StaticDdsCore::getSettingsFromConfig(ConfigStream& file)
@@ -187,13 +192,28 @@ void StaticDdsCore::writeDDSs(
 	std::array<std::array<double, size_t(StaticDDSGrid::numPERunit)>, size_t(StaticDDSGrid::numOFunit)> outputs_frequency,
 	std::array<std::array<double, size_t(StaticDDSGrid::numPERunit)>, size_t(StaticDDSGrid::numOFunit)> outputs_level)
 {
-	for (size_t port = 0; port < size_t(StaticDDSGrid::numOFunit); ++port) {
-		for (size_t ch = 0; ch < size_t(StaticDDSGrid::numPERunit); ++ch) {
-			double freq = outputs_frequency[port][ch];
-			double level = outputs_level[port][ch];
-			sddsFlume[port].setFrequency(freq, static_cast<int>(ch));
-			sddsFlume[port].setOutputLevel(level, static_cast<int>(ch));
+	try {
+		for (size_t port = 0; port < size_t(StaticDDSGrid::numOFunit); ++port) {
+			for (size_t ch = 0; ch < size_t(StaticDDSGrid::numPERunit); ++ch) {
+				double freq = outputs_frequency[port][ch];
+				double level = outputs_level[port][ch];
+				try {
+					sddsFlume[port].setFrequency(freq, static_cast<int>(ch));
+				}
+				catch (ChimeraError& e) {
+					throwNested("Failed to set frequency on Static DDS port " + str(port) + " channel " + str(ch) + ": " + e.trace());
+				}
+				try {
+					sddsFlume[port].setOutputLevel(level, static_cast<int>(ch));
+				}
+				catch (ChimeraError& e) {
+					throwNested("Failed to set output level on Static DDS port " + str(port) + " channel " + str(ch) + ": " + e.trace());
+				}
+			}
 		}
+	}
+	catch (ChimeraError&) {
+		throw;
 	}
 }
 

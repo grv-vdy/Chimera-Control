@@ -1,0 +1,40 @@
+%%%%%%%%%%%%%%%%% Start With 1ms %%%%%%%%%%%%%%%%% 
+t = 1
+
+dac: blue3dmot 0.3
+%dac: pushbeam 1
+dac: blue2dmot blue3dmotpower
+dac: greenmot greenmotpower
+dac: greenpushbeam greennarrowpushpower
+on: greenmot
+on: mako1
+t += 20
+off: mako1
+t += 10
+off: greenmot
+t += 10
+on: pushbeam
+on: greenmot
+%on: blue3dmot
+
+t += greenmotloadtime
+%off: blue3dmot
+
+off: pushbeam
+on: mako1
+t += 20
+off: mako1
+
+off: greenmot
+t += 3
+on: pixis_trg 
+t += 2
+off: pixis_trg
+t += 1
+on: pixis_trg
+t += 2
+off: pixis_trg
+t += 5
+
+t += 100
+

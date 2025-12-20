@@ -59,6 +59,7 @@ void MOTAnalysisSystem::prepareMOTAnalysis(int idx)
 	//calcInput.aborting = &calcThreadAborting;
 	//calcInput.active = &calcThreadActive;
 	calcInput.camSet = mkSet;
+	calcInput.analyzeImageIndex = mkSet.analyzeImageIndex;
 
 	MOTCalc = new MOTAnalysisThreadWoker(calcInput);
 	QThread* thread = new QThread;

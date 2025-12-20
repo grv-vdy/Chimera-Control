@@ -50,6 +50,10 @@ SyntaxHighlighter::SyntaxHighlighter (ScriptableDevice device, QTextDocument* pa
 		addRules({ "{", "}" }, QColor(181, 137, 0), true, true);
 		addRules({ "dac0","dac1","dac2","dac3" }, QColor(153, 115, 0), true, false);
 	}
+	else if (device == ScriptableDevice::DDS) {
+		addRules({ "tone", "ramp", "off" }, QColor(108, 113, 196), true, true);
+		addRules({ "#" }, QColor(100, 100, 100), true, false);
+	}
 
 	QTextCharFormat singleLineCommentFormat;
 	singleLineCommentFormat.setForeground (QColor (101, 115, 126));

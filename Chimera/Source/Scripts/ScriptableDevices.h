@@ -3,5 +3,6 @@
 enum class ScriptableDevice {
 	ArbGen,
 	Master,
-	GMoog
+	GMoog,
+	DDS
 };

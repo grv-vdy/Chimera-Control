@@ -23,7 +23,7 @@
 /**
  * The signature of the FPGA bitfile.
  */
-static const char* const NiFpga_chimerasequencer_Signature = "1D353E5E9D4CE64C77642F1DFD62414E";
+static const char* const NiFpga_chimerasequencer_Signature = "EBC7D4AEF42AF08113B54F3F3FE68CF2";
 
 #if NiFpga_Cpp
 extern "C"
@@ -56,8 +56,9 @@ typedef enum
 typedef enum
 {
    NiFpga_chimerasequencer_ControlBool_reset = 0x18012,
-   NiFpga_chimerasequencer_ControlBool_start_copy_to_ram = 0x18032,
-   NiFpga_chimerasequencer_ControlBool_trigger_i = 0x18036
+   NiFpga_chimerasequencer_ControlBool_skip_program = 0x1803A,
+   NiFpga_chimerasequencer_ControlBool_start_copy_to_ram = 0x18036,
+   NiFpga_chimerasequencer_ControlBool_trigger_i = 0x18032
 } NiFpga_chimerasequencer_ControlBool;
 
 typedef enum

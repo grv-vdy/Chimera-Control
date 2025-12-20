@@ -2,6 +2,7 @@
 
 #include "ParameterSystem/ParameterSystemStructures.h"
 //#include "ExperimentMonitoringAndStatus/statusMsg.h"
+#include "ExperimentMonitoringAndStatus/statusMsg.h"
 #include <string>
 #include <vector>
 #include <qobject.h>

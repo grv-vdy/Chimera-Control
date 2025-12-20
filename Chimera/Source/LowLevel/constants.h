@@ -98,9 +98,15 @@
 	const std::string AI_SOCKET_ADDRESS = "10.10.0.10";
 	const std::string AI_SOCKET_PORT = "80";
 
+	//Wieserlabs DDS
+	const bool WIESERLABS_SAFEMODE = false;
+	const std::string WIESERLABS_IPADDRESS = "192.168.105.5";
+	const int WIESERLABS_IPPORT = 26000;
+	const std::array<bool, 6> SLOT_CONNECTED = { true, false, false, false, false, false };
+
 	//Mako camera
 	const unsigned MAKO_NUMBER = 4;
-	const std::array<bool, MAKO_NUMBER> MAKO_SAFEMODE = { false,false,true,true};
+	const std::array<bool, MAKO_NUMBER> MAKO_SAFEMODE = { true,true,true,true};
 	const std::array<std::string, MAKO_NUMBER> MAKO_DELIMS = { "MAKO1_CAM"/*MOT G125*/, "MAKO2_CAM"/*MOT G319*/, "MAKO3_CAM"/*420 MON*/, "MAKO4_CAM"/*1013 MON*/};
 	const std::array<std::string, MAKO_NUMBER> MAKO_IPADDRS = { "192.168.105.2", "192.168.105.6","10.10.0.12","10.10.0.11" };
 	const std::vector<std::pair<unsigned, unsigned>> MAKO_TRIGGER_LINE
@@ -108,14 +114,14 @@
 	/*the first is the label on the box minus 1, has minus'd 1 explicitly and this is not used in the code, just a reminder*/
 
 	//GIGAMOOG
-	const bool GIGAMOOG_SAFEMODE = true;
+	const bool GIGAMOOG_SAFEMODE = false;
 	const std::string GIGAMOOG_IPADDRESS = "192.168.7.179";
 	const int GIGAMOOG_IPPORT = 804;
 	//const std::string GIGAMOOG_PORT = "COM5";
 	//const int GIGAMOOG_BAUDRATE = 115200;
 	const double GM_TRIGGER_TIME = 0.0005; //in ms i.e. 0.5us
 	const std::vector<std::pair<unsigned, unsigned>> GM_TRIGGER_LINE
-		= { std::make_pair(8 - 1,0),std::make_pair(8 - 1,1) }; //load and move
+		= { std::make_pair(1 - 1,7),std::make_pair(8 - 1,1) }; //load and move
 	/*the first is the label on the box minus 1, has minus'd 1 explicitly and this is not used in the code, just a reminder*/
 
 	//Microwave Windfreak
@@ -134,7 +140,7 @@
 	const std::string STATICAO_IPADDRESS = "192.168.7.165";
 	const int STATICAO_IPPORT = 804;
 
-	//static DDS
+	//static PLL
 	const unsigned int STATICDDS_NUMBER = 3; // Set to the number of StaticDDS systems you want
 	const bool STATICDDS_SAFEMODE = false;
 	const std::array<std::string, STATICDDS_NUMBER> STATICDDS_PORT = {"COM4", "COM5", "COM6" };

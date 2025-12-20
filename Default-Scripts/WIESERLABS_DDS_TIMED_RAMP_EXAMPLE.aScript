@@ -1,0 +1,27 @@
+// Example Wieserlabs DDS script with timed ramp execution
+//
+// This script demonstrates the new timing control for DDS commands.
+// Commands can now include an optional delay:X parameter (in seconds) that
+// specifies when the command should execute relative to the start of the script.
+//
+// Syntax for commands:
+//   tone channel frequency amplitude [phase] [delay:X]
+//   ramp channel start_freq end_freq amplitude duration [phase] [delay:X]
+//   off channel [delay:X]
+//
+// All frequencies are in MHz, amplitude is 0.0-1.0, phase is in degrees.
+// Delays are in seconds.
+
+// Example 1: Single tone on channel 0, executed immediately (no delay)
+tone 0 80 0.5 0
+
+// Example 2: Frequency ramp on channel 1 starting after 0.5 seconds
+// Ramps from 100 MHz to 150 MHz over 1.0 second with 0.7 amplitude
+ramp 1 100 150 0.7 1.0 0 delay:0.5
+
+// Example 3: Another tone with delay
+// Turns on 120 MHz on channel 0 after 2 seconds
+tone 0 120 0.6 0 delay:2.0
+
+// Example 4: Turn off channel 1 after the ramp completes (1.5 second total: 0.5 sec delay + 1.0 sec ramp)
+off 1 delay:1.5

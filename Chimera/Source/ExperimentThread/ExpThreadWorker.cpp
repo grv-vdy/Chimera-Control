@@ -1208,8 +1208,13 @@ void ExpThreadWorker::startRep (unsigned repInc, unsigned variationInc, bool ski
 		//input->ao.writeDacs(variationInc, skip);
 		
 		//AO and TTL
-		input->ttls.writeTtlAoDataToFPGA(variationInc, skip, input->ao);
-		
+		if (repInc == 0) {
+			input->ttls.writeTtlAoDataToFPGA(variationInc, skip, input->ao, true);
+		}
+		else {
+			input->ttls.writeTtlAoDataToFPGA(variationInc, skip, input->ao, false);
+		}
+
 		//emit notification("0.1: " + qstr(timer.elapsed()) + "\t");
 		// Sleep(50); /// have to sleep for this amount of time to make TCP connect smoothly?????? zzp 2021/06/04 very annoying
 		// input->zynqExp.sendCommand("trigger");

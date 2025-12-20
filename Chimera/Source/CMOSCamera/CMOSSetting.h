@@ -94,6 +94,7 @@ struct MakoSettings {
 	double frameRate;
 	imageParameters dims; // mako do not do binning
 	unsigned picsPerRep;
+	unsigned analyzeImageIndex = 1; // 0-based: 0 means analyze first image raw; >0 means subtract image 0 and analyze this index
 	unsigned repsPerVar;
 	bool repFirst;
 	unsigned variations;

@@ -20,4 +20,8 @@ struct MOTThreadInput {
 	// this tells the plotter to immediately stop.
 	//std::atomic<bool>* aborting = nullptr;
 	MakoSettings camSet;
+
+	// which image to analyze when multiple images are captured per repetition.
+	// semantics: 0 -> analyze first image raw (no subtraction). >0 -> subtract image 0 and analyze this index.
+	unsigned analyzeImageIndex = 1;
 };

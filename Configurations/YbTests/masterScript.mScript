@@ -4,7 +4,7 @@ t = 1
 dac: blue3dmot 1.550
 %dac: pushbeam 1
 dac: blue2dmot 1.8300
-dac: greenmot 0.1582
+dac: greenmot greenmotpower
 dac: greenpushbeam greenpushpower
 
 on: greenmot
@@ -16,7 +16,7 @@ off: blue3dmot
 t += 10
 on: pushbeam
 
-t += 3000
+t += greenmotloadtime
 
 off: pushbeam
 on: blue3dmot
@@ -36,5 +36,5 @@ t += 2
 off: pixis_trg
 t += 5
 
-t += (100 - wait_time)
+t += 100
 

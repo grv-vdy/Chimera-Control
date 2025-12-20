@@ -49,6 +49,10 @@ void Script::initialize(IChimeraQtWindow* parent, std::string deviceTypeInput, s
 		devenum = ScriptableDevice::GMoog;
 		extension = str(".") + GMOOG_SCRIPT_EXTENSION;
 	}
+	else if (deviceTypeInput == "Wieserlabs DDS") {
+		devenum = ScriptableDevice::DDS;
+		extension = str(".") + DDS_SCRIPT_EXTENSION;
+	}
 	else {
 		thrower (": Device input type not recognized during construction of script control.  (A low level bug, "
 			"this shouldn't happen)");
@@ -506,6 +510,11 @@ void Script::openParentScript(std::string parentScriptFileAndPath, std::string c
 	else if (deviceType == "GMoog") {
 		if (extStr != str(".") + GMOOG_SCRIPT_EXTENSION) {
 			thrower("Attempted to open non-gigamoog script from gmoog script control!");
+		}
+	}
+	else if (deviceType == "DDS") {
+		if (extStr != str(".") + DDS_SCRIPT_EXTENSION) {
+			thrower("Attempted to open non-dds script from dds script control!");
 		}
 	}
 	else{

@@ -95,6 +95,14 @@ void RIO::untrigger() {
     }
 }
 
+void RIO::set_reprogram(int reprogram) {
+   NiFpga_Status status;
+    status = NiFpga_WriteBool(session, NiFpga_chimerasequencer_ControlBool_skip_program, reprogram);
+	if (status != NiFpga_Status_Success) {
+        throw std::runtime_error("Failed to trigger FPGA");
+    }
+}
+
 void RIO::reset() {
     NiFpga_Abort(session);
     NiFpga_Run(session, 0);

@@ -24,6 +24,7 @@ public:
     int clearFifo();
 	void untrigger();
     void reset();
+    void set_reprogram(int reprogram);
     void waitForMemLoaded();
     void waitForFinish();
 

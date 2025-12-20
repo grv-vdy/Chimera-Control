@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <qmetatype.h>
 
 #define GLOBAL_PARAMETER_SCOPE "global"
 #define PARENT_PARAMETER_SCOPE "parent"

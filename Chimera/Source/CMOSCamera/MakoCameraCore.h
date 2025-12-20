@@ -56,6 +56,8 @@ public:
 
 	void setPicsPerRep(int picsperrep);
 
+	void setAnalyzeImageIndex(int idx);
+
 	//void setCurrentRepVarNumber(size_t rep, size_t var);
 	std::pair<size_t, size_t> getCurrentRepVarNumber(unsigned int currentPicNumber);
 

@@ -132,7 +132,18 @@ void ConfigSystem::initializeAtDelim ( ConfigStream& configStream, std::string d
 
 
 void ConfigSystem::jumpToDelimiter ( ConfigStream& configStream, std::string delimiter ){
-	auto startPos = configStream.str().find(delimiter);
+	// Search for delimiter in the raw file content (case-insensitive)
+	std::string hay = configStream.str();
+	std::string needle = delimiter;
+	
+	// Case-insensitive search
+	auto caseInsensitiveFind = [](const std::string& haystack, const std::string& needle) {
+		auto it = std::search(haystack.begin(), haystack.end(), needle.begin(), needle.end(),
+			[](char a, char b) { return std::tolower(a) == std::tolower(b); });
+		return it == haystack.end() ? std::string::npos : std::distance(haystack.begin(), it);
+	};
+	
+	auto startPos = caseInsensitiveFind(hay, needle);
 	if (std::string::npos == startPos) {
 		// reached end of file.
 		thrower("Failed to jump to a delimiter! Delimiter was: " + delimiter + ".");
@@ -162,6 +173,8 @@ void ConfigSystem::jumpToDelimiter ( ConfigStream& configStream, std::string del
 void ConfigSystem::checkDelimiterLine(ConfigStream& openFile, std::string delimiter){
 	std::string checkStr;
 	openFile >> checkStr;
+	std::transform(delimiter.begin(), delimiter.end(), delimiter.begin(), ::tolower);
+	std::transform(checkStr.begin(), checkStr.end(), checkStr.begin(), ::tolower);
 	if (checkStr != delimiter){
 		thrower ("ERROR: Expected \"" + delimiter + "\" in configuration file, but instead found \"" + checkStr + "\"");
 	}

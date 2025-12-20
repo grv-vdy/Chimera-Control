@@ -5,6 +5,7 @@
 #include "ArbGenChannelMode.h"
 #include "ArbGenSettings.h"
 #include "ParameterSystem/Expression.h"
+#include "WieserlabsDDS/WieserlabsDDSStructures.h"
 #include <string>
 #include <array>
 
@@ -72,5 +73,6 @@ struct deviceOutputInfo{
 	// first ([0]) is channel 1, second ([1]) is channel 2.
 	std::array<channelInfo, 2> channel;
 	bool synced = false;
+	std::vector<wieserlabsDdsChannel> snapshot;
 };
 

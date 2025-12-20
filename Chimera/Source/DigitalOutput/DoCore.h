@@ -73,7 +73,8 @@ public:
 
     void formatForFPGA(UINT variation);
     void writeTtlDataToFPGA(UINT variation, bool loadSkip);
-    void writeTtlAoDataToFPGA(UINT variation, bool loadSkip, AoCore& aoSys);
+    void writeTtlAoDataToFPGA(UINT variation, bool loadSkip, AoCore& aoSys, bool reprogram);
+    void triggerTtlAo(UINT variation, bool loadSkip, AoCore& aoSys);
     void FPGAForceOutput(DOStatus status);
     void FPGAForcePulse(DOStatus status, std::vector<std::pair<unsigned, unsigned>> rowcol, double dur);
 

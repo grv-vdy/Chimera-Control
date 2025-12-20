@@ -186,6 +186,22 @@ void IChimeraQtWindow::initializeMenu (){
 
 	///
 	scriptsM->addSeparator();
+	auto dds = scriptsM->addMenu("Wieserlabs DDS Script");
+	auto* newddsSc = new QAction("Ne&w Wieserlabs DDS Script", this);
+	connect(newddsSc, &QAction::triggered, [this]() {scriptWin->newWieserlabsDDSScript(); });
+	dds->addAction(newddsSc);
+	auto* openddsSc = new QAction("Op&en Wieserlabs DDS Script", this);
+	connect(openddsSc, &QAction::triggered, [this]() {scriptWin->openWieserlabsDDSScript(scriptWin); });
+	dds->addAction(openddsSc);
+	auto* saveddsSc = new QAction("&Save Wieserlabs DDS Script", this);
+	connect(saveddsSc, &QAction::triggered, [this]() {scriptWin->saveWieserlabsDDSScript(); });
+	dds->addAction(saveddsSc);
+	auto* saveddsScAs = new QAction("Save Wieserlabs DDS Script &As", this);
+	connect(saveddsScAs, &QAction::triggered, [this]() {scriptWin->saveWieserlabsDDSScriptAs(scriptWin); });
+	dds->addAction(saveddsScAs);
+
+	///
+	scriptsM->addSeparator();
 	auto gmg = scriptsM->addMenu("GMOOG Script");
 	auto* newgmoogSc = new QAction("Ne&w GMOOG Script", this);
 	connect(newgmoogSc, &QAction::triggered, [this]() {scriptWin->newGMoogScript(); });

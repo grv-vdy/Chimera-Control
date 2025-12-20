@@ -645,6 +645,12 @@ void MakoCameraCore::setPicsPerRep(int picsperrep)
     makoCtrl.setPicsPerRep(picsperrep);
 }
 
+void MakoCameraCore::setAnalyzeImageIndex(int idx)
+{
+    runSettings.analyzeImageIndex = idx;
+    expRunSettings.analyzeImageIndex = idx;
+}
+
 //void MakoCameraCore::setCurrentRepVarNumber(size_t rep, size_t var)
 //{
 //    currentRepNumber = rep;

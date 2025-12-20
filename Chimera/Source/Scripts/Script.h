@@ -33,9 +33,10 @@ class Script : public IChimeraSystem
 		widgetHeigthMax = 100000
 	};
 	public:
-		static constexpr auto MASTER_SCRIPT_EXTENSION = "mScript";
-		static constexpr auto ARBGEN_SCRIPT_EXTENSION = "aScript";
-		static constexpr auto GMOOG_SCRIPT_EXTENSION = "gScript";
+	static constexpr auto MASTER_SCRIPT_EXTENSION = "mScript";
+	static constexpr auto ARBGEN_SCRIPT_EXTENSION = "aScript";
+	static constexpr auto GMOOG_SCRIPT_EXTENSION = "gScript";
+	static constexpr auto DDS_SCRIPT_EXTENSION = "ddsScript";
 		static constexpr auto FUNCTION_EXTENSION = "func";
 
 		Script(IChimeraQtWindow* parent);

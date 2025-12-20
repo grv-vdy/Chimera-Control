@@ -1,5 +1,6 @@
 #pragma once
 #include <qobject.h>
+#include <QVector>
 #include <map>
 #include <RealTimeMOTAnalysis/MOTThreadInput.h>
 #include <RealTimeMOTAnalysis/MOTAnalysisType.h>
@@ -32,12 +33,21 @@ private:
     //return mean, confident95 of mean, std, confident95 of std
     std::vector<double> fit1dGaussian(std::vector<double> Crx);
 
+    // perform analysis on a ready-to-analyze image (already background-subtracted if needed)
+    void analyzeAndStore(const QVector<double>& rawImg, const QVector<double>* background, int width, int height, size_t rep, size_t var);
+
 public:
 
 private:
     MOTThreadInput input;
     std::vector<std::vector<double>> currentImg;
     std::vector<double> xpts;
+
+    // background handling per variation
+    std::vector<QVector<double>> backgroundImage;
+    std::vector<bool> hasBackground;
+    std::vector<unsigned> imagesSeenThisRep;
+    std::vector<size_t> lastRepForVar;
 
     //std::map<size_t, size_t> resultOrder; // first is the result order, second is 0,1,2,...
     // the vector index is the variation list: var0, var1, var2, ... in the ascending order, not affected by the randomize variation option

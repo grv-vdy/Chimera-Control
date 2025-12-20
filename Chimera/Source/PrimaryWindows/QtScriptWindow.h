@@ -7,6 +7,7 @@
 #include "ArbGen/ArbGenSystem.h"
 #include <ArbGen/whichAg.h>
 #include <GigaMOOG/GigaMoogSystem.h>
+#include "WieserlabsDDS/WieserlabsDDSSystem.h"
 #include "ConfigurationSystems/profileSettings.h"
 #include "ExperimentThread/ExperimentThreadInput.h"
 #include "IChimeraQtWindow.h"
@@ -15,6 +16,7 @@
 template <typename type> struct scriptInfo{
 	type master;
 	type gmoog;
+	type wieserlabsDds;
 };
 
 namespace Ui {
@@ -73,6 +75,12 @@ class QtScriptWindow : public IChimeraQtWindow{
 		void saveGMoogScript();
 		void saveGMoogScriptAs(IChimeraQtWindow* parent);
 
+		void newWieserlabsDDSScript();
+		void openWieserlabsDDSScript(IChimeraQtWindow* parent);
+		void openWieserlabsDDSScript(std::string name);
+		void saveWieserlabsDDSScript();
+		void saveWieserlabsDDSScriptAs(IChimeraQtWindow* parent);
+
 		void saveAllScript();
 
 		void updateConfigurationSavedStatus (bool status);
@@ -95,6 +103,7 @@ class QtScriptWindow : public IChimeraQtWindow{
 
 		std::array<ArbGenSystem, numArbGen> arbGens;
 		GigaMoogSystem gigaMoog;
+		WieserlabsDDSSystem wieserlabsDds;
 
 	public Q_SLOTS:
 		void updateVarNames ();

@@ -9,12 +9,15 @@
 #include <PrimaryWindows/QtMainWindow.h>
 #include <ExcessDialogs/saveWithExplorer.h>
 #include <ExcessDialogs/openWithExplorer.h>
+#include "WieserlabsDDS/WieserlabsDDSSystem.h"
+#include "WieserlabsDDS/WieserlabsDDSSettings.h"
 
 QtScriptWindow::QtScriptWindow(QWidget* parent) : IChimeraQtWindow(parent)
 	, masterScript(this)
 	, arbGens{ {ArbGenSystem(UWAVE_SIGLENT_SETTINGS, ArbGenType::Siglent, this),
 		ArbGenSystem(UWAVE_AGILENT_SETTINGS, ArbGenType::Agilent, this) } }
 	, gigaMoog(this)
+	, wieserlabsDds(WIESERLABS_DDS_SETTINGS, this)
 {
 	setWindowTitle ("Script Window");
 }
@@ -32,7 +35,7 @@ void QtScriptWindow::initializeWidgets (){
 		arbGens[(int)name].initialize(arbGens[(int)name].initSettings.deviceName, this);
 	}
 
-	
+	wieserlabsDds.initialize("Wieserlabs DDS", this);
 
 	masterScript.initialize(this, "Master", "Master Script");
 	gigaMoog.initialize(this);
@@ -40,7 +43,7 @@ void QtScriptWindow::initializeWidgets (){
 	QVBoxLayout* layout1 = new QVBoxLayout(this);
 	layout1->setContentsMargins(0, 0, 0, 0);
 	layout1->addWidget(&arbGens[0], 1);
-	layout1->addWidget(&arbGens[1], 1);
+	layout1->addWidget(&wieserlabsDds, 1);
 	layout->addLayout(layout1, 1);
 	layout->addWidget(&gigaMoog, 1);
 	layout->addWidget(&masterScript, 1);
@@ -73,6 +76,10 @@ void QtScriptWindow::updateVarNames() {
 		arbGens[(int)name].arbGenScript.highlighter->setLocalParams(arbGens[(int)name].arbGenScript.getLocalParams());
 		arbGens[(int)name].arbGenScript.highlighter->rehighlight();
 	}
+
+	wieserlabsDds.wieserlabsDdsScript->highlighter->setOtherParams(params);
+	wieserlabsDds.wieserlabsDdsScript->highlighter->setLocalParams(wieserlabsDds.wieserlabsDdsScript->getLocalParams());
+	wieserlabsDds.wieserlabsDdsScript->highlighter->rehighlight();
 }
 
 void QtScriptWindow::updateDoAoDdsNames () {
@@ -95,6 +102,10 @@ void QtScriptWindow::updateDoAoDdsNames () {
 		arbGens[(int)name].arbGenScript.highlighter->rehighlight();
 	}
 
+	wieserlabsDds.wieserlabsDdsScript->highlighter->setTtlNames(doNames);
+	wieserlabsDds.wieserlabsDdsScript->highlighter->setDacNames(aoNames);
+	wieserlabsDds.wieserlabsDdsScript->highlighter->setCalNames(calNames);
+	wieserlabsDds.wieserlabsDdsScript->highlighter->rehighlight();
 }
 
 
@@ -114,7 +125,7 @@ void QtScriptWindow::checkScriptSaves (){
 	for (auto name : ArbGenEnum::allAgs) {
 		arbGens[(int)name].checkSave(getProfile().configLocation, mainWin->getRunInfo());
 	}
-	//intensityAgilent.checkSave(getProfile().configLocation, mainWin->getRunInfo());
+	wieserlabsDds.checkSave(getProfile().configLocation, mainWin->getRunInfo());
 }
 
 std::string QtScriptWindow::getSystemStatusString (){
@@ -141,6 +152,15 @@ std::string QtScriptWindow::getSystemStatusString (){
 	else {
 		status += "\tGIGAMOOG System is disabled! Enable in \"constants.h\" \n";
 	}
+	status += "WIESERLABS DDS:\n\t";
+	if (!WIESERLABS_SAFEMODE) {
+		status += str("WIESERLABS DDS System is Active at " + WIESERLABS_IPADDRESS + " and port," + str(WIESERLABS_IPPORT) + "\n\t");
+		std::string slotStr = "Connected: " + std::string(wieserlabsDds.getCore().connected() ? "Yes" : "No") + "\n";
+		status += slotStr;
+	}
+	else {
+		status += "\tWIESERLABS DDS System is disabled! Enable in \"constants.h\" \n";
+	}
 	return status;
 }
 
@@ -151,7 +171,7 @@ scriptInfo<std::string> QtScriptWindow::getScriptNames (){
 	scriptInfo<std::string> names;
 	names.master = masterScript.getScriptName ();
 	names.gmoog = gigaMoog.gmoogScript.getScriptName();
-	//names.intensityAgilent = intensityAgilent.arbGenScript.getScriptName();
+	names.wieserlabsDds = wieserlabsDds.wieserlabsDdsScript->getScriptName();
 	return names;
 }
 
@@ -160,9 +180,9 @@ scriptInfo<std::string> QtScriptWindow::getScriptNames (){
 */
 scriptInfo<bool> QtScriptWindow::getScriptSavedStatuses (){
 	scriptInfo<bool> status;
-	//status.intensityAgilent = intensityAgilent.arbGenScript.savedStatus();
 	status.master = masterScript.savedStatus ();
 	status.gmoog = gigaMoog.gmoogScript.savedStatus();
+	status.wieserlabsDds = wieserlabsDds.wieserlabsDdsScript->savedStatus();
 	return status;
 }
 
@@ -171,9 +191,9 @@ scriptInfo<bool> QtScriptWindow::getScriptSavedStatuses (){
 */
 scriptInfo<std::string> QtScriptWindow::getScriptAddresses (){
 	scriptInfo<std::string> addresses;
-	//addresses.intensityAgilent = intensityAgilent.arbGenScript.getScriptPathAndName();
 	addresses.master = masterScript.getScriptPathAndName ();
 	addresses.gmoog = gigaMoog.gmoogScript.getScriptPathAndName();
+	addresses.wieserlabsDds = wieserlabsDds.wieserlabsDdsScript->getScriptPathAndName();
 	return addresses;
 }
 
@@ -319,6 +339,16 @@ void QtScriptWindow::windowOpenConfig (ConfigStream& configFile){
 			arbGens[(int)name].updateSettingsDisplay(getProfileSettings().configLocation, mainWin->getRunInfo());
 		}
 
+		deviceOutputInfo ddsInfo;
+		try {
+			ConfigSystem::stdGetFromConfig(configFile, wieserlabsDds.getCore(), ddsInfo, Version("1.0"));
+			wieserlabsDds.setOutputSettings(ddsInfo);
+			wieserlabsDds.updateSettingsDisplay(getProfileSettings().configLocation, mainWin->getRunInfo());
+		}
+		catch (ChimeraError& err) {
+			// DDS config not present in file, skip loading
+			reportErr("DDS config load skipped: " + err.qtrace());
+		}
 
 		considerScriptLocations();
 	}
@@ -460,6 +490,57 @@ void QtScriptWindow::saveGMoogScriptAs(IChimeraQtWindow* parent)
 	gigaMoog.gmoogScript.updateScriptNameText(getProfile().configLocation);
 }
 
+void QtScriptWindow::newWieserlabsDDSScript()
+{
+	try {
+		wieserlabsDds.wieserlabsDdsScript->checkSave(getProfile().configLocation, mainWin->getRunInfo());
+		wieserlabsDds.wieserlabsDdsScript->newScript();
+		updateConfigurationSavedStatus(false);
+		wieserlabsDds.wieserlabsDdsScript->updateScriptNameText(getProfile().configLocation);
+	}
+	catch (ChimeraError& err) {
+		reportErr(err.qtrace());
+	}
+}
+
+void QtScriptWindow::openWieserlabsDDSScript(IChimeraQtWindow* parent)
+{
+	try {
+		wieserlabsDds.wieserlabsDdsScript->checkSave(getProfile().configLocation, mainWin->getRunInfo());
+		std::string openName = openWithExplorer(parent, Script::DDS_SCRIPT_EXTENSION, CONFIGURATION_PATH);
+		wieserlabsDds.wieserlabsDdsScript->openParentScript(openName, getProfile().configLocation, mainWin->getRunInfo());
+		updateConfigurationSavedStatus(false);
+		wieserlabsDds.wieserlabsDdsScript->updateScriptNameText(getProfile().configLocation);
+	}
+	catch (ChimeraError& err) {
+		reportErr("Open Wieserlabs DDS Script Failed: " + err.qtrace() + "\r\n");
+	}
+}
+
+void QtScriptWindow::openWieserlabsDDSScript(std::string name)
+{
+	wieserlabsDds.wieserlabsDdsScript->openParentScript(name, getProfile().configLocation, mainWin->getRunInfo());
+}
+
+void QtScriptWindow::saveWieserlabsDDSScript()
+{
+	wieserlabsDds.wieserlabsDdsScript->saveScript(getProfile().configLocation, mainWin->getRunInfo());
+	wieserlabsDds.wieserlabsDdsScript->updateScriptNameText(getProfile().configLocation);
+}
+
+void QtScriptWindow::saveWieserlabsDDSScriptAs(IChimeraQtWindow* parent)
+{
+	std::string extensionNoPeriod = wieserlabsDds.wieserlabsDdsScript->getExtension();
+	if (extensionNoPeriod.size() == 0) {
+		return;
+	}
+	extensionNoPeriod = extensionNoPeriod.substr(1, extensionNoPeriod.size());
+	std::string newScriptAddress = saveWithExplorer(parent, extensionNoPeriod, getProfileSettings());
+	wieserlabsDds.wieserlabsDdsScript->saveScriptAs(newScriptAddress, mainWin->getRunInfo());
+	updateConfigurationSavedStatus(false);
+	wieserlabsDds.wieserlabsDdsScript->updateScriptNameText(getProfile().configLocation);
+}
+
 void QtScriptWindow::saveAllScript()
 {
 	saveMasterScript();
@@ -467,6 +548,7 @@ void QtScriptWindow::saveAllScript()
 	for (auto name : ArbGenEnum::allAgs) {
 		saveArbGenScript(name);
 	}
+	saveWieserlabsDDSScript();
 }
 
 void QtScriptWindow::windowSaveConfig (ConfigStream& saveFile){
@@ -480,11 +562,13 @@ void QtScriptWindow::windowSaveConfig (ConfigStream& saveFile){
 	for (auto name : ArbGenEnum::allAgs) {
 		arbGens[(int)name].handleSavingConfig(saveFile, getProfileSettings().configLocation, mainWin->getRunInfo());
 	}
+	wieserlabsDds.handleSavingConfig(saveFile, getProfileSettings().configLocation, mainWin->getRunInfo());
 }
 
 void QtScriptWindow::checkMasterSave (){
 	masterScript.checkSave (getProfile ().configLocation, mainWin->getRunInfo());
 	gigaMoog.gmoogScript.checkSave(getProfile().configLocation, mainWin->getRunInfo());
+	wieserlabsDds.wieserlabsDdsScript->checkSave(getProfile().configLocation, mainWin->getRunInfo());
 }
 
 void QtScriptWindow::considerScriptLocations() {

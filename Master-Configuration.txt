@@ -5,13 +5,13 @@ blue3dmot
 1
 mako1
 1
-broken
+greennarrow
 1
 greenmot
 1
 pixis_trg
 1
-xyzmotshutter
+blueimg
 1
 prbshutter
 1
@@ -143,8 +143,8 @@ dipolepushamp
 0 - 7.3
 0
 dac0_3
-prbamp
--9.9 - 10
+blueimg
+0 - 2
 0
 dac0_4
 blue3dmot
