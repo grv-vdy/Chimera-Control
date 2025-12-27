@@ -512,7 +512,7 @@ void Script::openParentScript(std::string parentScriptFileAndPath, std::string c
 			thrower("Attempted to open non-gigamoog script from gmoog script control!");
 		}
 	}
-	else if (deviceType == "DDS") {
+	else if (deviceType == "Wieserlabs DDS") {
 		if (extStr != str(".") + DDS_SCRIPT_EXTENSION) {
 			thrower("Attempted to open non-dds script from dds script control!");
 		}
@@ -562,11 +562,15 @@ void Script::loadFile(std::string pathToFile, std::ios::openmode flags)
 	}
 	std::string tempLine;
 	std::string fileText;
+	int lineCount = 0;
 	while (std::getline(openFile, tempLine)){
 		cleanString(tempLine);
 		fileText += tempLine;
+		lineCount++;
 	}
 	// put the default into the new control.
+	qDebug() << "Script::loadFile: Loaded" << lineCount << "lines from" << QString::fromStdString(pathToFile);
+	qDebug() << "Script::loadFile: Total file text length:" << fileText.length();
 	edit->setText(cstr(fileText));
 	openFile.close();
 	emit notification (qstr("Finished loading " + deviceType + " file\n"),1);

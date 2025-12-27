@@ -150,7 +150,22 @@ void WeiserlabsDDSSystem::updateSavedStatus(bool isSaved)
 
 void WeiserlabsDDSSystem::handleSavingConfig(ConfigStream& saveFile, std::string configPath, RunInfo info)
 {
-	// Save configuration
+	saveFile << core.getDelim() << "\n";
+	
+	// Save channel settings - format must match getSettingsFromConfig
+	auto channelInfo = getOutputInfo();
+	for (unsigned chan = 0; chan < channelInfo.snapshot.size(); chan++) {
+		saveFile << "CHANNEL_" << (chan + 1);
+		saveFile << "\n/*On:*/\t\t\t\t\t\t" << channelInfo.snapshot[chan].on;
+		saveFile << "\n/*Frequency (MHz):*/\t\t\t" << channelInfo.snapshot[chan].frequency;
+		saveFile << "\n/*Amplitude (0-1):*/\t\t\t" << channelInfo.snapshot[chan].amplitude;
+		saveFile << "\n/*Phase (deg):*/\t\t\t\t" << channelInfo.snapshot[chan].phase;
+	}
+	
+	// Save script address for future auto-loading
+	saveFile << "\n/*Script Address:*/\t\t\t" << wieserlabsDdsScript->getScriptPathAndName(configPath, info);
+	
+	saveFile << "\nEND_" << core.getDelim() << "\n";
 }
 
 std::string WeiserlabsDDSSystem::getDeviceIdentity()
@@ -158,9 +173,10 @@ std::string WeiserlabsDDSSystem::getDeviceIdentity()
 	return core.getDeviceIdentity();
 }
 
-void WeiserlabsDDSSystem::handleOpenConfig(ConfigStream& file)
+void WeiserlabsDDSSystem::handleOpenConfig(deviceOutputInfo settings)
 {
-	// Load configuration
+	// Settings are applied via setOutputSettings in QtScriptWindow
+	// This method can be used for additional processing if needed
 }
 
 void WeiserlabsDDSSystem::updateSettingsDisplay(int chan, std::string configPath, RunInfo currentRunInfo)

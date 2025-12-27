@@ -32,10 +32,9 @@ class QtScriptWindow : public IChimeraQtWindow{
 		void initializeWidgets ();
 
 		void fillExpDeviceList (DeviceList& list);
-		void fillMasterThreadInput(ExperimentThreadInput* input) override {};
-		void checkScriptSaves ();
-
-		scriptInfo<std::string> getScriptNames ();
+	void fillMasterThreadInput(ExperimentThreadInput* input) override;
+		void checkScriptSaves();
+		scriptInfo<std::string> getScriptNames();
 		scriptInfo<bool> getScriptSavedStatuses ();
 		scriptInfo<std::string> getScriptAddresses ();
 

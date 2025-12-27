@@ -13,9 +13,10 @@ struct InfluxDataUnitType
 {
 	enum class mode {
 		K,
+		C,
 		mBar,
 		Torr
 	};
-	static const std::array<InfluxDataUnitType::mode, 3> allModes;
+	static const std::array<InfluxDataUnitType::mode, 4> allModes;
 };
 

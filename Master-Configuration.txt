@@ -15,9 +15,9 @@ blueimg
 1
 prbshutter
 1
-test
+dds0
 1
-tarepshutter
+dds1
 1
 xymotshutter
 1

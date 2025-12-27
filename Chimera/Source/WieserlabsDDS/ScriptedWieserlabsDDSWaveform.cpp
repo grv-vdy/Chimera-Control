@@ -11,17 +11,23 @@ ScriptedWieserlabsDDSWaveform::ScriptedWieserlabsDDSWaveform()
 bool ScriptedWieserlabsDDSWaveform::analyzeWieserlabsDDSScriptCommand(ScriptStream& script, std::vector<parameterType>& params,
 	std::string& warnings)
 {
+	std::string line = script.getline();
+	if (line.empty()) {
+		return false;
+	}
+	
+	std::stringstream lineStream(line);
 	std::string command;
-	script >> command;
+	lineStream >> command;
 	boost::to_lower(command);
 
 	if (command == "tone") {
 		// Syntax: tone channel frequency amplitude [phase] [delay:X]
 		std::string channelStr, freqStr, ampStr, phaseStr = "0", delayStr = "";
-		script >> channelStr >> freqStr >> ampStr;
+		lineStream >> channelStr >> freqStr >> ampStr;
 		
 		std::string token;
-		while (script >> token) {
+		while (lineStream >> token) {
 			boost::to_lower(token);
 			if (token.find("delay:") == 0) {
 				delayStr = token;
@@ -40,7 +46,7 @@ bool ScriptedWieserlabsDDSWaveform::analyzeWieserlabsDDSScriptCommand(ScriptStre
 		
 		if (!delayStr.empty()) {
 			try {
-				cmdObj.delayMs = std::stod(delayStr.substr(6)) * 1000.0; // delay:X in seconds -> ms
+				cmdObj.delayMs = std::stod(delayStr.substr(6)); // delay:X in milliseconds
 			} catch (...) {
 				warnings += "Invalid delay format in tone command\n";
 			}
@@ -53,10 +59,10 @@ bool ScriptedWieserlabsDDSWaveform::analyzeWieserlabsDDSScriptCommand(ScriptStre
 	else if (command == "ramp") {
 		// Syntax: ramp channel start_freq end_freq amplitude duration [phase] [delay:X]
 		std::string channelStr, startFreqStr, endFreqStr, ampStr, durationStr, phaseStr = "0", delayStr = "";
-		script >> channelStr >> startFreqStr >> endFreqStr >> ampStr >> durationStr;
+		lineStream >> channelStr >> startFreqStr >> endFreqStr >> ampStr >> durationStr;
 		
 		std::string token;
-		while (script >> token) {
+		while (lineStream >> token) {
 			boost::to_lower(token);
 			if (token.find("delay:") == 0) {
 				delayStr = token;
@@ -77,7 +83,7 @@ bool ScriptedWieserlabsDDSWaveform::analyzeWieserlabsDDSScriptCommand(ScriptStre
 		
 		if (!delayStr.empty()) {
 			try {
-				cmdObj.delayMs = std::stod(delayStr.substr(6)) * 1000.0; // delay:X in seconds -> ms
+				cmdObj.delayMs = std::stod(delayStr.substr(6)); // delay:X in milliseconds
 			} catch (...) {
 				warnings += "Invalid delay format in ramp command\n";
 			}
@@ -91,10 +97,10 @@ bool ScriptedWieserlabsDDSWaveform::analyzeWieserlabsDDSScriptCommand(ScriptStre
 	else if (command == "off") {
 		// Syntax: off channel [delay:X]
 		std::string channelStr, delayStr = "";
-		script >> channelStr;
+		lineStream >> channelStr;
 		
 		std::string token;
-		if (script >> token) {
+		while (lineStream >> token) {
 			boost::to_lower(token);
 			if (token.find("delay:") == 0) {
 				delayStr = token;
@@ -108,7 +114,7 @@ bool ScriptedWieserlabsDDSWaveform::analyzeWieserlabsDDSScriptCommand(ScriptStre
 		
 		if (!delayStr.empty()) {
 			try {
-				cmdObj.delayMs = std::stod(delayStr.substr(6)) * 1000.0; // delay:X in seconds -> ms
+				cmdObj.delayMs = std::stod(delayStr.substr(6)); // delay:X in milliseconds
 			} catch (...) {
 				warnings += "Invalid delay format in off command\n";
 			}

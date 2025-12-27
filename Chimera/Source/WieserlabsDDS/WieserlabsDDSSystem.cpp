@@ -4,6 +4,8 @@
 #include "WieserlabsDDSSystem.h"
 #include "WieserlabsDDSStructures.h"
 #include "ConfigurationSystems/ConfigSystem.h"
+#include "Scripts/ScriptStream.h"
+#include "ParameterSystem/ParameterSystemStructures.h"
 #include "PrimaryWindows/IChimeraQtWindow.h"
 #include "ExcessDialogs/saveWithExplorer.h"
 #include "ExcessDialogs/openWithExplorer.h"
@@ -73,6 +75,7 @@ void WieserlabsDDSSystem::initialize(std::string headerText, IChimeraQtWindow* w
 	wieserlabsDdsScript = new Script(win);
 	wieserlabsDdsScript->initialize(win, "Wieserlabs DDS", "DDS");
 	layout->addWidget(wieserlabsDdsScript);
+	refreshScriptedWaveform();
 
 	connect(modeCombo, qOverload<int>(&CQComboBox::currentIndexChanged), this, &WieserlabsDDSSystem::handleModeCombo);
 
@@ -102,13 +105,14 @@ void WieserlabsDDSSystem::handleChannelPress(int chan, std::string configPath, R
 
 	try {
 		bool on = onButtons[chan]->isChecked();
-		double freq = freqEdits[chan]->text().toDouble() * 1e6; // Convert MHz to Hz
+		double freq = freqEdits[chan]->text().toDouble(); // Already in MHz
 		double amp = ampEdits[chan]->text().toDouble();
 		double phase = phaseEdits[chan]->text().toDouble();
 
 		if (on) {
-			core.programSingleToneNow(chan, freq, amp, phase);
-		}
+			core.programSingleToneNow(chan, freq, amp, phase);			// Update steady state so this becomes the new default after experiments
+			core.updateSteadyState(chan, freq, amp, phase, on);
+			qDebug() << "Programmed DDS ch" << chan << ":" << freq << "MHz," << amp << "amp," << phase << "deg";		}
 	}
 	catch (ChimeraError& err) {
 		QMessageBox::warning(this, "Wieserlabs DDS Error", QString::fromStdString(err.trace()));
@@ -119,6 +123,7 @@ void WieserlabsDDSSystem::handleModeCombo()
 {
 	bool scripting = (modeCombo->currentIndex() == 0);
 	wieserlabsDdsScript->setEnabled(scripting, false);
+	refreshScriptedWaveform();
 }
 
 void WieserlabsDDSSystem::readGuiSettings()
@@ -159,6 +164,8 @@ void WieserlabsDDSSystem::handleSavingConfig(ConfigStream& saveFile, std::string
 		saveFile << "\n/*Amplitude:*/\t\t\t\t" << ampEdits[chan]->text().toStdString();
 		saveFile << "\n/*Phase:*/\t\t\t\t\t" << phaseEdits[chan]->text().toStdString();
 	}
+	// Save script address for auto-loading on next config open
+	saveFile << "\n/*Script Address:*/\t\t\t" << wieserlabsDdsScript->getScriptPathAndName();
 	saveFile << "\nEND_" + core.getDelim() << "\n"; // ensure newline so next section starts cleanly
 }
 
@@ -172,7 +179,7 @@ void WieserlabsDDSSystem::handleOpenConfig(deviceOutputInfo settings)
 	// Set UI from settings
 	for (int chan = 0; chan < 2; chan++) {
 		onButtons[chan]->setChecked(settings.snapshot[chan].on);
-		freqEdits[chan]->setText(QString::number(settings.snapshot[chan].frequency / 1e6)); // Convert Hz to MHz
+		freqEdits[chan]->setText(QString::number(settings.snapshot[chan].frequency)); // Config stores MHz
 		ampEdits[chan]->setText(QString::number(settings.snapshot[chan].amplitude));
 		phaseEdits[chan]->setText(QString::number(settings.snapshot[chan].phase));
 	}
@@ -185,7 +192,7 @@ void WieserlabsDDSSystem::updateSettingsDisplay(int chan, std::string configPath
 	if (chan >= 0 && chan < 2) {
 		auto& channelInfo = currentGuiInfo.snapshot[chan];
 		onButtons[chan]->setChecked(channelInfo.on);
-		freqEdits[chan]->setText(QString::number(channelInfo.frequency / 1e6));
+		freqEdits[chan]->setText(QString::number(channelInfo.frequency)); // Config stores MHz
 		ampEdits[chan]->setText(QString::number(channelInfo.amplitude));
 		phaseEdits[chan]->setText(QString::number(channelInfo.phase));
 	}
@@ -196,6 +203,45 @@ void WieserlabsDDSSystem::updateSettingsDisplay(std::string configPath, RunInfo 
 	for (int chan = 1; chan <= 2; chan++) {
 		updateSettingsDisplay(chan, configPath, currentRunInfo);
 	}
+}
+
+void WieserlabsDDSSystem::refreshScriptedWaveform()
+{
+	if (!wieserlabsDdsScript) {
+		qDebug() << "WieserlabsDDS: No script object exists";
+		return;
+	}
+
+	if (!scriptingModeIsSelected()) {
+		qDebug() << "WieserlabsDDS: Not in scripting mode, clearing waveform";
+		scriptedWaveform = ScriptedWieserlabsDDSWaveform();
+		core.setScriptedWaveform(scriptedWaveform);
+		return;
+	}
+
+	std::string scriptText = wieserlabsDdsScript->getScriptText();
+	qDebug() << "WieserlabsDDS: Script text length:" << scriptText.length();
+	qDebug() << "WieserlabsDDS: Script text:" << QString::fromStdString(scriptText);
+
+	ScriptStream stream(scriptText);
+	ScriptedWieserlabsDDSWaveform parsedWaveform;
+	std::vector<parameterType> params; // no param expansion yet
+	std::string warnings;
+
+	while (stream.peek() != EOF) {
+		if (!parsedWaveform.analyzeWieserlabsDDSScriptCommand(stream, params, warnings)) {
+			break;
+		}
+	}
+
+	if (!warnings.empty()) {
+		qDebug() << "Wieserlabs DDS script warnings:\n" << QString::fromStdString(warnings);
+	}
+
+	qDebug() << "WieserlabsDDS: Parsed" << parsedWaveform.getCommandList().size() << "commands";
+
+	scriptedWaveform = parsedWaveform;
+	core.setScriptedWaveform(scriptedWaveform);
 }
 
 deviceOutputInfo WieserlabsDDSSystem::getOutputInfo()

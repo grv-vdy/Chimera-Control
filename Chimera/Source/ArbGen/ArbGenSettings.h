@@ -19,12 +19,13 @@ struct arbGenSettings {
 };
 
 
-// NOT IN USE AT THE MOMENT (Nov 27th, 2020)
+// NOTE: Agilent AWG is currently NOT USED - Commenting out
+/*
 const arbGenSettings UWAVE_AGILENT_SETTINGS = {
 	// safemode option											
 	UWAVE_SAFEMODE_AGI,
 	// usb/tcpip address
-	/*UWAVE_SIGLENT_ADDRESS*/UWAVE_AGILENT_ADDRESS,
+	UWAVE_AGILENT_ADDRESS,
 	// sample rate in hertz
 	1e6,
 	// Memory location, whether the device will save waveforms to 
@@ -46,6 +47,7 @@ const arbGenSettings UWAVE_AGILENT_SETTINGS = {
 	"output1:load INF", "output2:load INF", 
 	"SOURCE1:FUNC:ARB:FILTER Normal", "SOURCE2:FUNC:ARB:FILTER Normal" }
 };
+*/
 
 const arbGenSettings UWAVE_SIGLENT_SETTINGS = {
 	// safemode option											

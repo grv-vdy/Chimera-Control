@@ -472,7 +472,8 @@ void DataLogger::writeMakoPic(std::vector<double> image, int width, int height, 
 void DataLogger::writeTemperature(std::pair<std::vector<long long>, std::vector<double>> timedata, std::string identifier)
 {
 	if (fileIsOpen == false) {
-		thrower("Tried to write to h5 file (for temperature), but the file is closed!\r\n");
+		// File already closed - this can happen if temperature data arrives after experiment finishes
+		return;
 	}
 	try {
 		H5::Group temperature;
@@ -491,7 +492,7 @@ void DataLogger::writeTemperature(std::pair<std::vector<long long>, std::vector<
 			strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", localtime(&epoch));
 			return std::string(buffer); });
 		writeDataSet(timeStr, "Datetime", subtemp);
-		writeDataSet(timedata.second, "Temperature(K)", subtemp);
+		writeDataSet(timedata.second, "Temperature(C)", subtemp);
 		
 	}
 	catch (H5::Exception& err) {
@@ -504,7 +505,8 @@ void DataLogger::writeTemperature(std::pair<std::vector<long long>, std::vector<
 void DataLogger::writePressure(std::pair<std::vector<long long>, std::vector<double>> timedata, std::string identifier, InfluxDataUnitType::mode unit)
 {
 	if (fileIsOpen == false) {
-		thrower("Tried to write to h5 file (for pressure), but the file is closed!\r\n");
+		// File already closed - this can happen if pressure data arrives after experiment finishes
+		return;
 	}
 	try {
 		H5::Group temperature;

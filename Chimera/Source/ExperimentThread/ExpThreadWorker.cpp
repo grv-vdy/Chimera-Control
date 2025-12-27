@@ -4,6 +4,7 @@
 #include <MiscellaneousExperimentOptions/Repetitions.h>
 #include <Scripts/Script.h>
 #include <DataLogging/DataLogger.h>
+#include <WieserlabsDDS/WieserlabsDDSCore.h>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
@@ -101,6 +102,11 @@ void ExpThreadWorker::experimentThreadProcedure () {
 				for (const auto& repInc : range(expRuntime.repetitions)) {
 					inExpCalibrationRun(expRuntime);
 					emit notification(qstr("Starting Repetition #" + qstr(repInc) + "\n"), 2);
+					for (auto& device : input->devices.list) {
+						if (device.get().getDelim().find("DDS") != std::string::npos) {
+							deviceProgramVariation(device, expRuntime.expParams, variationInc);
+						}
+					}
 					handlePause(isPaused, isAborting);
 					startRep(repInc, variationInc, input->skipNext == nullptr ? false : input->skipNext->load());
 					waitForSequenceFinish(finaltimes[variationInc]);
@@ -719,6 +725,7 @@ bool ExpThreadWorker::handleAoCommands (std::string word, ScriptStream& stream,	
 		}
 	}
 	if (word == "dac:") {
+		qDebug() << "ExpThreadWorker: Parsing dac: command";
 		AoCommandForm command;
 		std::string name;
 		stream >> name >> command.finalVal;
@@ -780,6 +787,7 @@ bool ExpThreadWorker::handleAoCommands (std::string word, ScriptStream& stream,	
 	}
 	else if (word == "dacramp:")
 	{
+		qDebug() << "ExpThreadWorker: Parsing dacramp: command";
 		AoCommandForm command;
 		std::string name;
 		stream >> name >> command.initVal >> command.finalVal >> command.rampTime;

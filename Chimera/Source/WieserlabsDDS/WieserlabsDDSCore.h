@@ -5,6 +5,7 @@
 #include "GeneralObjects/IDeviceCore.h"
 #include "ConfigurationSystems/ConfigStream.h"
 #include "ArbGen/ArbGenStructures.h"
+#include "ScriptedWieserlabsDDSWaveform.h"
 #include "WieserlabsClient.h"
 #include <vector>
 #include <string>
@@ -41,19 +42,26 @@ public:
 	void calculateVariations(std::vector<parameterType>& params, ExpThreadWorker* threadworker);
 	void checkTriggers(unsigned variationInc, DoCore& ttls, ExpThreadWorker* threadWorker);
 	void normalFinish();
-	void errorFinish() {};
+	void errorFinish();
 	void setRunSettings(deviceOutputInfo newSettings);
 	void setWieserlabsDDS(unsigned variation, std::vector<parameterType>& params, deviceOutputInfo runSettings, ExpThreadWorker* expWorker);
 	void programVariation(unsigned variation, std::vector<parameterType>& params, ExpThreadWorker* threadworker);
 
 	void programSingleToneNow(unsigned channel, double freq, double amp, double phase);
+	void updateSteadyState(unsigned channel, double freq, double amp, double phase, bool on);
+	void resetChannels();
+	void setScriptedWaveform(const ScriptedWieserlabsDDSWaveform& waveform);
+	bool hasScriptedWaveform() const { return waveformLoaded; }
 	void executeScriptedCommands(const class ScriptedWieserlabsDDSWaveform& waveform, ExpThreadWorker* expWorker);
+	std::string getLoadedScriptAddress() const { return loadedScriptAddress; }
 
 private:
 	const wieserlabsDdsSettings initSettings;
 	std::string configDelim;
 	std::unique_ptr<WieserlabsClient> ddsClient;
 	bool isConnected = false;
+	bool waveformLoaded = false;
+	bool warnedMissingWaveform = false;
 
 	// Current settings for each channel
 	std::vector<wieserlabsDdsChannel> currentSettings;
@@ -61,8 +69,15 @@ private:
 	// Steady-state settings to return to after experiment
 	std::vector<wieserlabsDdsChannel> steadyStateSettings;
 
+	ScriptedWieserlabsDDSWaveform activeWaveform;
+
+	// Experiment run settings
+	deviceOutputInfo expRunSettings;
+	
+	// Loaded script address from config
+	std::string loadedScriptAddress;
+
 	void connectToDevice();
 	void disconnectFromDevice();
-	void programSingleTone(unsigned channel, double freq, double amp, double phase);
-	void programRamp(unsigned channel, double startFreq, double endFreq, double amp, double phase, double duration);
+	void programSingleTone(unsigned channel, double freq, double amp, double phase, ExpThreadWorker* expWorker = nullptr, bool waitForTrigger = false);
 };

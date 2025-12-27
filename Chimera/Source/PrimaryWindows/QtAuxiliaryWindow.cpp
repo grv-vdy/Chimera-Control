@@ -516,6 +516,8 @@ void QtAuxiliaryWindow::ViewOrChangeAINames()
 std::string QtAuxiliaryWindow::getOtherSystemStatusMsg (){
 	// controls are done. Report the initialization defaultStatus...
 	std::string msg;
+	// NOTE: Zynq System is currently NOT USED - Commenting out status
+	/*
 	msg += "Zynq System:\n";
 	if (!ZYNQ_SAFEMODE){
 		msg += str("\tZynq System is Active at ") + ZYNQ_ADDRESS + ", at port " + ZYNQ_PORT + "\n";
@@ -524,6 +526,7 @@ std::string QtAuxiliaryWindow::getOtherSystemStatusMsg (){
 	else{
 		msg += "\tZynq System is disabled! Enable in \"constants.h\" as well as \"ZynqTcp.h\"\n";
 	}
+	*/
 
 	msg += "PicoScrew System:\n";
 	if (!PICOSCREW_SAFEMODE) {
@@ -535,6 +538,8 @@ std::string QtAuxiliaryWindow::getOtherSystemStatusMsg (){
 		msg += "\tCode System is disabled! Enable in \"constants.h\"\n";
 	}
 
+	// NOTE: AI System is currently NOT USED - Commenting out status
+	/*
 	msg += "AI System:\n";
 	if (!AI_SAFEMODE){
 		msg += str("\tAnalog In System is Active at ") + AI_SOCKET_ADDRESS + ", at port " + str(AI_SOCKET_PORT) + "\n";
@@ -542,6 +547,7 @@ std::string QtAuxiliaryWindow::getOtherSystemStatusMsg (){
 	else{
 		msg += "\tAnalog In System is disabled! Enable in \"constants.h\" \n";
 	}
+	*/
 	return msg;
 }
 
@@ -551,7 +557,8 @@ std::string QtAuxiliaryWindow::getVisaDeviceStatus (){
 }
 
 void QtAuxiliaryWindow::fillExpDeviceList (DeviceList& list){
-	list.list.push_back(aiSys.getCore());
+	// NOTE: AI_SYSTEM is currently NOT USED - Commenting out
+	// list.list.push_back(aiSys.getCore());
 	list.list.push_back(picoSys.getCore());
 }
 

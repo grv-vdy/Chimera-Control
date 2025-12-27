@@ -19,8 +19,9 @@
 QtMainWindow::QtMainWindow () : 
 	profile (PROFILES_PATH, this),
 	masterConfig (MASTER_CONFIGURATION_FILE_ADDRESS),
-	tempMonitor(this, TEMPMON_SAFEMODE),
-	tcpServer(this)
+	tempMonitor(this, TEMPMON_SAFEMODE)
+	// NOTE: TCP Server is currently NOT USED - Commenting out
+	// tcpServer(this)
 {
 	
 	startupTimes.push_back (chronoClock::now ());
@@ -145,12 +146,13 @@ void QtMainWindow::initializeWidgets (){
 	errorStatus.initialize (this, "ERROR STATUS", { "#FF0000", "#800000"});
 	
 	layout->addWidget(&mainStatus, 0, 0, 6, 1);
-	layout->addWidget(shortStatus.statusLabel(), 6, 0, 1, 2);
+	layout->addWidget(shortStatus.statusLabel(), 5, 0, 1, 2);
 	layout->addWidget(&errorStatus, 0, 1, 6, 1);
 
 	profile.initialize (this); // this and inside it, "handleSelectConfigButton" connect the open config button to openning the config for all windows 
 	notes.initialize (this);
-	tcpServer.initialize();
+	// NOTE: TCP Server is currently NOT USED - Commenting out
+	// tcpServer.initialize();
 	repetitionControl.initialize (this);
 	mainOptsCtrl.initialize (this);
 	debugger.initialize (this);
@@ -158,11 +160,12 @@ void QtMainWindow::initializeWidgets (){
 
 	layout->addWidget(&profile, 0, 2);
 	layout->addWidget(&notes, 1, 2);
-	layout->addWidget(&tcpServer, 2, 2);
-	layout->addWidget(&repetitionControl, 3, 2);
-	layout->addWidget(&mainOptsCtrl, 4, 2);
-	layout->addWidget(&debugger, 5, 2);
-	layout->addWidget(&tempMonitor, 6, 2);
+	// NOTE: TCP Server is currently NOT USED
+	// layout->addWidget(&tcpServer, 2, 2);
+	layout->addWidget(&repetitionControl, 2, 2);
+	layout->addWidget(&mainOptsCtrl, 3, 2);
+	layout->addWidget(&debugger, 4, 2);
+	layout->addWidget(&tempMonitor, 5, 2);
 }
 
 unsigned QtMainWindow::getAutoCalNumber () { return autoCalNum; }

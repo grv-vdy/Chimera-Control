@@ -1,0 +1,2 @@
+// Ramp from 100 MHz to 150 MHz over 50ms on channel 0
+ramp 0 100 150 0.5 50

@@ -301,6 +301,7 @@ void AoSystem::prepareDacForceChange(int line, double voltage)
 
 void AoSystem::setDACs()
 {
+	qDebug() << "AoSystem::setDACs() called";
 	try {
 		std::vector<std::vector<AoChannelSnapshot>> channelSnapShot;
 		channelSnapShot.resize(1);

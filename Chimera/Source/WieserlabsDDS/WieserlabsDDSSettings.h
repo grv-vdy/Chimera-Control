@@ -11,8 +11,10 @@ const wieserlabsDdsSettings WIESERLABS_DDS_SETTINGS = {
 	WIESERLABS_IPPORT,
 	// device name
 	"Wieserlabs DDS",
-	// trigger line (not used for DDS)
-	std::make_pair(0, 0),
+	// trigger line for Channel 0 (BNC_IN_A)
+	WIESERLABS_CH0_TRIGGER_LINE,
+	// trigger line for Channel 1 (BNC_IN_B)
+	WIESERLABS_CH1_TRIGGER_LINE,
 	// Configuration file delimiter
 	"WIESERLABS_DDS"
 };

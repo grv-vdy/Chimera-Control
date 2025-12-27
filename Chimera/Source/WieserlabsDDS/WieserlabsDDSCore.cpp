@@ -17,6 +17,7 @@ WieserlabsDDSCore::WieserlabsDDSCore(const wieserlabsDdsSettings& settings)
 	: initSettings(settings), configDelim(settings.configurationFileDelimiter)
 {
 	currentSettings.resize(2); // 2 channels
+	experimentActive = false;
 	if (!initSettings.safemode) {
 		connectToDevice();
 	}
@@ -47,7 +48,7 @@ void WieserlabsDDSCore::reconnect()
 
 std::pair<unsigned, unsigned> WieserlabsDDSCore::getTriggerLine()
 {
-	return initSettings.triggerLine;
+	return initSettings.triggerLineCh0;
 }
 
 std::string WieserlabsDDSCore::getDeviceIdentity()
@@ -158,7 +159,8 @@ deviceOutputInfo WieserlabsDDSCore::getSettingsFromConfig(ConfigStream& file)
 		}
 		else {
 			try {
-				info.snapshot[chan].frequency = std::stod(freqStr) * 1e6; // Convert MHz to Hz
+				// Config stores MHz, system expects MHz (conversion to Hz happens in programSingleTone)
+				info.snapshot[chan].frequency = std::stod(freqStr);
 			}
 			catch (...) {
 				info.snapshot[chan].frequency = 0.0;
@@ -198,6 +200,35 @@ deviceOutputInfo WieserlabsDDSCore::getSettingsFromConfig(ConfigStream& file)
 		}
 	}
 	
+	// Read script address if present (added in later version - may not exist in old configs)
+	// Peek at next token to see if it's the END delimiter or a script path
+	std::streampos pos = file.tellg();
+	std::string nextToken;
+	file >> nextToken;
+	
+	// Check if this is the END delimiter (case-insensitive check)
+	std::string lowerToken = nextToken;
+	std::transform(lowerToken.begin(), lowerToken.end(), lowerToken.begin(), ::tolower);
+	
+	if (lowerToken == "end_wieserlabs_dds" || lowerToken.find("camera_") == 0 || 
+	    lowerToken.find("andor_") == 0 || lowerToken.find("master_") == 0 || nextToken.empty()) {
+		// No script address in this config file (old format or empty), restore position
+		file.seekg(pos);
+		loadedScriptAddress = "";
+		qDebug() << "WieserlabsDDSCore: No script address found in config (old format or next section:" << qstr(nextToken) << ")";
+	} else {
+		// This is the script address, keep it
+		loadedScriptAddress = nextToken;
+		// Strip quotes if present
+		if (!loadedScriptAddress.empty() && loadedScriptAddress.front() == '"') {
+			loadedScriptAddress.erase(0, 1);
+		}
+		if (!loadedScriptAddress.empty() && loadedScriptAddress.back() == '"') {
+			loadedScriptAddress.pop_back();
+		}
+		qDebug() << "WieserlabsDDSCore: Loaded script address:" << QString::fromStdString(loadedScriptAddress);
+	}
+	
 	// Store these as steady-state settings to return to after experiment
 	steadyStateSettings = info.snapshot;
 	return info;
@@ -205,17 +236,45 @@ deviceOutputInfo WieserlabsDDSCore::getSettingsFromConfig(ConfigStream& file)
 
 void WieserlabsDDSCore::loadExpSettings(ConfigStream& script)
 {
-	// Load settings from script
+	// DDS is NOT configured in master script - it's only configured in the main config file
+	// This function is called by the framework but should do nothing for DDS
+	qDebug() << "WieserlabsDDSCore::loadExpSettings called - DDS does not use master script config, skipping";
+	experimentActive = waveformLoaded; // Use the waveform that was loaded from the DDS script
+	qDebug() << "WieserlabsDDSCore::loadExpSettings - experimentActive =" << experimentActive << ", waveformLoaded =" << waveformLoaded;
 }
 
 void WieserlabsDDSCore::calculateVariations(std::vector<parameterType>& params, ExpThreadWorker* threadworker)
 {
-	// Calculate variations for the experiment
+	qDebug() << "WieserlabsDDSCore::calculateVariations called, waveformLoaded =" << waveformLoaded << ", experimentActive =" << experimentActive;
+	// The waveform should already be set by the system via setScriptedWaveform
+	// This is called from refreshScriptedWaveform when the experiment is prepared
+	// experimentActive is set in setScriptedWaveform based on whether we have commands
+	if (!experimentActive && !waveformLoaded) {
+		qDebug() << "WieserlabsDDSCore: No waveform loaded, DDS will not be active in experiment";
+	}
+	else {
+		qDebug() << "WieserlabsDDSCore: Waveform is loaded and ready for experiment";
+	}
 }
 
 void WieserlabsDDSCore::checkTriggers(unsigned variationInc, DoCore& ttls, ExpThreadWorker* threadWorker)
 {
-	// Check trigger consistency
+	const auto triggerCount = ttls.countTriggers(initSettings.triggerLineCh0, variationInc);
+	if (triggerCount == 0) {
+		return;
+	}
+
+	if (!waveformLoaded) {
+		if (!warnedMissingWaveform && threadWorker) {
+			emit threadWorker->warn(qstr("Wieserlabs DDS received triggers but no script is loaded; skipping DDS actions.\r\n"), 0);
+			warnedMissingWaveform = true;
+		}
+		return;
+	}
+
+	for (unsigned trig = 0; trig < triggerCount; ++trig) {
+		executeScriptedCommands(activeWaveform, threadWorker);
+	}
 }
 
 void WieserlabsDDSCore::setRunSettings(deviceOutputInfo newSettings)
@@ -231,7 +290,7 @@ void WieserlabsDDSCore::setWieserlabsDDS(unsigned variation, std::vector<paramet
 	auto& channels = runSettings.snapshot;
 	for (unsigned chan = 0; chan < channels.size(); chan++) {
 		if (channels[chan].on) {
-			programSingleTone(chan, channels[chan].frequency, channels[chan].amplitude, channels[chan].phase);
+			programSingleTone(chan, channels[chan].frequency, channels[chan].amplitude, channels[chan].phase, nullptr, false);
 		}
 		currentSettings[chan] = channels[chan];
 	}
@@ -239,7 +298,9 @@ void WieserlabsDDSCore::setWieserlabsDDS(unsigned variation, std::vector<paramet
 
 void WieserlabsDDSCore::programVariation(unsigned variation, std::vector<parameterType>& params, ExpThreadWorker* threadworker)
 {
-	// Program variation
+	if (hasScriptedWaveform()) {
+		executeScriptedCommands(activeWaveform, threadworker);
+	}
 }
 
 void WieserlabsDDSCore::connectToDevice()
@@ -268,70 +329,167 @@ void WieserlabsDDSCore::disconnectFromDevice()
 	}
 }
 
-void WieserlabsDDSCore::programSingleTone(unsigned channel, double freq, double amp, double phase)
+void WieserlabsDDSCore::programSingleTone(unsigned channel, double freq, double amp, double phase, ExpThreadWorker* expWorker, bool waitForTrigger)
 {
-	if (!ddsClient) return;
+	if (!isConnected || !ddsClient) {
+		qDebug() << "WieserlabsDDSCore::programSingleTone - Not connected or no client";
+		return;
+	}
+	
+	qDebug() << "WieserlabsDDSCore::programSingleTone - ch" << channel << "freq" << freq << "MHz, amp" << amp 
+		<< "phase" << phase << "waitTrig" << waitForTrigger;
+	
 	try {
-		ddsClient->singleToneNow(0, channel, freq, amp, phase);
+		ddsClient->singleToneNow(0, channel, freq * 1e6, amp, phase, waitForTrigger);
+		qDebug() << "WieserlabsDDSCore::programSingleTone - Command sent successfully";
 	}
 	catch (const std::exception& e) {
-		qDebug() << "Failed to program single tone:" << e.what();
+		qDebug() << "WieserlabsDDSCore::programSingleTone - Exception:" << e.what();
+	}
+	catch (...) {
+		qDebug() << "WieserlabsDDSCore::programSingleTone - Unknown exception";
 	}
 }
 
-void WieserlabsDDSCore::programRamp(unsigned channel, double startFreq, double endFreq, double amp, double phase, double duration)
+void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWaveform& waveform, ExpThreadWorker* expWorker)
 {
-	// Program ramp using WieserlabsClient
-	if (!ddsClient) return;
-	try {
-		ddsClient->rampTone(0, channel, startFreq, endFreq, amp, duration, phase);
+	if (!isConnected) {
+		return;
 	}
-	catch (const std::exception& e) {
-		qDebug() << "Failed to program ramp:" << e.what();
-	}
-}
-
-	void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWaveform& waveform, ExpThreadWorker* expWorker)
-{
-	if (!isConnected) return;
 	
 	const auto& commands = waveform.getCommandList();
 	
-	for (const auto& cmd : commands) {
-		// Wait for the specified delay before executing the command
-		if (cmd.delayMs > 0.0) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<long long>(cmd.delayMs)));
-		}
+	// Build all DCP commands into one batch
+	std::string batchCommands;
+	bool firstCommand = true;
+	
+	for (size_t i = 0; i < commands.size(); i++) {
+		const auto& cmd = commands[i];
 		
 		if (cmd.type == "tone") {
-			programSingleTone(cmd.channel, cmd.startFreq, cmd.amplitude, cmd.phase);
-		}
-		else if (cmd.type == "ramp") {
-			programRamp(cmd.channel, cmd.startFreq, cmd.endFreq, cmd.amplitude, cmd.phase, cmd.duration);
+			// Build DCP commands for this tone
+			double frequency = cmd.startFreq * 1e6; // Convert MHz to Hz
+			batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:CFR1=0x402000\n";
+			batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:CFR2=0x1000080\n";
+			
+			// Calculate register values
+			unsigned long long freq_val = static_cast<unsigned long long>(std::round((1ULL << 32) / 1e9 * frequency)) & 0xFFFFFFFFULL;
+			int amp_val = static_cast<int>(std::round(std::max(0.0, std::min(16383.0, 16383.0 * cmd.amplitude))));
+			double phase_norm = std::fmod(cmd.phase, 360.0);
+			if (phase_norm < 0) phase_norm += 360.0;
+			int phase_val = static_cast<int>(std::round((1 << 16) * phase_norm / 360.0));
+			
+			char stp0_buf[32];
+			sprintf(stp0_buf, "0x%04x%04x%08llx", amp_val, phase_val, freq_val);
+			
+			
+			// Add trigger wait for first command only
+			if (firstCommand) {
+				// Channel 0 uses BNC A, channel 1 uses BNC B
+				std::string triggerLine = (cmd.channel == 0) ? "BNC_IN_A_RISING" : "BNC_IN_B_RISING";
+				batchCommands += "dcp " + std::to_string(cmd.channel) + " wait::" + triggerLine + "\n";
+				firstCommand = false;
+			}
+			
+			batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:stp0=" + std::string(stp0_buf) + "\n";
+			batchCommands += "dcp " + std::to_string(cmd.channel) + " update:u\n";
+			
+			// Add delay if specified in script (convert ms to us for DCP wait command)
+			if (cmd.delayMs > 0.0) {
+				int delayUs = static_cast<int>(cmd.delayMs * 1000.0);
+				batchCommands += "dcp " + std::to_string(cmd.channel) + " wait:" + std::to_string(delayUs) + ":\n";
+			}
 		}
 		else if (cmd.type == "off") {
-			// Program zero amplitude to turn off
-			programSingleTone(cmd.channel, cmd.startFreq, 0.0, 0.0);
+			batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:CFR1=0x402000\n";
+			batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:CFR2=0x1000080\n";
+			batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:stp0=0x000000000000\n";
+			batchCommands += "dcp " + std::to_string(cmd.channel) + " update:u\n";
+		}
+	}
+	
+	// Send all commands as one batch
+	if (!batchCommands.empty()) {
+		try {
+			ddsClient->sendBatchCommands(batchCommands);
+		} catch (const std::exception& e) {
+			// Silently handle exception
 		}
 	}
 }
 
 void WieserlabsDDSCore::normalFinish()
 {
-	if (!isConnected) return;
+	qDebug() << "normalFinish: Called";
+	if (!isConnected || !ddsClient) {
+		qDebug() << "normalFinish: Not connected or no client, returning";
+		return;
+	}
 	
 	// Return DDS to steady-state values from configuration
 	for (unsigned chan = 0; chan < steadyStateSettings.size(); chan++) {
 		if (steadyStateSettings[chan].on) {
 			programSingleTone(chan, steadyStateSettings[chan].frequency, 
-				steadyStateSettings[chan].amplitude, steadyStateSettings[chan].phase);
+				steadyStateSettings[chan].amplitude, steadyStateSettings[chan].phase, nullptr, false);
 		}
 		currentSettings[chan] = steadyStateSettings[chan];
 	}
 	qDebug() << "Returned Wieserlabs DDS to steady-state values";
 }
 
+void WieserlabsDDSCore::errorFinish()
+{
+	// On abort/error, reset DDS to clear any pending trigger waits
+	if (isConnected && ddsClient) {
+		try {
+			ddsClient->sendBatchCommands("dds reset\n");
+			qDebug() << "Sent DDS reset on abort";
+		} catch (...) {
+			qDebug() << "Failed to send DDS reset";
+		}
+	}
+	
+	// Then return to steady state
+	normalFinish();
+}
+
 void WieserlabsDDSCore::programSingleToneNow(unsigned channel, double freq, double amp, double phase)
 {
-	programSingleTone(channel, freq, amp, phase);
+	programSingleTone(channel, freq, amp, phase, nullptr, false);
+}
+
+void WieserlabsDDSCore::updateSteadyState(unsigned channel, double freq, double amp, double phase, bool on)
+{
+	if (channel < steadyStateSettings.size()) {
+		steadyStateSettings[channel].frequency = freq;
+		steadyStateSettings[channel].amplitude = amp;
+		steadyStateSettings[channel].phase = phase;
+		steadyStateSettings[channel].on = on;
+		qDebug() << "Updated steady state for channel" << channel << ":" << freq << "MHz," << amp << "amp," << phase << "deg, on=" << on;
+	}
+}
+
+void WieserlabsDDSCore::setScriptedWaveform(const ScriptedWieserlabsDDSWaveform& waveform)
+{
+	activeWaveform = waveform;
+	waveformLoaded = !activeWaveform.getCommandList().empty();
+	warnedMissingWaveform = false;
+	experimentActive = waveformLoaded;
+	qDebug() << "WieserlabsDDSCore: Waveform set with" << activeWaveform.getCommandList().size() 
+		<< "commands, waveformLoaded =" << waveformLoaded;
+}
+
+void WieserlabsDDSCore::resetChannels()
+{
+	if (!isConnected || !ddsClient) return;
+	
+	// Turn off all channels to clear any previous state
+	for (int ch = 0; ch < 2; ch++) {
+		try {
+			ddsClient->turnOffChannel(ch);
+		}
+		catch (...) {
+			// Ignore errors during reset
+		}
+	}
 }

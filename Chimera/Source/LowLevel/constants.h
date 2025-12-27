@@ -84,11 +84,12 @@
 	//ArbGens
 	const bool UWAVE_SAFEMODE = true;
 	const bool UWAVE_SAFEMODE_SIG = true;
-	const bool UWAVE_SAFEMODE_AGI = true;
-	const int numArbGen = 2;
+	// NOTE: Agilent AWG is currently NOT USED - Commenting out
+	// const bool UWAVE_SAFEMODE_AGI = true;
+	const int numArbGen = 1;	// Only Siglent0, Agilent0 removed
 	//const std::string UWAVE_AGILENT_ADDRESS = "TCPIP0::10.10.0.5::inst0::INSTR";
-	const std::string UWAVE_AGILENT_ADDRESS = "USB0::0x0957::0x2807::MY57400998::INSTR";
-	const std::pair<unsigned, unsigned> UWAVE_AGILENT_TRIGGER_LINE = std::make_pair(7 - 1, 0); /*the first is the label on the box minus 1, has minus'd 1 explicitly */
+	// const std::string UWAVE_AGILENT_ADDRESS = "USB0::0x0957::0x2807::MY57400998::INSTR";
+	// const std::pair<unsigned, unsigned> UWAVE_AGILENT_TRIGGER_LINE = std::make_pair(7 - 1, 0); /*the first is the label on the box minus 1, has minus'd 1 explicitly */
 	const std::string UWAVE_SIGLENT_ADDRESS = "USB0::0xF4EC::0x1102::SDG2XCAC6R0238::INSTR";
 	const std::pair<unsigned, unsigned> UWAVE_SIGLENT_TRIGGER_LINE = std::make_pair(7 - 1, 1); /*the first is the label on the box minus 1, has minus'd 1 explicitly */
 	const std::string RAMP_LOCATION = str(CODE_ROOT) + "\\Ramp_Files\\";
@@ -102,6 +103,9 @@
 	const bool WIESERLABS_SAFEMODE = false;
 	const std::string WIESERLABS_IPADDRESS = "192.168.105.5";
 	const int WIESERLABS_IPPORT = 26000;
+	// Per-channel hardware triggers on FlexDDS-NG: Channel 0 on BNC_IN_A, Channel 1 on BNC_IN_B
+	const std::pair<unsigned, unsigned> WIESERLABS_CH0_TRIGGER_LINE = std::make_pair(1, 0); /*BNC_IN_A: Row 1, Column 0*/
+	const std::pair<unsigned, unsigned> WIESERLABS_CH1_TRIGGER_LINE = std::make_pair(1, 1); /*BNC_IN_B: Row 1, Column 1*/
 	const std::array<bool, 6> SLOT_CONNECTED = { true, false, false, false, false, false };
 
 	//Mako camera
@@ -151,16 +155,24 @@
 	const std::string ELLIPTEC_PORT = "COM14";
 
 	//Temperature Monitor
-	const bool TEMPMON_SAFEMODE = true;
-	const unsigned TEMPMON_NUMBER = 5;
+	const bool TEMPMON_SAFEMODE = false;
+	// We will show two temperatures: science table and laser table
+	const unsigned TEMPMON_NUMBER = 2;
 	const std::array<std::string, TEMPMON_NUMBER> TEMPMON_ID{ 
-		"Cold_Shield", "Cold_Finger", "Cold_Box", "Main_Chamber_Pressure", "Cryostat_side_Pressure"};
+		"yb2-science-table", "yb2-laser-table" };
+	// Legacy InfluxQL syntax placeholders (unused in Flux path)
 	const std::array<std::string, TEMPMON_NUMBER> TEMPMON_SYNTAX{ 
-		"SELECT \"Cold Shield\" from ColdEdge order by time desc limit 1", 
-		"SELECT \"Cold finger\" from ColdEdge order by time desc limit 1",
-		"SELECT \"temperature_B\" from \"Lakeshore331 T\" order by time desc limit 1",
-		"SELECT \"pressure\" from B240_main_chamber order by time desc limit 1",
-		"SELECT \"Pressure\" from \"Terranova\" order by time desc limit 1" };
+		"", "" };
+
+	// InfluxDB 2.x (Flux) configuration
+	const std::string INFLUX2_URL = "http://192.168.105.4:8086";
+	const std::string INFLUX2_ORG = "yb2";
+	const std::string INFLUX2_BUCKET = "lab-vitals";
+	const std::string INFLUX2_TOKEN = "TZ3vx6Bo41wGIqK-Yyf7ZBBWq4NSXyREPtWI7cEKrWAXOP-l9HIzOwGJtDsTyQZTKEW0iz3oHinwhIU1WFyMiQ==";
+	const std::string INFLUX2_MEASUREMENT = "ubibot";
+	const std::string INFLUX2_FIELD = "temperature";
+	const std::string INFLUX2_TAG_KEY = "channel";
+
 #endif
 /// Random other Constants
 constexpr double PI = 3.14159265358979323846264338327950288;

@@ -8,6 +8,7 @@
 #include <InfluxDB.h>
 #include <InfluxDBFactory.h>
 #include <atomic>
+#include "LowLevel/constants.h"
 
 class IChimeraQtWindow;
 class InfluxBroker;
@@ -33,7 +34,12 @@ public:
 	void clearNonExpData();
 
 
-	const std::string dbAddr = "http://admin:Twizzler@6.1.1.93:8086?db=monitoring";
+	// InfluxDB 2.x configuration (Flux)
+	const std::string influx2Url = INFLUX2_URL;
+	const std::string influx2Org = INFLUX2_ORG;
+	const std::string influx2Bucket = INFLUX2_BUCKET;
+	const std::string influx2Token = INFLUX2_TOKEN;
+	const std::string influx2TagKey = INFLUX2_TAG_KEY;
 	const std::string syntax;
 	const std::string identifier;
 	const InfluxDataType::mode dataMode;

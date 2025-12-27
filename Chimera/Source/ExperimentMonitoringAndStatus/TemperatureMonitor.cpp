@@ -10,13 +10,18 @@
 #include <ParameterSystem/Expression.h>
 #include <PrimaryWindows/IChimeraQtWindow.h>
 #include <PrimaryWindows/QtAndorWindow.h>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QUrl>
+#include <QEventLoop>
 
 
 TemperatureMonitor::TemperatureMonitor(IChimeraQtWindow* parent_in, bool safemode)
 	: IChimeraSystem(parent_in)
 	, core(parent_in, safemode)
-	, name{ new QLabel(this) ,new QLabel(this), new QLabel(this), new QLabel(this), new QLabel(this) }
-	, reading{ new QLabel(this) ,new QLabel(this), new QLabel(this), new QLabel(this), new QLabel(this) }
+	, name{ new QLabel(this), new QLabel(this) }
+	, reading{ new QLabel(this), new QLabel(this) }
 {
 }
 
@@ -30,25 +35,12 @@ void TemperatureMonitor::initialize(IChimeraQtWindow* parent)
 		reading[id]->setStyleSheet("QLabel {font: bold 16pt;}");
 	}
 	QVBoxLayout* layout = new QVBoxLayout(this);
-	std::array<QHBoxLayout*, 3> lay;
-	for (auto id : range(3/*TEMPMON_NUMBER*/)) {
-		lay[id] = new QHBoxLayout();
-		lay[id]->setContentsMargins(0, 0, 0, 0);
-		if (id == 0) {
-			lay[0]->addWidget(name[0]);
-			lay[0]->addWidget(reading[0], 0);
-			lay[0]->addWidget(name[1]);
-			lay[0]->addWidget(reading[1], 0);
-			lay[0]->addWidget(name[2]);
-			lay[0]->addWidget(reading[2], 0);
-			layout->addLayout(lay[0]);
-		}
-		else {
-			lay[id]->addWidget(name[id+2]);
-			lay[id]->addWidget(reading[id+2], 0);
-			layout->addLayout(lay[id]);
-		}
-
+	for (auto id : range(TEMPMON_NUMBER)) {
+		auto row = new QHBoxLayout();
+		row->setContentsMargins(0, 0, 0, 0);
+		row->addWidget(name[id]);
+		row->addWidget(reading[id], 0);
+		layout->addLayout(row);
 	}
 	QTimer* timer = new QTimer(this);
 	QObject::connect(timer, &QTimer::timeout, [this]() {
@@ -66,7 +58,15 @@ void TemperatureMonitor::initialize(IChimeraQtWindow* parent)
 			switch (core.dataBroker[idx].dataMode)
 			{
 			case InfluxDataType::mode::Temperature:
-				reading[idx]->setText(qstr(timedata.second, 2) + " K");
+				switch (core.dataBroker[idx].unitMode)
+				{
+				case InfluxDataUnitType::mode::K:
+					reading[idx]->setText(qstr(timedata.second, 2) + " K");
+					break;
+				case InfluxDataUnitType::mode::C:
+					reading[idx]->setText(qstr(timedata.second, 2) + " C");
+					break;
+				}
 				break;
 			case InfluxDataType::mode::Pressure:
 				switch (core.dataBroker[idx].unitMode)
@@ -90,11 +90,8 @@ void TemperatureMonitor::initialize(IChimeraQtWindow* parent)
 
 TemperatureMonitorCore::TemperatureMonitorCore(IChimeraQtWindow* parent, bool safemode)
 	: dataBroker{ 
-	InfluxBroker(TEMPMON_ID[0],TEMPMON_SYNTAX[0], InfluxDataType::mode::Temperature, InfluxDataUnitType::mode::K, safemode),
-	InfluxBroker(TEMPMON_ID[1],TEMPMON_SYNTAX[1], InfluxDataType::mode::Temperature, InfluxDataUnitType::mode::K, safemode),
-	InfluxBroker(TEMPMON_ID[2],TEMPMON_SYNTAX[2], InfluxDataType::mode::Temperature, InfluxDataUnitType::mode::K, safemode),
-	InfluxBroker(TEMPMON_ID[3],TEMPMON_SYNTAX[3], InfluxDataType::mode::Pressure, InfluxDataUnitType::mode::mBar, safemode),
-	InfluxBroker(TEMPMON_ID[4],TEMPMON_SYNTAX[4], InfluxDataType::mode::Pressure, InfluxDataUnitType::mode::Torr, safemode) }//array aggregation, no copy or move involved
+	InfluxBroker(TEMPMON_ID[0],TEMPMON_SYNTAX[0], InfluxDataType::mode::Temperature, InfluxDataUnitType::mode::C, safemode),
+	InfluxBroker(TEMPMON_ID[1],TEMPMON_SYNTAX[1], InfluxDataType::mode::Temperature, InfluxDataUnitType::mode::C, safemode) }
 {
 	this->setParent(parent);
 	//dataBroker.reserve(TEMPMON_NUMBER);
@@ -246,7 +243,9 @@ InfluxBroker::InfluxBroker(std::string identifier, std::string syntax, InfluxDat
 	unitMode(unit),
 	experimentOngoing(false)
 {
-	influxPtr = influxdb::InfluxDBFactory::Get(dbAddr);
+	// We no longer use the legacy InfluxDB v1 client for Flux queries
+	// influxPtr is kept but unused when querying Influx v2
+	influxPtr = nullptr;
 }
 
 std::pair<std::vector<long long>, std::vector<double>> InfluxBroker::getData()
@@ -280,21 +279,79 @@ std::pair<long long, double> InfluxBroker::queryDataPoint()
 		}
 		return std::make_pair(timeStamp.back(), data.back());
 	}
-	std::vector<influxdb::Point> points = influxPtr->query(syntax);
-	std::chrono::time_point<std::chrono::system_clock> tt = points[0].getTimestamp();
-	long long time = std::chrono::duration_cast<std::chrono::seconds>(tt.time_since_epoch()).count(); // somehow need *10 to be ms epoch. somehow do not need *10 again zzp 09/16/2022
-	QMutexLocker locker(&lock);
-	if (!timeStamp.empty() && timeStamp.back() == time) { //https://stackoverflow.com/questions/7925479/if-argument-evaluation-order
-		// not a new point, skip this
-		return std::make_pair(timeStamp.back(),data.back());
+
+	// Build Flux query to get latest temperature for this identifier
+	// Use -2h to ensure we get data even if sensor reports infrequently (every 30min)
+	std::string flux =
+		"from(bucket: \"" + influx2Bucket + "\")\n"
+		"  |> range(start: -2h)\n"
+		"  |> filter(fn: (r) => r._measurement == \"ubibot\")\n"
+		"  |> filter(fn: (r) => r._field == \"temperature\")\n"
+		"  |> filter(fn: (r) => r[\"" + influx2TagKey + "\"] == \"" + identifier + "\")\n"
+		"  |> last()\n";
+
+	QNetworkAccessManager mgr;
+	QNetworkRequest req(QUrl(QString::fromStdString(influx2Url + "/api/v2/query?org=" + influx2Org)));
+	req.setRawHeader("Authorization", QByteArray("Token ") + QByteArray::fromStdString(influx2Token));
+	req.setRawHeader("Accept", "text/csv");
+	req.setHeader(QNetworkRequest::ContentTypeHeader, "application/vnd.flux");
+
+	QEventLoop loop;
+	QNetworkReply* reply = mgr.post(req, QByteArray::fromStdString(flux));
+	QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+	loop.exec();
+
+	if (reply->error() != QNetworkReply::NoError) {
+		std::string err = reply->errorString().toStdString();
+		QByteArray errBody = reply->readAll();
+		std::string errBodyStr = QString::fromUtf8(errBody).toStdString();
+		reply->deleteLater();
+		thrower("InfluxDB v2 query failed: " + err + " | Response: " + errBodyStr);
 	}
-	std::string temperature = points[0].getFields();
-	temperature = temperature.substr(temperature.find("=") + 1, temperature.size());
-	Expression temperatureXprs(temperature);
 
-	data.push_back(temperatureXprs.evaluate());
-	timeStamp.push_back(time);
+	QByteArray body = reply->readAll();
+	reply->deleteLater();
+	QString text = QString::fromUtf8(body);
+	QStringList lines = text.split('\n', Qt::SkipEmptyParts);
+	int headerIdx = -1;
+	for (int i = 0; i < lines.size(); ++i) {
+		if (!lines[i].startsWith('#')) { headerIdx = i; break; }
+	}
+	if (headerIdx < 0 || headerIdx + 1 >= lines.size()) {
+		thrower("InfluxDB v2 CSV parse error: no data rows");
+	}
+	QStringList headers = lines[headerIdx].split(',');
+	int timeCol = headers.indexOf("_time");
+	int valueCol = headers.indexOf("_value");
+	if (timeCol < 0 || valueCol < 0) {
+		thrower("InfluxDB v2 CSV parse error: missing _time/_value columns");
+	}
+	// first data row after header
+	QStringList cols = lines[headerIdx + 1].split(',');
+	if (cols.size() <= std::max(timeCol, valueCol)) {
+		thrower("InfluxDB v2 CSV parse error: insufficient columns");
+	}
+	QString timeStr = cols[timeCol];
+	QString valueStr = cols[valueCol];
 
+	bool ok = false;
+	double val = valueStr.toDouble(&ok);
+	if (!ok) {
+		thrower("InfluxDB v2 CSV parse error: invalid numeric value");
+	}
+	QDateTime dt = QDateTime::fromString(timeStr, Qt::ISODateWithMs);
+	if (!dt.isValid()) { dt = QDateTime::fromString(timeStr, Qt::ISODate); }
+	if (!dt.isValid()) {
+		thrower("InfluxDB v2 CSV parse error: invalid time format");
+	}
+	long long secs = dt.toSecsSinceEpoch();
+
+	QMutexLocker locker(&lock);
+	if (!timeStamp.empty() && timeStamp.back() == secs) {
+		return std::make_pair(timeStamp.back(), data.back());
+	}
+	data.push_back(val);
+	timeStamp.push_back(secs);
 	if (experimentOngoing) {
 		dataExp.push_back(data.back());
 		timeStampExp.push_back(timeStamp.back());
@@ -308,6 +365,9 @@ void InfluxBroker::clearNonExpData()
 	timeStamp.clear();
 	data.clear();
 }
+
+
+
 
 
 

@@ -268,6 +268,7 @@ namespace commonFunctions{
 		input.masterInput->sleepTime = win->mainWin->getDebuggingOptions ().sleepTime;
 		input.masterInput->profile = win->mainWin->getProfileSettings ();
 		// Start the programming thread. order is important.
+		win->scriptWin->fillMasterThreadInput( input.masterInput );
 		win->auxWin->fillMasterThreadInput( input.masterInput );
 		win->mainWin->fillMasterThreadInput( input.masterInput );
 		win->andorWin->fillMasterThreadInput( input.masterInput );

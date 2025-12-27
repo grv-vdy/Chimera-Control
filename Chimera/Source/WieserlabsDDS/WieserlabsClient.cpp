@@ -5,6 +5,9 @@
 #include <cmath>
 #include <cstdio>
 #include <algorithm>
+#include <thread>
+#include <chrono>
+#include <QDebug>
 
 WieserlabsClient::WieserlabsClient(const std::string& ip, int port)
     : ip_(ip), port_(port), socket_(io_context_), connected_(false) {
@@ -53,85 +56,66 @@ bool WieserlabsClient::isConnected() const {
     return connected_;
 }
 
-bool WieserlabsClient::singleToneNow(int slot, int channel, double frequency, double amplitude, double phase) {
+bool WieserlabsClient::singleToneNow(int slot, int channel, double frequency, double amplitude, double phase, bool waitForTrigger) {
     if (!connected_) {
+        qDebug() << "WieserlabsClient::singleToneNow - NOT CONNECTED";
         return false;
     }
 
-    // Build all commands following the exact sequence
     std::string commands;
-
-    // Set CFR1 register for auto-clear phase on update (bit 13)
     commands += "dcp " + std::to_string(channel) + " spi:CFR1=0x402000\n";
-
-    // Set CFR2 register for single tone ASF bit and matched latency
     commands += "dcp " + std::to_string(channel) + " spi:CFR2=0x1000080\n";
 
-    // Compute stp0 register value: 0x[amp][phase][freq]
     std::string amp_w = amp_to_word(amplitude);
     std::string phase_w = phase_to_word(phase);
     std::string freq_w = freq_to_word(frequency);
     std::string stp0_value = "0x" + amp_w + phase_w + freq_w;
 
-    // Send stp0 register write
     commands += "dcp " + std::to_string(channel) + " spi:stp0=" + stp0_value + "\n";
 
-    // Send update immediately
+    if (waitForTrigger) {
+        commands += "dcp " + std::to_string(channel) + " wait::BNC_IN_A_RISING\n";
+    }
+
     commands += "dcp " + std::to_string(channel) + " update:u\n";
 
-    // Send all commands at once
+    qDebug() << "=== DCP COMMANDS ===";
+    qDebug() << QString::fromStdString(commands);
+    qDebug() << "====================";
+
     return sendCommand(commands);
 }
 
-bool WieserlabsClient::rampTone(int slot, int channel, double startFreq, double endFreq, double amplitude, double duration, double phase) {
+bool WieserlabsClient::turnOffChannel(int channel) {
     if (!connected_) {
         return false;
     }
-
-    // Ramp implementation:
-    // 1. Write CFR1 with ramp enable bits
-    // 2. Write CFR2 with amplitude and phase
-    // 3. Write frequency ramp start/stop/increment to RAM
-    // 4. Trigger ramp with update command
-
-    std::string commands;
-
-    // Set CFR1 for ramp mode (enable sweep with no autoclear on update)
-    // Bit 13: autoclear phase (0), Bit 7: linear sweep enable (1)
-    commands += "dcp " + std::to_string(channel) + " spi:CFR1=0x400280\n";
-
-    // Set CFR2 register for amplitude and phase
-    std::string amp_w = amp_to_word(amplitude);
-    std::string phase_w = phase_to_word(phase);
-    commands += "dcp " + std::to_string(channel) + " spi:CFR2=0x" + amp_w + phase_w + "00\n";
-
-    // Write start frequency to RAM address 0x00
-    std::string startFreq_w = freq_to_word(startFreq);
-    commands += "dcp " + std::to_string(channel) + " ram:0x00=0x" + startFreq_w + "\n";
-
-    // Write end frequency to RAM address 0x01
-    std::string endFreq_w = freq_to_word(endFreq);
-    commands += "dcp " + std::to_string(channel) + " ram:0x01=0x" + endFreq_w + "\n";
-
-    // Calculate ramp increment based on duration and clock (assuming 1 GHz reference)
-    // Ramp rate = (endFreq - startFreq) / duration
-    double rampInc = (endFreq - startFreq) / (duration * 1e9); // in steps per clock cycle
-    unsigned long rampIncWord = static_cast<unsigned long>(std::round(rampInc)) & 0xFFFFFFFF;
-    char rampIncBuf[11];
-    sprintf(rampIncBuf, "%08lx", rampIncWord);
     
-    // Write ramp increment to RAM address 0x02
-    commands += "dcp " + std::to_string(channel) + " ram:0x02=0x" + std::string(rampIncBuf) + "\n";
-
-    // Write ramp duration to RAM address 0x03
-    unsigned long durationWord = static_cast<unsigned long>(std::round(duration * 1e6)) & 0xFFFFFFFF;
-    char durationBuf[11];
-    sprintf(durationBuf, "%08lx", durationWord);
-    commands += "dcp " + std::to_string(channel) + " ram:0x03=0x" + std::string(durationBuf) + "\n";
-
-    // Trigger ramp start
+    // Send commands to turn off channel (amplitude = 0)
+    std::string commands;
+    commands += "dcp " + std::to_string(channel) + " spi:CFR1=0x402000\n";
+    commands += "dcp " + std::to_string(channel) + " spi:CFR2=0x1000080\n";
+    commands += "dcp " + std::to_string(channel) + " spi:stp0=0x000000000000\n";  // Zero amplitude
     commands += "dcp " + std::to_string(channel) + " update:u\n";
+    
+    return sendCommand(commands);
+}
 
+bool WieserlabsClient::abortChannel(int channel) {
+    if (!connected_) {
+        return false;
+    }
+    
+    // Clear any pending trigger waits by sending an immediate update
+    // This overwrites any queued commands that are waiting for triggers
+    std::string commands;
+    commands += "dcp " + std::to_string(channel) + " update::immediate\n";
+    
+    qDebug() << "Clearing pending triggers on channel" << channel << "with immediate update";
+    return sendCommand(commands);
+}
+
+bool WieserlabsClient::sendBatchCommands(const std::string& commands) {
     return sendCommand(commands);
 }
 
@@ -143,7 +127,7 @@ bool WieserlabsClient::sendCommand(const std::string& command) {
         while (std::getline(iss, line)) {
             if (!line.empty()) {
                 // Add \r\n for proper line ending
-                std::string cmd = line + "\n\r";
+                std::string cmd = line + "\r\n";
                 boost::asio::write(socket_, boost::asio::buffer(cmd));
                 // Read response for each command
                 std::string response = receiveResponse();

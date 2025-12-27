@@ -11,11 +11,10 @@ public:
     void disconnect();
     bool isConnected() const;
 
-    // Program a single tone on a specific channel
-    bool singleToneNow(int slot, int channel, double frequency, double amplitude, double phase = 0.0);
-
-    // Placeholder for ramp functionality (to be implemented)
-    bool rampTone(int slot, int channel, double startFreq, double endFreq, double amplitude, double duration, double phase = 0.0);
+    bool singleToneNow(int slot, int channel, double frequency, double amplitude, double phase = 0.0, bool waitForTrigger = false);
+    bool turnOffChannel(int channel);
+    bool abortChannel(int channel);
+    bool sendBatchCommands(const std::string& commands);
 
 private:
     std::string ip_;

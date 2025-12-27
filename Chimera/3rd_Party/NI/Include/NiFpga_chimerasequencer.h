@@ -23,7 +23,7 @@
 /**
  * The signature of the FPGA bitfile.
  */
-static const char* const NiFpga_chimerasequencer_Signature = "EBC7D4AEF42AF08113B54F3F3FE68CF2";
+static const char* const NiFpga_chimerasequencer_Signature = "D614A2C9825A19CE2CB6B1FF3E78B778";
 
 #if NiFpga_Cpp
 extern "C"

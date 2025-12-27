@@ -42,6 +42,7 @@ public:
 	deviceOutputInfo getOutputInfo();
 	WieserlabsDDSCore& getCore();
 	void setOutputSettings(deviceOutputInfo info);
+	void refreshScriptedWaveform();
 
 	// making the script public greatly simplifies opening, saving, etc. files from this script.
 	Script* wieserlabsDdsScript = nullptr;

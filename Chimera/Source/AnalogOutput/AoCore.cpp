@@ -351,13 +351,13 @@ void AoCore::calculateVariations(std::vector<parameterType>& params, ExpThreadWo
 			else if (formList.commandName == "dacramp:")
 			{
 				// interpret ramp time command. I need to know whether it's ramping or not.
-				double rampTime = formList.rampTime.evaluate(params, variationInc);
+				double rampTime = formList.rampTime.evaluate(params, variationInc, calibrations);
 				/// many points to be made.
 				// convert initValue and finalValue to doubles to be used 
 				double initValue, finalValue, numSteps;
-				initValue = formList.initVal.evaluate(params, variationInc);
+				initValue = formList.initVal.evaluate(params, variationInc, calibrations);
 				// deal with final value;
-				finalValue = formList.finalVal.evaluate(params, variationInc);
+				finalValue = formList.finalVal.evaluate(params, variationInc, calibrations);
 				// set votlage resolution to be maximum allowed by the ramp range and time
 				numSteps = rampTime / DAC_TIME_RESOLUTION;
 				double rampInc = (finalValue - initValue) / numSteps;
@@ -720,6 +720,10 @@ void AoCore::formatDacForFPGA(UINT variation, AoSnapshot initSnap)
 	// in writeDacsToNI (which treats times as ms). Convert seconds -> milliseconds here.
 	const l64 timeConv = 1; // convert seconds to milliseconds
 	//std::array<double, size_t(AOGrid::total)> dacValuestmp = initSnap.dacValues;
+	
+	// IMPORTANT: Clear finalDacSnapshots before populating to avoid accumulation across multiple variations
+	finalDacSnapshots[variation].clear();
+	
 	for (int i = 0; i < dacSnapshots[variation].size(); ++i)
 	{
 		AoSnapshot snapshotPrev;
@@ -805,7 +809,7 @@ void AoCore::writeDacs(unsigned variation, bool loadSkip)
     if (useNI) 
 	{
         // Replace with your actual device and lines
-        writeDacsToNI(variation, "Dev1", "/Dev1/RTSI0", "/Dev1/RTSI0");
+        writeDacsToNI(variation, "Dev1", "/Dev1/RTSI0", "/Dev1/RTSI1");
     } 
 	
 	else 
@@ -835,7 +839,7 @@ void AoCore::setGUIDacChange(std::vector<std::vector<AoChannelSnapshot>> channel
 	prepareForce();
 	dacSnapshots.resize(1); // just to make getNumberEvents happy, used in AoCore::writeDacs()
 	dacSnapshots[0].resize(channelSnapShot.size());
-	finalDacSnapshots = channelSnapShot;
+	finalDacSnapshots[0] = channelSnapShot[0];
 	try {
 		writeDacs(0, true);
 	}
@@ -890,6 +894,7 @@ void AoCore::makeFinalDataFormat(unsigned variation)
 
 void AoCore::handleDacScriptCommand(AoCommandForm command, std::string name, std::vector<parameterType>& vars)
 {
+	qDebug() << "handleDacScriptCommand: " << QString::fromStdString(command.commandName) << " for " << QString::fromStdString(name);
 	if (command.commandName != "dac:" &&
 		command.commandName != "dacarange:" &&
 		command.commandName != "daclinspace:" &&
@@ -1028,15 +1033,17 @@ void AoCore::writeDacsToNI(unsigned variation,
     for (const auto& snap : snapshots)
         channelData[snap.channel].emplace_back(snap.time, snap.dacValue);
 
-    // Get all unique time points (ms)
+    // Get ALL unique time points from all snapshots (not just where values changed per-channel)
     std::set<double> allTimes;
-    for (const auto& kv : channelData)
-        for (const auto& tv : kv.second)
-            allTimes.insert(tv.first);
+    for (const auto& snap : snapshots) {
+        allTimes.insert(snap.time);
+    }
 
     std::vector<double> sortedTimes(allTimes.begin(), allTimes.end());
     size_t numSamples = sortedTimes.size();
-    size_t numChannels = channelsUsed.size();
+    int minCh = *channelsUsed.begin();
+    int maxCh = *channelsUsed.rbegin();
+    size_t numChannels = maxCh - minCh + 1;  // Full range of channels
 
     // === Single snapshot case: software-timed ===
     if (numSamples == 1) {
@@ -1057,7 +1064,7 @@ void AoCore::writeDacsToNI(unsigned variation,
         return;
     }
 
-       // === Multi-snapshot case: hardware-timed ===
+    // === Multi-snapshot case: hardware-timed ===
     const double clkRate = 320000;       // external clock rate
     const double msToSamples = clkRate * 1e-3;
 
@@ -1070,6 +1077,31 @@ void AoCore::writeDacsToNI(unsigned variation,
 
     // Build expanded output buffer with ramp support
     std::vector<float64> writeBuffer(totalSamples * numChannels, 0.0);
+    
+    // Track last known value for each channel (for holding values when no snapshot)
+    std::map<int, double> lastChannelValue;
+    for (int ch : channelsUsed) {
+        lastChannelValue[ch] = 0.0;  // Initialize all channels to 0
+    }
+    
+    // Pre-fill samples before the first snapshot with initial values
+    if (!sampleIndices.empty() && sampleIndices[0] > 0) {
+        for (int ch : channelsUsed) {
+            // Find initial snapshot value for this channel
+            double initialVal = 0.0;
+            for (size_t i = 0; i < snapshots.size(); i++) {
+                const auto& snap = snapshots[i];
+                if (snap.channel == ch && std::abs(snap.time - sortedTimes[0]) < 1e-6) {
+                    initialVal = snap.dacValue;
+                    break;
+                }
+            }
+            size_t chPos = ch - minCh;  // Position relative to minCh
+            for (uint64_t k = 0; k < sampleIndices[0]; ++k) {
+                writeBuffer[k * numChannels + chPos] = initialVal;
+            }
+        }
+    }
 
     for (size_t seg = 0; seg < sortedTimes.size(); ++seg) {
         uint64_t startIdx = sampleIndices[seg];
@@ -1077,8 +1109,10 @@ void AoCore::writeDacsToNI(unsigned variation,
 
         for (int ch : channelsUsed) {
             // Find the current and next snapshot for this channel
-            double startVal = 0.0, endVal = 0.0;
+            double startVal = lastChannelValue[ch];  // Use last known value as default
+            double endVal = lastChannelValue[ch];
             double rampTime = 0.0;
+            bool foundSnapshot = false;
             
             for (size_t i = 0; i < snapshots.size(); i++) {
                 const auto& snap = snapshots[i];
@@ -1086,11 +1120,13 @@ void AoCore::writeDacsToNI(unsigned variation,
                     startVal = snap.dacValue;
                     endVal = snap.dacEndValue;
                     rampTime = snap.dacRampTime;
+                    foundSnapshot = true;
+                    lastChannelValue[ch] = endVal;  // Update last known value
                     break;
                 }
             }
 
-            size_t chPos = std::distance(channelsUsed.begin(), channelsUsed.find(ch));
+            size_t chPos = ch - minCh;  // Position relative to minCh
             
             // If there's a ramp, interpolate values
             if (rampTime > 0) {
@@ -1099,7 +1135,8 @@ void AoCore::writeDacsToNI(unsigned variation,
                 
                 for (uint64_t k = startIdx; k < rampEndSample; ++k) {
                     double fraction = static_cast<double>(k - startIdx) / (rampEndSample - startIdx);
-                    writeBuffer[k * numChannels + chPos] = startVal + fraction * (endVal - startVal);
+                    double interpolatedVal = startVal + fraction * (endVal - startVal);
+                    writeBuffer[k * numChannels + chPos] = interpolatedVal;
                 }
                 
                 // Fill remaining samples with end value
@@ -1112,12 +1149,17 @@ void AoCore::writeDacsToNI(unsigned variation,
                 for (uint64_t k = startIdx; k < endIdx; ++k) {
                     writeBuffer[k * numChannels + chPos] = startVal;
                 }
+                // Debug: verify writes for segment 1
+                if (seg == 1 && ch < 2 && startIdx < endIdx) {
+                    qDebug() << "  DEBUG: seg=" << seg << "ch=" << ch << "chPos=" << chPos 
+                             << "wrote" << (endIdx-startIdx) << "samples with val=" << startVal;
+                    qDebug() << "    Buffer[" << (startIdx*numChannels+chPos) << "]=" << writeBuffer[startIdx*numChannels+chPos];
+                    qDebug() << "    Buffer[" << ((startIdx+1)*numChannels+chPos) << "]=" << writeBuffer[(startIdx+1)*numChannels+chPos];
+                }
 			}
         }
     }
 
-    int minCh = *channelsUsed.begin();
-    int maxCh = *channelsUsed.rbegin();
     std::string channelStr = deviceName + "/ao" + std::to_string(minCh) + ":" + std::to_string(maxCh);
 
 	DAQmxStopTask(taskHandle);
@@ -1150,9 +1192,7 @@ void AoCore::writeDacsToNI(unsigned variation,
 	// Write data
 	int32 written = 0;
 	status = DAQmxWriteAnalogF64(taskHandle, totalSamples, 0, 10.0,
-						DAQmx_Val_GroupByScanNumber, writeBuffer.data(), &written, NULL);
-
-
+					DAQmx_Val_GroupByScanNumber, writeBuffer.data(), &written, NULL);
 	// Start in software (this is the software trigger)
 	status = DAQmxStartTask(taskHandle);
 

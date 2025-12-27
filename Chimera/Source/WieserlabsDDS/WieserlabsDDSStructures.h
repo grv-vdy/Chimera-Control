@@ -22,7 +22,8 @@ struct wieserlabsDdsSettings {
 	std::string ipAddress;
 	int ipPort;
 	std::string deviceName;
-	std::pair<unsigned, unsigned> triggerLine;
+	std::pair<unsigned, unsigned> triggerLineCh0; // BNC_IN_A for Channel 0
+	std::pair<unsigned, unsigned> triggerLineCh1; // BNC_IN_B for Channel 1
 	std::string configurationFileDelimiter;
 };
 

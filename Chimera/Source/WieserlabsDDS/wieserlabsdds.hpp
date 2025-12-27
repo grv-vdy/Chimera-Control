@@ -9,6 +9,7 @@
 #endif
 
 #include <boost/asio.hpp>
+#include <qdebug.h>
 
 #include <cstdint>
 #include <cmath>
@@ -55,7 +56,8 @@ public:
     // Convenience: immediately set a single tone and send to hardware
     // slotIndex is accepted for API compatibility but ignored (we only support slot 0)
     void singleToneNow(int slotIndex, int channel,
-                       double freqHz, double amplitude, double phaseDeg = 0.0)
+                       double freqHz, double amplitude, double phaseDeg = 0.0,
+                       bool waitForTrigger = false)
     {
         (void)slotIndex; // unused
 
@@ -70,7 +72,10 @@ public:
         messageStack_.push_back(ad9910WriteMessage(channel, "stp0", stp0));
 
         // 3) Issue an update command
-        messageStack_.push_back(updateMessage(channel, "u"));
+        // If waitForTrigger=true, use 'i' (wait for I/O update trigger)
+        // If waitForTrigger=false, use 'u' (immediate software update)
+        std::string updateType = waitForTrigger ? "i" : "u";
+        messageStack_.push_back(updateMessage(channel, updateType));
 
         // 4) Send everything to the board
         run();
@@ -203,6 +208,10 @@ private:
         std::string msg = payload.str();
         messageStack_.clear();
 
+        qDebug() << "=== TCP COMMANDS TO DDS ===";
+        qDebug() << QString::fromStdString(msg);
+        qDebug() << "===========================";
+        
         sendLine(msg);
     }
 
@@ -221,6 +230,7 @@ private:
         boost::asio::read_until(socket_, buf, '\n', ec);
 
         if (ec && ec != boost::asio::error::eof) {
+            qDebug() << "DDS read error:" << QString::fromStdString(ec.message());
             std::cerr << "read error: " << ec.message() << "\n";
             return;
         }
@@ -230,6 +240,7 @@ private:
         std::getline(is, response);
 
         if (!response.empty()) {
+            qDebug() << "DDS response:" << QString::fromStdString(response);
             std::cerr << "FlexDDS -> " << response << "\n";
         }
     }

@@ -14,8 +14,7 @@
 
 QtScriptWindow::QtScriptWindow(QWidget* parent) : IChimeraQtWindow(parent)
 	, masterScript(this)
-	, arbGens{ {ArbGenSystem(UWAVE_SIGLENT_SETTINGS, ArbGenType::Siglent, this),
-		ArbGenSystem(UWAVE_AGILENT_SETTINGS, ArbGenType::Agilent, this) } }
+	, arbGens{ {ArbGenSystem(UWAVE_SIGLENT_SETTINGS, ArbGenType::Siglent, this) } }
 	, gigaMoog(this)
 	, wieserlabsDds(WIESERLABS_DDS_SETTINGS, this)
 {
@@ -296,6 +295,7 @@ profileSettings QtScriptWindow::getProfile (){
 }
 
 void QtScriptWindow::windowOpenConfig (ConfigStream& configFile){
+	qDebug() << "QtScriptWindow::windowOpenConfig CALLED";
 	try{
 		ConfigSystem::initializeAtDelim (configFile, "SCRIPTS");
 	}
@@ -339,14 +339,39 @@ void QtScriptWindow::windowOpenConfig (ConfigStream& configFile){
 			arbGens[(int)name].updateSettingsDisplay(getProfileSettings().configLocation, mainWin->getRunInfo());
 		}
 
+		qDebug() << "QtScriptWindow::windowOpenConfig - About to load DDS config";
 		deviceOutputInfo ddsInfo;
 		try {
+			qDebug() << "QtScriptWindow: Loading DDS config...";
+			// Load DDS channel settings (stdGetFromConfig handles everything including END delimiter)
 			ConfigSystem::stdGetFromConfig(configFile, wieserlabsDds.getCore(), ddsInfo, Version("1.0"));
 			wieserlabsDds.setOutputSettings(ddsInfo);
 			wieserlabsDds.updateSettingsDisplay(getProfileSettings().configLocation, mainWin->getRunInfo());
+			qDebug() << "QtScriptWindow: DDS settings loaded successfully";
+			
+			// Auto-open DDS script if one was saved
+			std::string scriptAddr = wieserlabsDds.getCore().getLoadedScriptAddress();
+			qDebug() << "DDS Script Address from config:" << qstr(scriptAddr);
+			// Simple check: if not empty and not the special empty marker, try to load
+			if (!scriptAddr.empty() && scriptAddr != "!#EMPTY_STRING#!") {
+				try {
+					qDebug() << "Attempting to open DDS script:" << qstr(scriptAddr);
+					openWieserlabsDDSScript(scriptAddr);
+					qDebug() << "DDS script opened successfully";
+				}
+				catch (ChimeraError& err) {
+					qDebug() << "Failed to open DDS script:" << err.qtrace();
+					// Script address exists but file not found - just report, don't force dialog
+					reportErr(qstr("DDS script from config not found: " + err.trace()));
+				}
+			}
+			else {
+				qDebug() << "No DDS script address in config - user can open manually if needed";
+			}
 		}
 		catch (ChimeraError& err) {
 			// DDS config not present in file, skip loading
+			qDebug() << "DDS config load failed:" << err.qtrace();
 			reportErr("DDS config load skipped: " + err.qtrace());
 		}
 
@@ -511,6 +536,7 @@ void QtScriptWindow::openWieserlabsDDSScript(IChimeraQtWindow* parent)
 		wieserlabsDds.wieserlabsDdsScript->openParentScript(openName, getProfile().configLocation, mainWin->getRunInfo());
 		updateConfigurationSavedStatus(false);
 		wieserlabsDds.wieserlabsDdsScript->updateScriptNameText(getProfile().configLocation);
+		wieserlabsDds.refreshScriptedWaveform(); // Parse the script into waveform
 	}
 	catch (ChimeraError& err) {
 		reportErr("Open Wieserlabs DDS Script Failed: " + err.qtrace() + "\r\n");
@@ -519,7 +545,16 @@ void QtScriptWindow::openWieserlabsDDSScript(IChimeraQtWindow* parent)
 
 void QtScriptWindow::openWieserlabsDDSScript(std::string name)
 {
-	wieserlabsDds.wieserlabsDdsScript->openParentScript(name, getProfile().configLocation, mainWin->getRunInfo());
+	try {
+		qDebug() << "openWieserlabsDDSScript: Opening script at path:" << qstr(name);
+		wieserlabsDds.wieserlabsDdsScript->openParentScript(name, getProfile().configLocation, mainWin->getRunInfo());
+		qDebug() << "openWieserlabsDDSScript: Script opened, now refreshing waveform";
+		wieserlabsDds.refreshScriptedWaveform(); // Parse the script into waveform
+		qDebug() << "openWieserlabsDDSScript: Waveform refreshed";
+	}
+	catch (ChimeraError& err) {
+		reportErr("ERROR opening DDS script: " + err.qtrace());
+	}
 }
 
 void QtScriptWindow::saveWieserlabsDDSScript()
@@ -595,7 +630,17 @@ void QtScriptWindow::fillExpDeviceList (DeviceList& list) {
 	for (auto name : ArbGenEnum::allAgs) {
 		list.list.push_back(arbGens[(int)name].getCore());
 	}
+	list.list.push_back(wieserlabsDds.getCore());
 	list.list.push_back(gigaMoog.getCore());
+}
+
+void QtScriptWindow::fillMasterThreadInput(ExperimentThreadInput* input) {
+	// Refresh the Wieserlabs DDS scripted waveform before the experiment starts
+	// This ensures the waveform is parsed and loaded into the core
+	qDebug() << "QtScriptWindow::fillMasterThreadInput: Refreshing Wieserlabs DDS waveform";
+	wieserlabsDds.refreshScriptedWaveform();
+	// Note: Other devices like arbGens and gigaMoog don't need pre-experiment refresh
+	// as their scripts are parsed differently
 }
 
 std::vector<std::reference_wrapper<ArbGenSystem>> QtScriptWindow::getArbGenSystem()
