@@ -3,17 +3,15 @@ t = 1
 dac: blue2dmot blue2dmotpower
 dac: greenmot greenmotpower
 dac: greenpushbeam greennarrowpushpower
+%dac: greenpushbeam 0.17
 dac: pushbeam bluepushpower
-dac: blue3dmot blue3dmotpower
-dac: bias1 bias1
-dac: bias2 bias2
-dac: biasz biasz
+%dac: blue3dmot blue3dmotpower
 
 
-on: mako1
-t += 20
-off: mako1
-t += 800
+off: blue3dmot
+t += 500
+on: blue3dmot
+t += 500
 on: pixis_trg 
 t += 2
 off: pixis_trg

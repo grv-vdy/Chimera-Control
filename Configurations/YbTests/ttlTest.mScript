@@ -1,49 +1,46 @@
 %%%%%%%%%%%%%%%%% Start With 1ms %%%%%%%%%%%%%%%%% 
 t = 1
 
-dac: blue3dmot 0.3
-%dac: pushbeam 1
-dac: blue2dmot 1.8300
-dac: greenmot 2
-dac: greenpushbeam greenpushpower
+t += 0.12
 
-on: pushbeam
-on: greenmot
-on: dds0
-on: dds1
-t += 10
-off: dds0
-off: dds1
-on: mako1
-t += 50
-off: mako1
-t += 10
-off: pushbeam
 
-dac: greenmot 0
-t += 1
-%on: pushbeam
-%on: blue3dmot
+dac: greenmot greenmotpower
+dac: opamp 0.000857739
 
-t += 10
+t += 3
 
-dac: greenmot 2
+dac: opamp 7.350000000
 
-t += 100
+t += 0.12
 
-dac: greenmot 0
+dac: opamp 3
 
-%off: pushbeam
-%off: blue3dmot
+t += 0.12
+
+dac: opamp 0
+
+t += 1000
 
 on: mako1
-t += 50
+t += 0.1
 off: mako1
 
-t += 400
+%dac: opamp 7.350000000
+%
+%t += 0.12
+%
+%dac: opamp 3
+%
+%t += 0.12
+%
+%dac: opamp 0
 
-off: greenmot
-off: blue3dmot
+dacramp: opamp 0 5 10
+t += 10
+
+
+
+
 on: pixis_trg 
 t += 2
 off: pixis_trg

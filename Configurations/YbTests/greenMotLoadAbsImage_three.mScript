@@ -1,0 +1,77 @@
+%%%%%%%%%%%%%%%%% Start With 1ms %%%%%%%%%%%%%%%%% 
+t = 1
+
+dac: blue3dmot 0.3
+%dac: pushbeam 1
+dac: blue2dmot blue2dmotpower
+dac: greenmot greenmotpower
+dac: greenpushbeam greennarrowpushpower
+dac: blueimg bluepower
+off: blueimg
+off: greenmot
+off: pushbeam
+t += 10
+on: pushbeam
+on: greenmot
+
+t += greenmotloadtime
+
+%mot rampdown
+%dacramp: greenmot greenmotpower greenmotpowerlow 300
+off: pushbeam
+
+
+% img 1
+
+%t += 301
+off: greenmot
+t += motreleasetime
+on: mako1
+t += 0.1
+on: blueimg
+t += 0.016
+off: blueimg
+t += 0.1
+off: mako1
+
+% make sure to destoroy atom
+t += 0.3
+on: blueimg
+t += 20
+off: blueimg
+t += 0.3
+% img 2
+on: mako1
+t += 0.1
+on: blueimg
+t += 0.016
+off: blueimg
+t += 0.1
+off: mako1
+t += 0.1
+
+t += 21
+
+on: mako1
+t += 0.1
+
+t += 0.016
+
+t += 0.1
+off: mako1
+t += 0.1
+
+t += 100
+
+t += 3
+on: pixis_trg 
+t += 2
+off: pixis_trg
+t += 1
+on: pixis_trg
+t += 2
+off: pixis_trg
+t += 5
+
+
+

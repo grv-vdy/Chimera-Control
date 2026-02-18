@@ -809,7 +809,7 @@ void AoCore::writeDacs(unsigned variation, bool loadSkip)
     if (useNI) 
 	{
         // Replace with your actual device and lines
-        writeDacsToNI(variation, "Dev1", "/Dev1/RTSI0", "/Dev1/RTSI1");
+        writeDacsToNI(variation, "Dev1", "/Dev1/RTSI0", "/Dev1/RTSI0");
     } 
 	
 	else 
@@ -894,7 +894,6 @@ void AoCore::makeFinalDataFormat(unsigned variation)
 
 void AoCore::handleDacScriptCommand(AoCommandForm command, std::string name, std::vector<parameterType>& vars)
 {
-	qDebug() << "handleDacScriptCommand: " << QString::fromStdString(command.commandName) << " for " << QString::fromStdString(name);
 	if (command.commandName != "dac:" &&
 		command.commandName != "dacarange:" &&
 		command.commandName != "daclinspace:" &&
@@ -1064,8 +1063,8 @@ void AoCore::writeDacsToNI(unsigned variation,
         return;
     }
 
-    // === Multi-snapshot case: hardware-timed ===
-    const double clkRate = 320000;       // external clock rate
+       // === Multi-snapshot case: hardware-timed ===
+    const double clkRate = 31250;       // external clock rate
     const double msToSamples = clkRate * 1e-3;
 
     // Convert each time into a sample index
@@ -1149,17 +1148,9 @@ void AoCore::writeDacsToNI(unsigned variation,
                 for (uint64_t k = startIdx; k < endIdx; ++k) {
                     writeBuffer[k * numChannels + chPos] = startVal;
                 }
-                // Debug: verify writes for segment 1
-                if (seg == 1 && ch < 2 && startIdx < endIdx) {
-                    qDebug() << "  DEBUG: seg=" << seg << "ch=" << ch << "chPos=" << chPos 
-                             << "wrote" << (endIdx-startIdx) << "samples with val=" << startVal;
-                    qDebug() << "    Buffer[" << (startIdx*numChannels+chPos) << "]=" << writeBuffer[startIdx*numChannels+chPos];
-                    qDebug() << "    Buffer[" << ((startIdx+1)*numChannels+chPos) << "]=" << writeBuffer[(startIdx+1)*numChannels+chPos];
-                }
 			}
         }
     }
-
     std::string channelStr = deviceName + "/ao" + std::to_string(minCh) + ":" + std::to_string(maxCh);
 
 	DAQmxStopTask(taskHandle);
@@ -1178,7 +1169,7 @@ void AoCore::writeDacsToNI(unsigned variation,
 
 
     // // External trigger
-    DAQmxCfgDigEdgeStartTrig(taskHandle, triggerSource.c_str(), DAQmx_Val_Rising);
+    //DAQmxCfgDigEdgeStartTrig(taskHandle, triggerSource.c_str(), DAQmx_Val_Rising);
 
 
 	// Use an internal clock rate (Hz)
@@ -1192,12 +1183,17 @@ void AoCore::writeDacsToNI(unsigned variation,
 	// Write data
 	int32 written = 0;
 	status = DAQmxWriteAnalogF64(taskHandle, totalSamples, 0, 10.0,
-					DAQmx_Val_GroupByScanNumber, writeBuffer.data(), &written, NULL);
+						DAQmx_Val_GroupByScanNumber, writeBuffer.data(), &written, NULL);
+
+	if (status != 0) {
+    	char errBuff[2048];
+    	DAQmxGetExtendedErrorInfo(errBuff, 2048);
+    	thrower("DAQmx Start Task Error: " + std::string(errBuff));
+	}
+
+
 	// Start in software (this is the software trigger)
 	status = DAQmxStartTask(taskHandle);
-
-	// Wait for completion (if desired)
-	
 
 	
 }

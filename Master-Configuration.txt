@@ -21,7 +21,7 @@ dds1
 1
 xymotshutter
 1
-d1lgmshutter
+greenpush
 1
 d1lgmprbshutter
 1
@@ -39,65 +39,65 @@ d1lgmtrg
 1
 do3_3
 1
-motcamera
+do3_4
 1
-mako2
+do3_5
 1
-cooling_ol
+do3_6
 1
-repump_ol
+do3_7
 1
-d1lgmeomtrg
+do4_0
 1
-prbrelayswitch
+do4_1
 1
-mwtrg
+do4_2
 1
-mwamptrg
+do4_3
 1
-ryd420hold
+do4_4
 1
-ryd1013hold
+do4_5
 1
-d1lgm_ol
+do4_6
 1
-d1lgmeom_ol
+do4_7
 1
-ryd420shutter
+do5_0
 1
-ryd420trg
+do5_1
 1
-ryd420expshutter
+do5_2
 1
-ryd420mako
+do5_3
 1
-ryd1013trg
+do5_4
 1
-ryd1013shutter
+do5_5
 1
-ryd840_ol
+do5_6
 1
-ryd1013mako
+do5_7
 1
-tareptrg
+do6_0
 1
-prbreptrg
+do6_1
 1
-optrg
+do6_2
 1
-dipolepushtrg
+do6_3
 1
-prbtrg
+do6_4
 1
-scimottrg
+do6_5
 1
-srcmottrg
+do6_6
 1
-tweezertrg
+do6_7
 1
-keysighttrg
+do7_0
 1
-siglenttrg
+do7_1
 1
 do7_2
 1
@@ -111,7 +111,7 @@ do7_6
 1
 do7_7
 1
-gmloadtrg
+do8_0
 1
 do8_1
 1
@@ -121,11 +121,11 @@ do8_3
 1
 do8_4
 1
-tweezerintensityswitch
+do8_5
 1
-ryd420awgchswitch
+do8_6
 1
-uvlamptrg
+do8_7
 1
 greenmot
 0 - 2
@@ -159,20 +159,20 @@ blue2dmot
 0 - 2
 0
 dac0_7
-tweezerintensity
--5 - 8
+bias1
+0 - 5
 0
 dac0_8
-dipolepushrepamp
--9.9 - 10
+bias2
+0 - 5
 0
 dac0_9
-dac0_10
--9.9 - 10
+biasz
+0 - 5
 0
 dac0_10
-d1lgmamp
--9.9 - 10
+mot
+0 - 5
 0
 dac0_11
 d1lgmeomamp

@@ -4,15 +4,20 @@ t = 1
 
 dac: blue2dmot blue2dmotpower
 
-dac: bias1 bias1
-dac: bias2 bias2
+dac: bias1 (bias1+biasx+biasy)
+dac: bias2 (bias2-biasx+biasy)
 dac: biasz biasz
 dac: blue3dmot blue3dmotpower
 dac: greenmot greenmotpower
 dac: greenpushbeam greennarrowpushpower
 dac: pushbeam bluepushpower
+off: greenmot
+off: blue3dmot
+off: pushbeam
+t += 100
 on: greenmot
 on: blue3dmot
+%bkg img
 on: mako1
 t += 5
 off: mako1
@@ -27,6 +32,20 @@ on: blue3dmot
 t += coreshellloadtime
 
 off: pushbeam
+
+%img 1
+on: mako1
+t += 5
+off: mako1
+
+t += 1
+on: greenpush
+
+t+= 33
+
+off: greenpush
+
+% img 2
 on: mako1
 t += 5
 off: mako1

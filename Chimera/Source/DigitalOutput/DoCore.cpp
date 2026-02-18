@@ -550,25 +550,25 @@ void DoCore::writeTtlAoDataToFPGA(UINT variation, bool /*loadSkip*/, AoCore& ao,
 	if (reprogram)
 	{
 		rio.reset();
-		ao.writeDacs(variation, false);
+		//ao.writeDacs(variation, false);
 		std::this_thread::sleep_for(std::chrono::milliseconds(5));
 		rio.untrigger();
 		rio.writeTTL(doFPGATimes[variation], doFPGAData[variation]);
 		rio.waitForMemLoaded();
 		rio.trigger();
 		rio.waitForFinish();
-		ao.handleFinish();
+		//ao.handleFinish();
 	}
 
 	else
 	{
-		ao.writeDacs(variation, false);
+		//ao.writeDacs(variation, false);
 		std::this_thread::sleep_for(std::chrono::milliseconds(5));
 		rio.untrigger();
 		rio.set_reprogram(1);
 		rio.trigger();
 		rio.waitForFinish();
-		ao.handleFinish();
+		//ao.handleFinish();
 		rio.set_reprogram(0);
 	}
 	

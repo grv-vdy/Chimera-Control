@@ -110,7 +110,7 @@ void ExpThreadWorker::experimentThreadProcedure () {
 					handlePause(isPaused, isAborting);
 					startRep(repInc, variationInc, input->skipNext == nullptr ? false : input->skipNext->load());
 					waitForSequenceFinish(finaltimes[variationInc]);
-					Sleep(100);
+					Sleep(10);
 				}
 			}
 		}
@@ -724,8 +724,7 @@ bool ExpThreadWorker::handleAoCommands (std::string word, ScriptStream& stream,	
 			throwNested ("Error handling \"cao:\" command.");
 		}
 	}
-	if (word == "dac:") {
-		qDebug() << "ExpThreadWorker: Parsing dac: command";
+	else if (word == "dac:") {
 		AoCommandForm command;
 		std::string name;
 		stream >> name >> command.finalVal;
@@ -787,7 +786,7 @@ bool ExpThreadWorker::handleAoCommands (std::string word, ScriptStream& stream,	
 	}
 	else if (word == "dacramp:")
 	{
-		qDebug() << "ExpThreadWorker: Parsing dacramp: command";
+
 		AoCommandForm command;
 		std::string name;
 		stream >> name >> command.initVal >> command.finalVal >> command.rampTime;
@@ -1213,7 +1212,7 @@ void ExpThreadWorker::startRep (unsigned repInc, unsigned variationInc, bool ski
 		
 		
 		// input->ttls.writeTtlDataToFPGA(variationInc, skip);
-		//input->ao.writeDacs(variationInc, skip);
+		input->ao.writeDacs(variationInc, skip);
 		
 		//AO and TTL
 		if (repInc == 0) {
@@ -1222,7 +1221,7 @@ void ExpThreadWorker::startRep (unsigned repInc, unsigned variationInc, bool ski
 		else {
 			input->ttls.writeTtlAoDataToFPGA(variationInc, skip, input->ao, false);
 		}
-
+		
 		//emit notification("0.1: " + qstr(timer.elapsed()) + "\t");
 		// Sleep(50); /// have to sleep for this amount of time to make TCP connect smoothly?????? zzp 2021/06/04 very annoying
 		// input->zynqExp.sendCommand("trigger");

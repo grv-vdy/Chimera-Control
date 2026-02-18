@@ -174,7 +174,11 @@ void TemperatureMonitorCore::normalFinish()
 
 void TemperatureMonitorCore::errorFinish()
 {
-	normalFinish();
+	// Don't try to write temperature/pressure data during error/abort
+	// The file is being closed and HDF5 operations will deadlock or fail
+	for (auto& broker : dataBroker) {
+		broker.experimentEnd();
+	}
 }
 
 void TemperatureMonitorCore::createDataFolder()
