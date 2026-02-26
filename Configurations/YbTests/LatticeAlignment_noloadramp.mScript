@@ -8,21 +8,19 @@ dac: pushbeam bluepushpower
 dac: bias1 bias1
 dac: bias2 bias2
 dac: biasz biasz
-t += 1000
+t += 3000
 
 
 dac: bias1 (bias1+biasx+biasy)
 dac: bias2 (bias2-biasx+biasy)
 dac: biasz (biasz+biaszoff)
 t += 100
-on: greenmot
-on: blue3dmot
-
-dacramp: greenmot greenmotpower greenmotpowerlow 10
-t += 12
 
 off: pushbeam
 off: blue3dmot
+
+dacramp: greenmot greenmotpower greenmotpowerlow 10
+t += 3
 
 
 %t += 1
@@ -32,11 +30,8 @@ off: blue3dmot
 
 %t += 0.1
 
-t += 100
-
-
-
 t += 10
+
 
 %img 1
 on: mako1
@@ -51,7 +46,7 @@ on: greenpush
 t+= time
 
 off: greenpush
-t+= 600-time
+t+= 101-time
 
 t += 10
 
@@ -61,7 +56,6 @@ t += 22
 off: mako1
 
 on: pushbeam
-on: greenmot
 on: blue3dmot
 
 dac: bias1 bias1

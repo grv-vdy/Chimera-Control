@@ -11,9 +11,9 @@ dac: biasz biasz
 
 
 on: mako1
-t += 20
+t += 10
 off: mako1
-t += 800
+t += 200
 on: pixis_trg 
 t += 2
 off: pixis_trg

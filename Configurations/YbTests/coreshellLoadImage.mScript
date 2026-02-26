@@ -1,0 +1,47 @@
+%%%%%%%%%%%%%%%%% Start With 1ms %%%%%%%%%%%%%%%%% 
+t = 1
+
+
+dac: blue2dmot blue2dmotpower
+
+dac: bias1 (bias1+biasx+biasy)
+dac: bias2 (bias2-biasx+biasy)
+dac: biasz (biasz+biaszoff)
+dac: blue3dmot blue3dmotpower
+dac: greenmot greenmotpower
+dac: pushbeam bluepushpower
+on: greenmot
+on: blue3dmot
+on: mako1
+t += 5
+off: mako1
+t += 10
+off: greenmot
+off: blue3dmot
+t += 10
+on: pushbeam
+on: greenmot
+on: blue3dmot
+
+t += coreshellloadtime
+
+off: pushbeam
+on: mako1
+t += 5
+off: mako1
+
+off: greenmot
+off: blue3dmot
+
+
+t += 33
+t += 3
+on: pixis_trg 
+t += 2
+off: pixis_trg
+t += 1
+on: pixis_trg
+t += 2
+off: pixis_trg
+t += 5
+

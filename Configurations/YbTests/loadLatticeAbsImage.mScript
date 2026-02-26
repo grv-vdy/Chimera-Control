@@ -5,7 +5,6 @@ dac: blue3dmot blue3dmotpower
 dac: pushbeam bluepushpower
 dac: blue2dmot blue2dmotpower
 dac: greenmot greenmotpower
-dac: greenpushbeam greennarrowpushpower
 dac: blueimg blueimgpower
 dac: bias1 (bias1+biasx+biasy)
 dac: bias2 (bias2-biasx+biasy)
@@ -18,13 +17,13 @@ off: blue3dmot
 t += 10
 on: pushbeam
 on: greenmot
-
 on: blue3dmot
+
 t += coreshellloadtime
 
 %mot rampdown
-%dacramp: greenmot greenmotpower greenmotpowerlow 1
-%t += 3
+dacramp: greenmot greenmotpower greenmotpowerlow 1
+t += 3
 
 off: pushbeam
 off: blue3dmot
@@ -37,7 +36,7 @@ off: blue3dmot
 
 %t += 0.1
 
-%t += 10
+t += 10
 off: greenmot
 
 t += motreleasetime
