@@ -5,8 +5,10 @@
 #include "WieserlabsDDSStructures.h"
 #include "ConfigurationSystems/ConfigSystem.h"
 #include "Scripts/ScriptStream.h"
+#include "ParameterSystem/Expression.h"
 #include "ParameterSystem/ParameterSystemStructures.h"
 #include "PrimaryWindows/IChimeraQtWindow.h"
+#include "PrimaryWindows/QtAuxiliaryWindow.h"
 #include "ExcessDialogs/saveWithExplorer.h"
 #include "ExcessDialogs/openWithExplorer.h"
 #include <qdebug.h>
@@ -36,6 +38,10 @@ void WieserlabsDDSSystem::initialize(std::string headerText, IChimeraQtWindow* w
 	modeCombo->addItem("No Script");
 	modeCombo->setCurrentIndex(0);
 	layout->addWidget(modeCombo);
+
+	ctrlButton = new CQCheckBox("Control", win);
+	ctrlButton->setChecked(false);
+	layout->addWidget(ctrlButton);
 
 	// Channel controls
 	for (int chan = 0; chan < 2; chan++) {
@@ -98,21 +104,43 @@ void WieserlabsDDSSystem::checkSave(std::string configPath, RunInfo info)
 
 void WieserlabsDDSSystem::handleChannelPress(int chan, std::string configPath, RunInfo currentRunInfo)
 {
-	if (!core.connected()) {
-		QMessageBox::warning(this, "Wieserlabs DDS", "DDS not connected!");
-		return;
-	}
-
 	try {
 		bool on = onButtons[chan]->isChecked();
-		double freq = freqEdits[chan]->text().toDouble(); // Already in MHz
+
+		currentGuiInfo = getOutputInfo();
+		core.setRunSettings(currentGuiInfo);
+
+		bool ok = false;
+		double freq = freqEdits[chan]->text().toDouble(&ok); // Already in MHz
+		bool canProgramNow = ok;
+		if (!ok) {
+			try {
+				Expression expr(str(freqEdits[chan]->text()));
+				if (parentWin && parentWin->auxWin) {
+					auto constants = parentWin->auxWin->getUsableConstants();
+					expr.assertValid(constants, GLOBAL_PARAMETER_SCOPE);
+					freq = expr.evaluate(constants, 0);
+					canProgramNow = true;
+				}
+			}
+			catch (...) {
+				canProgramNow = false;
+			}
+		}
 		double amp = ampEdits[chan]->text().toDouble();
 		double phase = phaseEdits[chan]->text().toDouble();
 
 		if (on) {
-			core.programSingleToneNow(chan, freq, amp, phase);			// Update steady state so this becomes the new default after experiments
-			core.updateSteadyState(chan, freq, amp, phase, on);
-			qDebug() << "Programmed DDS ch" << chan << ":" << freq << "MHz," << amp << "amp," << phase << "deg";		}
+			if (canProgramNow) {
+				if (core.connected()) {
+					core.programSingleToneNow(chan, freq, amp, phase);
+					qDebug() << "Programmed DDS ch" << chan << ":" << freq << "MHz," << amp << "amp," << phase << "deg";
+				}
+				else {
+					QMessageBox::warning(this, "Wieserlabs DDS", "DDS not connected. Settings were saved but not programmed.");
+				}
+			}
+		}
 	}
 	catch (ChimeraError& err) {
 		QMessageBox::warning(this, "Wieserlabs DDS Error", QString::fromStdString(err.trace()));
@@ -128,14 +156,18 @@ void WieserlabsDDSSystem::handleModeCombo()
 
 void WieserlabsDDSSystem::readGuiSettings()
 {
-	for (int chan = 0; chan < 2; chan++) {
-		readGuiSettings(chan);
-	}
+	currentGuiInfo = getOutputInfo();
+	core.setRunSettings(currentGuiInfo);
+	refreshScriptedWaveform();
 }
 
 void WieserlabsDDSSystem::readGuiSettings(int chan)
 {
-	// Read GUI settings for channel
+	if (chan < 0 || chan >= 2) {
+		return;
+	}
+	currentGuiInfo = getOutputInfo();
+	core.setRunSettings(currentGuiInfo);
 }
 
 bool WieserlabsDDSSystem::scriptingModeIsSelected()
@@ -164,6 +196,7 @@ void WieserlabsDDSSystem::handleSavingConfig(ConfigStream& saveFile, std::string
 		saveFile << "\n/*Amplitude:*/\t\t\t\t" << ampEdits[chan]->text().toStdString();
 		saveFile << "\n/*Phase:*/\t\t\t\t\t" << phaseEdits[chan]->text().toStdString();
 	}
+	saveFile << "\n/*Control:*/\t\t\t\t" << ctrlButton->isChecked();
 	// Save script address for auto-loading on next config open
 	saveFile << "\n/*Script Address:*/\t\t\t" << wieserlabsDdsScript->getScriptPathAndName();
 	saveFile << "\nEND_" + core.getDelim() << "\n"; // ensure newline so next section starts cleanly
@@ -179,10 +212,16 @@ void WieserlabsDDSSystem::handleOpenConfig(deviceOutputInfo settings)
 	// Set UI from settings
 	for (int chan = 0; chan < 2; chan++) {
 		onButtons[chan]->setChecked(settings.snapshot[chan].on);
-		freqEdits[chan]->setText(QString::number(settings.snapshot[chan].frequency)); // Config stores MHz
+		if (!settings.snapshot[chan].frequencyExpression.expressionStr.empty()) {
+			freqEdits[chan]->setText(qstr(settings.snapshot[chan].frequencyExpression.expressionStr));
+		}
+		else {
+			freqEdits[chan]->setText(QString::number(settings.snapshot[chan].frequency)); // Config stores MHz
+		}
 		ampEdits[chan]->setText(QString::number(settings.snapshot[chan].amplitude));
 		phaseEdits[chan]->setText(QString::number(settings.snapshot[chan].phase));
 	}
+	ctrlButton->setChecked(settings.wieserlabsControl);
 }
 
 void WieserlabsDDSSystem::updateSettingsDisplay(int chan, std::string configPath, RunInfo currentRunInfo)
@@ -192,10 +231,16 @@ void WieserlabsDDSSystem::updateSettingsDisplay(int chan, std::string configPath
 	if (chan >= 0 && chan < 2) {
 		auto& channelInfo = currentGuiInfo.snapshot[chan];
 		onButtons[chan]->setChecked(channelInfo.on);
-		freqEdits[chan]->setText(QString::number(channelInfo.frequency)); // Config stores MHz
+		if (!channelInfo.frequencyExpression.expressionStr.empty()) {
+			freqEdits[chan]->setText(qstr(channelInfo.frequencyExpression.expressionStr));
+		}
+		else {
+			freqEdits[chan]->setText(QString::number(channelInfo.frequency)); // Config stores MHz
+		}
 		ampEdits[chan]->setText(QString::number(channelInfo.amplitude));
 		phaseEdits[chan]->setText(QString::number(channelInfo.phase));
 	}
+	ctrlButton->setChecked(currentGuiInfo.wieserlabsControl);
 }
 
 void WieserlabsDDSSystem::updateSettingsDisplay(std::string configPath, RunInfo currentRunInfo)
@@ -251,10 +296,16 @@ deviceOutputInfo WieserlabsDDSSystem::getOutputInfo()
 
 	for (int chan = 0; chan < 2; chan++) {
 		info.snapshot[chan].on = onButtons[chan]->isChecked();
-		info.snapshot[chan].frequency = freqEdits[chan]->text().toDouble() * 1e6;
+		info.snapshot[chan].frequencyExpression.expressionStr = str(freqEdits[chan]->text());
+		bool ok = false;
+		info.snapshot[chan].frequency = freqEdits[chan]->text().toDouble(&ok);
+		if (!ok) {
+			info.snapshot[chan].frequency = 0.0;
+		}
 		info.snapshot[chan].amplitude = ampEdits[chan]->text().toDouble();
 		info.snapshot[chan].phase = phaseEdits[chan]->text().toDouble();
 	}
+	info.wieserlabsControl = ctrlButton->isChecked();
 
 	return info;
 }
@@ -267,6 +318,7 @@ WieserlabsDDSCore& WieserlabsDDSSystem::getCore()
 void WieserlabsDDSSystem::setOutputSettings(deviceOutputInfo info)
 {
 	currentGuiInfo = info;
+	core.setRunSettings(currentGuiInfo);
 	// Immediately reflect loaded settings in the UI so the DDS window shows config values.
 	updateSettingsDisplay("", RunInfo());
 }

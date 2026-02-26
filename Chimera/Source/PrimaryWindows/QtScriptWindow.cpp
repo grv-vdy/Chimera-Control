@@ -635,10 +635,10 @@ void QtScriptWindow::fillExpDeviceList (DeviceList& list) {
 }
 
 void QtScriptWindow::fillMasterThreadInput(ExperimentThreadInput* input) {
-	// Refresh the Wieserlabs DDS scripted waveform before the experiment starts
-	// This ensures the waveform is parsed and loaded into the core
-	qDebug() << "QtScriptWindow::fillMasterThreadInput: Refreshing Wieserlabs DDS waveform";
-	wieserlabsDds.refreshScriptedWaveform();
+	// Push current Wieserlabs GUI state (including static expressions/control)
+	// and refresh scripted waveform before the experiment starts.
+	qDebug() << "QtScriptWindow::fillMasterThreadInput: Updating Wieserlabs DDS run settings";
+	wieserlabsDds.readGuiSettings();
 	// Note: Other devices like arbGens and gigaMoog don't need pre-experiment refresh
 	// as their scripts are parsed differently
 }

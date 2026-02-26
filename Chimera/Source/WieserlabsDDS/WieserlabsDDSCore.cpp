@@ -13,6 +13,25 @@
 #include <thread>
 #include <chrono>
 
+namespace {
+	double evaluateFrequencyMHz(wieserlabsDdsChannel& chan, std::vector<parameterType>& params, unsigned variation)
+	{
+		if (!chan.frequencyExpression.expressionStr.empty()) {
+			try {
+				return chan.frequencyExpression.evaluate(params, variation);
+			}
+			catch (...) {
+				try {
+					return std::stod(chan.frequencyExpression.expressionStr);
+				}
+				catch (...) {
+				}
+			}
+		}
+		return chan.frequency;
+	}
+}
+
 WieserlabsDDSCore::WieserlabsDDSCore(const wieserlabsDdsSettings& settings)
 	: initSettings(settings), configDelim(settings.configurationFileDelimiter)
 {
@@ -130,14 +149,17 @@ deviceOutputInfo WieserlabsDDSCore::getSettingsFromConfig(ConfigStream& file)
 	info.snapshot = std::vector<wieserlabsDdsChannel>(2);
 
 	auto normalizeToken = [](std::string t) {
-		// make lowercase to match ConfigStream behavior and strip surrounding quotes
-		std::transform(t.begin(), t.end(), t.begin(), ::tolower);
+		// strip surrounding quotes
 		if (!t.empty() && t.front() == '"') {
 			t.erase(0, 1);
 		}
 		if (!t.empty() && t.back() == '"') {
 			t.pop_back();
 		}
+		return t;
+	};
+	auto lowerCopy = [](std::string t) {
+		std::transform(t.begin(), t.end(), t.begin(), ::tolower);
 		return t;
 	};
 	
@@ -154,8 +176,10 @@ deviceOutputInfo WieserlabsDDSCore::getSettingsFromConfig(ConfigStream& file)
 		std::string freqStr;
 		file >> freqStr;
 		freqStr = normalizeToken(freqStr);
-		if (freqStr == "!#empty_string#!" || freqStr.empty()) {
+		info.snapshot[chan].frequencyExpression.expressionStr = freqStr;
+		if (lowerCopy(freqStr) == "!#empty_string#!" || freqStr.empty()) {
 			info.snapshot[chan].frequency = 0.0;
+			info.snapshot[chan].frequencyExpression.expressionStr = "0";
 		}
 		else {
 			try {
@@ -163,6 +187,7 @@ deviceOutputInfo WieserlabsDDSCore::getSettingsFromConfig(ConfigStream& file)
 				info.snapshot[chan].frequency = std::stod(freqStr);
 			}
 			catch (...) {
+				// Keep expression text even if it's not numeric.
 				info.snapshot[chan].frequency = 0.0;
 			}
 		}
@@ -207,8 +232,15 @@ deviceOutputInfo WieserlabsDDSCore::getSettingsFromConfig(ConfigStream& file)
 	file >> nextToken;
 	
 	// Check if this is the END delimiter (case-insensitive check)
-	std::string lowerToken = nextToken;
-	std::transform(lowerToken.begin(), lowerToken.end(), lowerToken.begin(), ::tolower);
+	std::string lowerToken = lowerCopy(nextToken);
+
+	// Optional control flag line.
+	if (lowerToken == "0" || lowerToken == "1" || lowerToken == "true" || lowerToken == "false") {
+		info.wieserlabsControl = (lowerToken == "1" || lowerToken == "true");
+		file >> nextToken;
+		lowerToken = lowerCopy(nextToken);
+	}
+ 
 	
 	if (lowerToken == "end_wieserlabs_dds" || lowerToken.find("camera_") == 0 || 
 	    lowerToken.find("andor_") == 0 || lowerToken.find("master_") == 0 || nextToken.empty()) {
@@ -239,7 +271,7 @@ void WieserlabsDDSCore::loadExpSettings(ConfigStream& script)
 	// DDS is NOT configured in master script - it's only configured in the main config file
 	// This function is called by the framework but should do nothing for DDS
 	qDebug() << "WieserlabsDDSCore::loadExpSettings called - DDS does not use master script config, skipping";
-	experimentActive = waveformLoaded; // Use the waveform that was loaded from the DDS script
+	experimentActive = waveformLoaded || expRunSettings.wieserlabsControl; // Scripted or static-control mode
 	qDebug() << "WieserlabsDDSCore::loadExpSettings - experimentActive =" << experimentActive << ", waveformLoaded =" << waveformLoaded;
 }
 
@@ -254,6 +286,37 @@ void WieserlabsDDSCore::calculateVariations(std::vector<parameterType>& params, 
 	}
 	else {
 		qDebug() << "WieserlabsDDSCore: Waveform is loaded and ready for experiment";
+	}
+
+	if (!expRunSettings.wieserlabsControl || waveformLoaded) {
+		return;
+	}
+
+	size_t totalVariations = (params.size() == 0) ? 1 : params.front().keyValues.size();
+	try {
+		for (unsigned chan = 0; chan < steadyStateSettings.size(); chan++) {
+			if (!steadyStateSettings[chan].on) {
+				continue;
+			}
+			auto& expr = steadyStateSettings[chan].frequencyExpression;
+			if (expr.expressionStr.empty()) {
+				continue;
+			}
+
+			expr.assertValid(params, GLOBAL_PARAMETER_SCOPE);
+			expr.internalEvaluate(params, static_cast<unsigned>(totalVariations));
+
+			if (expr.varies() && initSettings.safemode) {
+				thrower("Error varying Wieserlabs DDS frequency in safemode for channel " + str(chan));
+			}
+
+			for (unsigned variation = 0; variation < totalVariations; variation++) {
+				(void)expr.getValue(variation);
+			}
+		}
+	}
+	catch (ChimeraError&) {
+		throwNested("Failed to evaluate Wieserlabs DDS frequency expression variations.");
 	}
 }
 
@@ -279,7 +342,11 @@ void WieserlabsDDSCore::checkTriggers(unsigned variationInc, DoCore& ttls, ExpTh
 
 void WieserlabsDDSCore::setRunSettings(deviceOutputInfo newSettings)
 {
-	// Update current settings
+	expRunSettings = newSettings;
+	if (!newSettings.snapshot.empty()) {
+		steadyStateSettings = newSettings.snapshot;
+	}
+	experimentActive = waveformLoaded || expRunSettings.wieserlabsControl;
 }
 
 void WieserlabsDDSCore::setWieserlabsDDS(unsigned variation, std::vector<parameterType>& params, deviceOutputInfo runSettings, ExpThreadWorker* expWorker)
@@ -290,7 +357,8 @@ void WieserlabsDDSCore::setWieserlabsDDS(unsigned variation, std::vector<paramet
 	auto& channels = runSettings.snapshot;
 	for (unsigned chan = 0; chan < channels.size(); chan++) {
 		if (channels[chan].on) {
-			programSingleTone(chan, channels[chan].frequency, channels[chan].amplitude, channels[chan].phase, nullptr, false);
+			double freqMHz = evaluateFrequencyMHz(channels[chan], params, variation);
+			programSingleTone(chan, freqMHz, channels[chan].amplitude, channels[chan].phase, nullptr, false);
 		}
 		currentSettings[chan] = channels[chan];
 	}
@@ -300,6 +368,21 @@ void WieserlabsDDSCore::programVariation(unsigned variation, std::vector<paramet
 {
 	if (hasScriptedWaveform()) {
 		executeScriptedCommands(activeWaveform, threadworker);
+		return;
+	}
+
+	if (!expRunSettings.wieserlabsControl || !isConnected) {
+		return;
+	}
+
+	for (unsigned chan = 0; chan < steadyStateSettings.size(); chan++) {
+		if (!steadyStateSettings[chan].on) {
+			continue;
+		}
+		double freqMHz = evaluateFrequencyMHz(steadyStateSettings[chan], params, variation);
+		programSingleTone(chan, freqMHz, steadyStateSettings[chan].amplitude, steadyStateSettings[chan].phase, nullptr, false);
+		currentSettings[chan] = steadyStateSettings[chan];
+		currentSettings[chan].frequency = freqMHz;
 	}
 }
 
@@ -462,6 +545,7 @@ void WieserlabsDDSCore::updateSteadyState(unsigned channel, double freq, double 
 {
 	if (channel < steadyStateSettings.size()) {
 		steadyStateSettings[channel].frequency = freq;
+		steadyStateSettings[channel].frequencyExpression.expressionStr = str(freq);
 		steadyStateSettings[channel].amplitude = amp;
 		steadyStateSettings[channel].phase = phase;
 		steadyStateSettings[channel].on = on;

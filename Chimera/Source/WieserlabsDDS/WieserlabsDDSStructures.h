@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <ParameterSystem/Expression.h>
 
 enum class WieserlabsDDSType {
 	WieserlabsDDS
@@ -13,6 +14,7 @@ namespace WieserlabsDDSEnum {
 struct wieserlabsDdsChannel {
 	bool on = false;
 	double frequency = 0.0; // Hz
+	Expression frequencyExpression = "0";
 	double amplitude = 0.0; // 0-1 (normalized)
 	double phase = 0.0; // degrees
 };

@@ -57,6 +57,7 @@ private:
 	std::vector<CQLineEdit*> phaseEdits;
 	std::vector<QLabel*> channelLabels;
 	std::vector<QPushButton*> channelButtons;
+	CQCheckBox* ctrlButton;
 	CQComboBox* modeCombo;
 	QLabel* header;
 	deviceOutputInfo currentGuiInfo;
