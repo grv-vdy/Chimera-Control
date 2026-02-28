@@ -1,25 +1,121 @@
 #include "stdafx.h"
 #include "ScriptedWieserlabsDDSWaveform.h"
 #include "ParameterSystem/ParameterSystemStructures.h"
+#include "ParameterSystem/Expression.h"
 #include <boost/algorithm/string.hpp>
 #include <qdebug.h>
+#include <algorithm>
 
 ScriptedWieserlabsDDSWaveform::ScriptedWieserlabsDDSWaveform()
 {
 }
 
 bool ScriptedWieserlabsDDSWaveform::analyzeWieserlabsDDSScriptCommand(ScriptStream& script, std::vector<parameterType>& params,
-	std::string& warnings)
+	std::string& warnings, unsigned variation)
 {
 	std::string line = script.getline();
+	boost::trim(line);
 	if (line.empty()) {
-		return false;
+		return true;
 	}
 	
 	std::stringstream lineStream(line);
 	std::string command;
 	lineStream >> command;
 	boost::to_lower(command);
+
+	auto evalToken = [&](const std::string& token, double& valueOut) -> bool {
+		try {
+			valueOut = std::stod(token);
+			return true;
+		}
+		catch (...) {
+		}
+
+		try {
+			Expression expr(token);
+			std::vector<std::string> scopesToTry = {
+				GLOBAL_PARAMETER_SCOPE,
+				PARENT_PARAMETER_SCOPE,
+				DDS_PARAMETER_SCOPE
+			};
+			for (const auto& param : params) {
+				if (std::find(scopesToTry.begin(), scopesToTry.end(), param.parameterScope) == scopesToTry.end()) {
+					scopesToTry.push_back(param.parameterScope);
+				}
+			}
+
+			for (const auto& scope : scopesToTry) {
+				try {
+					expr.assertValid(params, scope);
+					valueOut = expr.evaluate(params, variation);
+					return true;
+				}
+				catch (...) {
+				}
+			}
+		}
+		catch (...) {
+		}
+
+		return false;
+	};
+
+	auto finalizeCommand = [&](DdsCommand& cmdObj) {
+		double scheduledStartMs = nextCommandStartMs;
+		if (scheduledStartMs < lastCommandEndMs) {
+			warnings += "Requested DDS command start time is earlier than current timeline; clamping to current time\n";
+			scheduledStartMs = lastCommandEndMs;
+		}
+
+		cmdObj.preDelayMs = std::max(0.0, scheduledStartMs - lastCommandEndMs);
+
+		double intrinsicDurationMs = 0.0;
+		if (cmdObj.type == "ramp") {
+			intrinsicDurationMs = std::max(0.0, cmdObj.duration);
+		}
+
+		lastCommandEndMs = scheduledStartMs + intrinsicDurationMs + std::max(0.0, cmdObj.delayMs);
+		nextCommandStartMs = lastCommandEndMs;
+		commandList.push_back(cmdObj);
+	};
+
+	if (command == "t") {
+		std::string assignToken;
+		lineStream >> assignToken;
+		if (assignToken != "=" && assignToken != "+=") {
+			warnings += "Invalid time assignment syntax. Use: t += 5, t = +5, or t = 50\n";
+			return true;
+		}
+
+		std::string valueToken;
+		lineStream >> valueToken;
+		if (valueToken.empty()) {
+			warnings += "Missing time value after time assignment\n";
+			return true;
+		}
+
+		try {
+			double valueMs = 0.0;
+			if (!evalToken(valueToken, valueMs)) {
+				warnings += "Invalid time value in time assignment\n";
+				scriptText += line + "\n";
+				return true;
+			}
+			if (assignToken == "+=" || valueToken[0] == '+') {
+				nextCommandStartMs += valueMs;
+			}
+			else {
+				nextCommandStartMs = valueMs;
+			}
+		}
+		catch (...) {
+			warnings += "Invalid time value in time assignment\n";
+		}
+
+		scriptText += line + "\n";
+		return true;
+	}
 
 	if (command == "tone") {
 		// Syntax: tone channel frequency amplitude [phase] [delay:X]
@@ -38,21 +134,34 @@ bool ScriptedWieserlabsDDSWaveform::analyzeWieserlabsDDSScriptCommand(ScriptStre
 
 		DdsCommand cmdObj;
 		cmdObj.type = "tone";
+		cmdObj.preDelayMs = 0.0;
 		cmdObj.channel = std::stoi(channelStr);
-		cmdObj.startFreq = std::stod(freqStr);
-		cmdObj.amplitude = std::stod(ampStr);
-		cmdObj.phase = phaseStr.empty() ? 0.0 : std::stod(phaseStr);
+		if (!evalToken(freqStr, cmdObj.startFreq) || !evalToken(ampStr, cmdObj.amplitude)) {
+			warnings += "Invalid expression in tone command\n";
+			return true;
+		}
+		cmdObj.endFreq = cmdObj.startFreq;
+		cmdObj.duration = 0.0;
+		if (phaseStr.empty()) {
+			cmdObj.phase = 0.0;
+		}
+		else if (!evalToken(phaseStr, cmdObj.phase)) {
+			warnings += "Invalid phase expression in tone command\n";
+			return true;
+		}
 		cmdObj.delayMs = 0.0;
 		
 		if (!delayStr.empty()) {
 			try {
-				cmdObj.delayMs = std::stod(delayStr.substr(6)); // delay:X in milliseconds
+				if (!evalToken(delayStr.substr(6), cmdObj.delayMs)) {
+					warnings += "Invalid delay format in tone command\n";
+				}
 			} catch (...) {
 				warnings += "Invalid delay format in tone command\n";
 			}
 		}
 
-		commandList.push_back(cmdObj);
+		finalizeCommand(cmdObj);
 		scriptText += command + " " + channelStr + " " + freqStr + " " + ampStr + 
 			" " + phaseStr + (delayStr.empty() ? "" : " " + delayStr) + "\n";
 	}
@@ -73,23 +182,33 @@ bool ScriptedWieserlabsDDSWaveform::analyzeWieserlabsDDSScriptCommand(ScriptStre
 
 		DdsCommand cmdObj;
 		cmdObj.type = "ramp";
+		cmdObj.preDelayMs = 0.0;
 		cmdObj.channel = std::stoi(channelStr);
-		cmdObj.startFreq = std::stod(startFreqStr);
-		cmdObj.endFreq = std::stod(endFreqStr);
-		cmdObj.amplitude = std::stod(ampStr);
-		cmdObj.duration = std::stod(durationStr);
-		cmdObj.phase = phaseStr.empty() ? 0.0 : std::stod(phaseStr);
+		if (!evalToken(startFreqStr, cmdObj.startFreq) || !evalToken(endFreqStr, cmdObj.endFreq)
+			|| !evalToken(ampStr, cmdObj.amplitude) || !evalToken(durationStr, cmdObj.duration)) {
+			warnings += "Invalid expression in ramp command\n";
+			return true;
+		}
+		if (phaseStr.empty()) {
+			cmdObj.phase = 0.0;
+		}
+		else if (!evalToken(phaseStr, cmdObj.phase)) {
+			warnings += "Invalid phase expression in ramp command\n";
+			return true;
+		}
 		cmdObj.delayMs = 0.0;
 		
 		if (!delayStr.empty()) {
 			try {
-				cmdObj.delayMs = std::stod(delayStr.substr(6)); // delay:X in milliseconds
+				if (!evalToken(delayStr.substr(6), cmdObj.delayMs)) {
+					warnings += "Invalid delay format in ramp command\n";
+				}
 			} catch (...) {
 				warnings += "Invalid delay format in ramp command\n";
 			}
 		}
 
-		commandList.push_back(cmdObj);
+		finalizeCommand(cmdObj);
 		scriptText += command + " " + channelStr + " " + startFreqStr + " " + endFreqStr + 
 			" " + ampStr + " " + durationStr + " " + phaseStr + 
 			(delayStr.empty() ? "" : " " + delayStr) + "\n";
@@ -109,23 +228,31 @@ bool ScriptedWieserlabsDDSWaveform::analyzeWieserlabsDDSScriptCommand(ScriptStre
 
 		DdsCommand cmdObj;
 		cmdObj.type = "off";
+		cmdObj.preDelayMs = 0.0;
 		cmdObj.channel = std::stoi(channelStr);
+		cmdObj.startFreq = 0.0;
+		cmdObj.endFreq = 0.0;
+		cmdObj.amplitude = 0.0;
+		cmdObj.duration = 0.0;
+		cmdObj.phase = 0.0;
 		cmdObj.delayMs = 0.0;
 		
 		if (!delayStr.empty()) {
 			try {
-				cmdObj.delayMs = std::stod(delayStr.substr(6)); // delay:X in milliseconds
+				if (!evalToken(delayStr.substr(6), cmdObj.delayMs)) {
+					warnings += "Invalid delay format in off command\n";
+				}
 			} catch (...) {
 				warnings += "Invalid delay format in off command\n";
 			}
 		}
 
-		commandList.push_back(cmdObj);
+		finalizeCommand(cmdObj);
 		scriptText += command + " " + channelStr + (delayStr.empty() ? "" : " " + delayStr) + "\n";
 	}
 	else {
 		warnings += "Unrecognized Wieserlabs DDS command: " + command + "\n";
-		return false;
+		return true;
 	}
 
 	return true;

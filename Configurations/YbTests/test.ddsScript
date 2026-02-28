@@ -1,8 +1,9 @@
-// Wieserlabs DDS Test Script
-// Set 150 MHz on channel 1 at t=0, then change to 80 MHz after 50ms
-
-// Set initial tone: 150 MHz on channel 1 with 50% amplitude, 0 phase
-tone 1 150 0.5 0
-
-// Change to 80 MHz after 50ms (delay:0.05 = 50ms)
-tone 1 80 0.5 0 delay:0.05
+tone 0 greenmot_frequency 1 0
+t += coreshellloadtime
+t += (3-2)
+%ramp 0 greenmot_frequency greenmot_frequency_low 1 1 0
+tone 0 greenmot_frequency_low 1 0
+t += (20+2)
+t += motreleasetime
+%ramp 0 greenmot_frequency_low greenmot_frequency 1 1 0
+tone 0 greenmot_frequency 1 0

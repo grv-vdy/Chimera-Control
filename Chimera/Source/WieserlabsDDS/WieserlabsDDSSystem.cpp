@@ -6,6 +6,7 @@
 #include "ConfigurationSystems/ConfigSystem.h"
 #include "Scripts/ScriptStream.h"
 #include "ParameterSystem/Expression.h"
+#include "ParameterSystem/ParameterSystem.h"
 #include "ParameterSystem/ParameterSystemStructures.h"
 #include "PrimaryWindows/IChimeraQtWindow.h"
 #include "PrimaryWindows/QtAuxiliaryWindow.h"
@@ -117,10 +118,15 @@ void WieserlabsDDSSystem::handleChannelPress(int chan, std::string configPath, R
 			try {
 				Expression expr(str(freqEdits[chan]->text()));
 				if (parentWin && parentWin->auxWin) {
-					auto constants = parentWin->auxWin->getUsableConstants();
-					expr.assertValid(constants, GLOBAL_PARAMETER_SCOPE);
-					freq = expr.evaluate(constants, 0);
-					canProgramNow = true;
+					try {
+						auto constants = parentWin->auxWin->getUsableConstants();
+						expr.assertValid(constants, GLOBAL_PARAMETER_SCOPE);
+						freq = expr.evaluate(constants, 0);
+						canProgramNow = true;
+					}
+					catch (ChimeraError&) {
+						canProgramNow = false;
+					}
 				}
 			}
 			catch (...) {
@@ -270,11 +276,38 @@ void WieserlabsDDSSystem::refreshScriptedWaveform()
 
 	ScriptStream stream(scriptText);
 	ScriptedWieserlabsDDSWaveform parsedWaveform;
-	std::vector<parameterType> params; // no param expansion yet
+	std::vector<parameterType> params;
+	if (parentWin && parentWin->auxWin) {
+		try {
+			params = parentWin->auxWin->getAllParams();
+			if (!params.empty()) {
+				auto rangeInfo = parentWin->auxWin->getConfigs().getRangeInfo();
+				ParameterSystem::generateKey(params, false, rangeInfo);
+			}
+		}
+		catch (ChimeraError&) {
+			params.clear();
+			qDebug() << "WieserlabsDDS: parameters unavailable while refreshing script waveform; parsing without parameters";
+		}
+	}
 	std::string warnings;
 
 	while (stream.peek() != EOF) {
-		if (!parsedWaveform.analyzeWieserlabsDDSScriptCommand(stream, params, warnings)) {
+		try {
+			if (!parsedWaveform.analyzeWieserlabsDDSScriptCommand(stream, params, warnings)) {
+				break;
+			}
+		}
+		catch (ChimeraError& err) {
+			warnings += "Exception while parsing DDS script: " + err.trace() + "\n";
+			break;
+		}
+		catch (std::exception& err) {
+			warnings += "Exception while parsing DDS script: " + std::string(err.what()) + "\n";
+			break;
+		}
+		catch (...) {
+			warnings += "Unknown exception while parsing DDS script\n";
 			break;
 		}
 	}
@@ -300,7 +333,9 @@ deviceOutputInfo WieserlabsDDSSystem::getOutputInfo()
 		bool ok = false;
 		info.snapshot[chan].frequency = freqEdits[chan]->text().toDouble(&ok);
 		if (!ok) {
-			info.snapshot[chan].frequency = 0.0;
+			if (chan < currentGuiInfo.snapshot.size()) {
+				info.snapshot[chan].frequency = currentGuiInfo.snapshot[chan].frequency;
+			}
 		}
 		info.snapshot[chan].amplitude = ampEdits[chan]->text().toDouble();
 		info.snapshot[chan].phase = phaseEdits[chan]->text().toDouble();

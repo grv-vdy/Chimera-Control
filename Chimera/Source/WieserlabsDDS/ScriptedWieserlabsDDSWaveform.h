@@ -6,12 +6,13 @@
 
 struct DdsCommand {
 	std::string type; // "tone", "ramp", "off"
-	double delayMs;   // delay before executing (in milliseconds)
+	double preDelayMs; // delay before this command executes (in milliseconds)
+	double delayMs;   // inter-command delay after this command (in milliseconds)
 	int channel;
 	double startFreq;
 	double endFreq;
 	double amplitude;
-	double duration;
+	double duration;  // ramp duration (in milliseconds)
 	double phase;
 };
 
@@ -20,7 +21,7 @@ class ScriptedWieserlabsDDSWaveform
 public:
 	ScriptedWieserlabsDDSWaveform();
 	bool analyzeWieserlabsDDSScriptCommand(ScriptStream& script, std::vector<parameterType>& params,
-		std::string& warnings);
+		std::string& warnings, unsigned variation = 0);
 	bool isVaried();
 	void calculateAllSegmentVariations(unsigned totalNumVariations, std::vector<parameterType>& variables);
 	std::string returnSequenceString();
@@ -31,4 +32,6 @@ protected:
 	std::string scriptText;
 	std::vector<std::string> commands;
 	std::vector<DdsCommand> commandList;
+	double nextCommandStartMs = 0.0;
+	double lastCommandEndMs = 0.0;
 };

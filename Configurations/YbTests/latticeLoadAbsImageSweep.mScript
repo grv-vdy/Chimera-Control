@@ -11,6 +11,9 @@ dac: bias1 bias1
 dac: bias2 bias2
 dac: biasz biasz
 
+pulseon: dds0 0.1
+pulseon: dds1 0.1
+
 off: blueimg
 off: greenmot
 off: pushbeam

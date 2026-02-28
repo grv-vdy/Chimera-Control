@@ -51,17 +51,21 @@ public:
 	void updateSteadyState(unsigned channel, double freq, double amp, double phase, bool on);
 	void resetChannels();
 	void setScriptedWaveform(const ScriptedWieserlabsDDSWaveform& waveform);
+	void setScriptModeEnabled(bool enabled);
 	bool hasScriptedWaveform() const { return waveformLoaded; }
 	void executeScriptedCommands(const class ScriptedWieserlabsDDSWaveform& waveform, ExpThreadWorker* expWorker);
 	std::string getLoadedScriptAddress() const { return loadedScriptAddress; }
 
 private:
+	static constexpr unsigned INVALID_SCRIPT_VARIATION = static_cast<unsigned>(-1);
 	const wieserlabsDdsSettings initSettings;
 	std::string configDelim;
 	std::unique_ptr<WieserlabsClient> ddsClient;
 	bool isConnected = false;
 	bool waveformLoaded = false;
 	bool warnedMissingWaveform = false;
+	bool needsReinitializeAfterScript = false;
+	unsigned lastProgrammedScriptVariation = INVALID_SCRIPT_VARIATION;
 
 	// Current settings for each channel
 	std::vector<wieserlabsDdsChannel> currentSettings;

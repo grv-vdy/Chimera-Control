@@ -11,6 +11,8 @@ dac: greenmot greenmotpower
 dac: pushbeam bluepushpower
 dac: blueimg blueimgpower
 
+%pulseon: dds0 0.1
+
 on: pushbeam
 on: greenmot
 on: blue3dmot
@@ -26,9 +28,9 @@ dacramp: bias2 bias2 (bias2-biasx+biasy) 1
 dacramp: biasz biasz (biasz+biaszoff) 1
 t += 3
 dacramp: greenmot greenmotpower greenmotpowerlow 1
-
+%dac: greenmot greenmotpowerlow
 t += 20 %thermalize mot see 260225
-
+%t += 80
 
 %release mot
 
@@ -40,7 +42,7 @@ t += motreleasetime
 
 
 on: greenmot
-dacramp: greenmot greenmotpowerlow greenmotpower 1
+%dacramp: greenmot greenmotpowerlow greenmotpower 1
 t += 1
 dacramp: bias1 (bias1+biasx+biasy) bias1 1
 dacramp: bias2 (bias2-biasx+biasy) bias2 1

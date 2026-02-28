@@ -1,0 +1,11 @@
+tone 0 greenmot_frequency 1.0 0
+t += coreshellloadtime
+t += 3
+
+ramp 0 greenmot_frequency greenmot_frequency_low 1 1.0 0
+
+t += 20
+t += motreleasetime
+
+ramp 0 greenmot_frequency_low greenmot_frequency 1 1.0 0
+

@@ -106,12 +106,14 @@ bool WieserlabsClient::abortChannel(int channel) {
         return false;
     }
     
-    // Clear any pending trigger waits by sending an immediate update
-    // This overwrites any queued commands that are waiting for triggers
+    // Clear pending wait/trigger state and return channel to normal tone mode.
     std::string commands;
     commands += "dcp " + std::to_string(channel) + " update::immediate\n";
+    commands += "dcp " + std::to_string(channel) + " spi:CFR1=0x402000\n";
+    commands += "dcp " + std::to_string(channel) + " spi:CFR2=0x1000080\n";
+    commands += "dcp " + std::to_string(channel) + " update:u\n";
     
-    qDebug() << "Clearing pending triggers on channel" << channel << "with immediate update";
+    qDebug() << "Aborting channel" << channel << "clearing queued waits and restoring tone mode";
     return sendCommand(commands);
 }
 
@@ -120,17 +122,33 @@ bool WieserlabsClient::sendBatchCommands(const std::string& commands) {
 }
 
 bool WieserlabsClient::sendCommand(const std::string& command) {
+    if (!connected_) {
+        return false;
+    }
+
     try {
         // Split command into individual lines and send each one
         std::istringstream iss(command);
         std::string line;
         while (std::getline(iss, line)) {
             if (!line.empty()) {
+                qDebug() << "DDS CMD >" << QString::fromStdString(line);
                 // Add \r\n for proper line ending
                 std::string cmd = line + "\r\n";
                 boost::asio::write(socket_, boost::asio::buffer(cmd));
                 // Read response for each command
                 std::string response = receiveResponse();
+                if (response.empty()) {
+                    // If transport has dropped, don't report success.
+                    if (!connected_) {
+                        std::cerr << "DDS command transport dropped while sending: " << line << std::endl;
+                        return false;
+                    }
+                    qDebug() << "DDS RSP < <empty>";
+                    // Some firmware revisions may not answer every command line.
+                    continue;
+                }
+                qDebug() << "DDS RSP <" << QString::fromStdString(response);
                 if (response.find("error") != std::string::npos) {
                     std::cerr << "DDS error for command '" << line << "': " << response << std::endl;
                     return false;
@@ -140,6 +158,7 @@ bool WieserlabsClient::sendCommand(const std::string& command) {
         return true;
     } catch (const boost::system::system_error& e) {
         std::cerr << "Send command failed: " << e.what() << std::endl;
+        connected_ = false;
         return false;
     }
 }
@@ -154,6 +173,7 @@ std::string WieserlabsClient::receiveResponse() {
         return response;
     } catch (const boost::system::system_error& e) {
         std::cerr << "Receive response failed: " << e.what() << std::endl;
+        connected_ = false;
         return "";
     }
 }

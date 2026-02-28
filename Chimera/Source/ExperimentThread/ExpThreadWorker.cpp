@@ -98,6 +98,7 @@ void ExpThreadWorker::experimentThreadProcedure () {
 				for (auto& device : input->devices.list) {
 					deviceProgramVariation(device, expRuntime.expParams, variationInc);
 				}
+				std::this_thread::sleep_for(std::chrono::milliseconds(300)); //temp added to make sure DDS programming works
 				emit notification("Running Experiment.\n");
 				for (const auto& repInc : range(expRuntime.repetitions)) {
 					inExpCalibrationRun(expRuntime);
@@ -107,6 +108,7 @@ void ExpThreadWorker::experimentThreadProcedure () {
 							deviceProgramVariation(device, expRuntime.expParams, variationInc);
 						}
 					}
+					std::this_thread::sleep_for(std::chrono::milliseconds(300)); //temp added to make sure DDS programming works
 					handlePause(isPaused, isAborting);
 					startRep(repInc, variationInc, input->skipNext == nullptr ? false : input->skipNext->load());
 					waitForSequenceFinish(finaltimes[variationInc]);
