@@ -5,8 +5,10 @@
 
 void StatusIndicator::initialize(IChimeraQtWindow* parent ){
 	status = new QLabel ("Passively Outputing Default Waveform", parent);
-	status->setMinimumSize(960, 100);
-	status->setStyleSheet ("QLabel {font: bold 30pt;}");
+	status->setMinimumSize(360, 36);
+	status->setMaximumSize(560, 44);
+	status->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+	status->setStyleSheet ("QLabel {font: bold 14pt;}");
 }
 
 void StatusIndicator::setText(std::string text){

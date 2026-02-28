@@ -14,13 +14,16 @@ StaticDdsSystem::StaticDdsSystem(IChimeraQtWindow* parent) :
 	expActive(false),
 	core(STATICDDS_SAFEMODE, STATICDDS_PORT, STATICDDS_BAUDRATE)
 {
+    for (auto idx : range(size_t(StaticDDSGrid::total))) {
+        channelNames[idx] = "dds" + str(idx);
+    }
 }
 
 void StaticDdsSystem::initialize()
 {
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
-    this->setMaximumWidth(600);
+    this->setMaximumWidth(760);
 
     QLabel* title = new QLabel("STATIC VALON PLL", this);
     layout->addWidget(title, 0);
@@ -75,7 +78,7 @@ void StaticDdsSystem::initialize()
         auto strChan = qstr(core.getDeviceInfo(port));
         labels_port[port] = new QLabel("Port " + strChan + ":", this);
         for (auto ch : range(size_t(StaticDDSGrid::numPERunit))) {
-            labels_channel[port][ch] = new QLabel(qstr(ch) + ":", this);
+            labels_channel[port][ch] = new QLabel("", this);
             edits_frequency[port][ch] = new QLineEdit(this);
             edits_level[port][ch] = new QLineEdit(this);
             // create per-channel sweep toggle button (press to configure/start, press again to stop)
@@ -180,12 +183,15 @@ void StaticDdsSystem::initialize()
         lay->addStretch(1);
         layout3->addLayout(lay, port, 0);
     }
+    refreshChannelLabels();
     layout->addLayout(layout3);
 }
 
 void StaticDdsSystem::handleOpenConfig(ConfigStream& configFile)
 {
     auto configVals = core.getSettingsFromConfig(configFile);
+    channelNames = configVals.channelNames;
+    refreshChannelLabels();
     for (auto port : range(size_t(StaticDDSGrid::numOFunit))) {
         for (auto ch : range(size_t(StaticDDSGrid::numPERunit))) {
             edits_frequency[port][ch]->setText(qstr(configVals.staticDDSs[port*size_t(StaticDDSGrid::numPERunit) + ch][0].expressionStr));
@@ -199,6 +205,10 @@ void StaticDdsSystem::handleOpenConfig(ConfigStream& configFile)
 void StaticDdsSystem::handleSaveConfig(ConfigStream& configFile)
 {
     configFile << core.configDelim;
+    configFile << "\n/* DDS Name:*/ ";
+    for (auto idx : range(size_t(StaticDDSGrid::total))) {
+        configFile << channelNames[idx] << " ";
+    }
     for (auto port : range(size_t(StaticDDSGrid::numOFunit))) {
         for (auto ch : range(size_t(StaticDDSGrid::numPERunit))) {
             configFile << "\n/* DDS-" + str(port*size_t(StaticDDSGrid::numPERunit)+ch) + " Frequency:*/\t\t" << Expression(str(edits_frequency[port][ch]->text()));
@@ -263,6 +273,24 @@ void StaticDdsSystem::handleProgramNowPress(std::vector<parameterType> constants
 std::string StaticDdsSystem::getDeviceInfo(unsigned int port)
 {
     return core.getDeviceInfo(port);
+}
+
+void StaticDdsSystem::setChannelNames(const std::array<std::string, size_t(StaticDDSGrid::total)>& namesIn)
+{
+    channelNames = namesIn;
+    refreshChannelLabels();
+}
+
+void StaticDdsSystem::refreshChannelLabels()
+{
+    for (auto port : range(size_t(StaticDDSGrid::numOFunit))) {
+        for (auto ch : range(size_t(StaticDDSGrid::numPERunit))) {
+            auto idx = port * size_t(StaticDDSGrid::numPERunit) + ch;
+            if (labels_channel[port][ch] != nullptr) {
+                labels_channel[port][ch]->setText(qstr(ch) + " (" + qstr(channelNames[idx]) + "):");
+            }
+        }
+    }
 }
 
 void StaticDdsSystem::setDdsEditFrequencyValue(std::string ddsfreq, unsigned channel, unsigned port)

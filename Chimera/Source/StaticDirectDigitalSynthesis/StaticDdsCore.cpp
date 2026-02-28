@@ -4,15 +4,33 @@
 #include <ConfigurationSystems/ConfigSystem.h>
 #include <DataLogging/DataLogger.h>
 
+namespace {
+	template <size_t... Idx>
+	std::array<StaticDDSFlume, STATICDDS_NUMBER> makeStaticDdsFlumesImpl(
+		const std::array<std::string, STATICDDS_NUMBER>& ports,
+		const std::array<unsigned int, STATICDDS_NUMBER>& baudrates,
+		bool safemode,
+		std::index_sequence<Idx...>)
+	{
+		return { StaticDDSFlume(ports[Idx], baudrates[Idx], safemode)... };
+	}
+
+	std::array<StaticDDSFlume, STATICDDS_NUMBER> makeStaticDdsFlumes(
+		const std::array<std::string, STATICDDS_NUMBER>& ports,
+		const std::array<unsigned int, STATICDDS_NUMBER>& baudrates,
+		bool safemode)
+	{
+		return makeStaticDdsFlumesImpl(ports, baudrates, safemode, std::make_index_sequence<STATICDDS_NUMBER>{});
+	}
+}
+
 StaticDdsCore::StaticDdsCore(
     const bool safemode,
     const std::array<std::string, STATICDDS_NUMBER>& port,
     const std::array<unsigned int, STATICDDS_NUMBER>& baudrate
 ) :
     safemode(safemode),
-	sddsFlume{ StaticDDSFlume(port[0], baudrate[0], safemode),
-			   StaticDDSFlume(port[1], baudrate[1], safemode),
-			   StaticDDSFlume(port[2], baudrate[2], safemode) }
+	sddsFlume(makeStaticDdsFlumes(port, baudrate, safemode))
 {
 }
 
@@ -99,13 +117,58 @@ StaticDDSSettings StaticDdsCore::getSettingsFromConfig(ConfigStream& file)
 {
 	StaticDDSSettings tempSettings;
 	auto getlineF = ConfigSystem::getGetlineFunc(file.ver);
-	//file.get();
-	for (auto port : range(size_t(StaticDDSGrid::numOFunit))) {
-		for (auto ch : range(size_t(StaticDDSGrid::numPERunit))) {
-			getlineF(file, tempSettings.staticDDSs[port*size_t(StaticDDSGrid::numPERunit)+ch][0].expressionStr);
-			getlineF(file, tempSettings.staticDDSs[port*size_t(StaticDDSGrid::numPERunit)+ch][1].expressionStr);
+	for (auto idx : range(size_t(StaticDDSGrid::total))) {
+		tempSettings.staticDDSs[idx][0].expressionStr = "0";
+		tempSettings.staticDDSs[idx][1].expressionStr = str(minLevelVal);
+		tempSettings.channelNames[idx] = "dds" + str(idx);
+	}
+
+	auto countSubstr = [](const std::string& text, const std::string& needle) {
+		size_t count = 0;
+		size_t pos = text.find(needle);
+		while (pos != std::string::npos) {
+			++count;
+			pos = text.find(needle, pos + needle.size());
+		}
+		return count;
+	};
+
+	bool legacyValueFormat = false;
+	bool hasNames = false;
+	size_t availableFreqLevelChannels = size_t(StaticDDSGrid::total);
+	auto sectionStartPos = file.tellg();
+	if (sectionStartPos != std::streampos(-1)) {
+		auto rawText = file.str();
+		auto startIdx = static_cast<size_t>(sectionStartPos);
+		if (startIdx < rawText.size()) {
+			auto sectionPreview = rawText.substr(startIdx, std::min<size_t>(8000, rawText.size() - startIdx));
+			auto valuePos = sectionPreview.find("DDS-0 Value");
+			auto freqPos = sectionPreview.find("DDS-0 Frequency");
+			hasNames = sectionPreview.find("DDS Name") != std::string::npos;
+			auto freqCount = countSubstr(sectionPreview, "Frequency:");
+			auto levelCount = countSubstr(sectionPreview, "Level:");
+			availableFreqLevelChannels = std::min(freqCount, levelCount);
+			legacyValueFormat = (valuePos != std::string::npos) && (freqPos == std::string::npos || valuePos < freqPos);
 		}
 	}
+
+	if (hasNames) {
+		for (auto idx : range(size_t(StaticDDSGrid::total))) {
+			file >> tempSettings.channelNames[idx];
+		}
+	}
+
+	if (legacyValueFormat) {
+		getlineF(file, tempSettings.staticDDSs[0][0].expressionStr);
+	}
+	else {
+		auto channelsToRead = std::min(size_t(StaticDDSGrid::total), availableFreqLevelChannels);
+		for (auto idx : range(channelsToRead)) {
+			getlineF(file, tempSettings.staticDDSs[idx][0].expressionStr);
+			getlineF(file, tempSettings.staticDDSs[idx][1].expressionStr);
+		}
+	}
+
 	file >> tempSettings.ctrlDDS;
 	file.get();
 	return tempSettings;

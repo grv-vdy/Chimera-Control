@@ -22,6 +22,8 @@ public:
 	std::string getConfigDelim() { return core.getDelim(); };
 	StaticDdsCore& getCore() { return core; };
 	std::string getDeviceInfo(unsigned int port);
+	std::array<std::string, size_t(StaticDDSGrid::total)> getChannelNames() const { return channelNames; }
+	void setChannelNames(const std::array<std::string, size_t(StaticDDSGrid::total)>& namesIn);
 
 	void setDdsEditFrequencyValue(std::string ddsfreq, unsigned channel, unsigned port); // should only be used in CommandModulator
 	void setDdsEditLevelValue(std::string ddsfreq, unsigned channel, unsigned port); // should only be used in CommandModulator
@@ -38,6 +40,8 @@ private:
 	std::array<std::array<QLabel*, size_t(StaticDDSGrid::numPERunit)>, size_t(StaticDDSGrid::numOFunit)> labels_channel;
 	std::array<std::array<QLineEdit*, size_t(StaticDDSGrid::numPERunit)>, size_t(StaticDDSGrid::numOFunit)> edits_frequency;
 	std::array<std::array<QLineEdit*, size_t(StaticDDSGrid::numPERunit)>, size_t(StaticDDSGrid::numOFunit)> edits_level;
+	std::array<std::string, size_t(StaticDDSGrid::total)> channelNames;
+	void refreshChannelLabels();
 
 
 };

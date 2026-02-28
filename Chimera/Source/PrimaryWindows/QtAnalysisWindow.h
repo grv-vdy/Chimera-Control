@@ -22,6 +22,7 @@ public:
 	void windowSaveConfig(ConfigStream& configFile) override;
 	void fillExpDeviceList(DeviceList& list) override;
 	void initializeWidgets() override;
+	void ViewOrChangeStaticDdsNames();
 	void fillMasterThreadInput(ExperimentThreadInput* input) override {};
 	//MOTAnalysisControl
 	StaticDdsSystem& getStaticDds() { return staticDds; };

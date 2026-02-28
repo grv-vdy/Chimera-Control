@@ -146,7 +146,7 @@ void QtMainWindow::initializeWidgets (){
 	errorStatus.initialize (this, "ERROR STATUS", { "#FF0000", "#800000"});
 	
 	layout->addWidget(&mainStatus, 0, 0, 6, 1);
-	layout->addWidget(shortStatus.statusLabel(), 5, 0, 1, 2);
+	layout->addWidget(shortStatus.statusLabel(), 5, 0, 1, 2, Qt::AlignLeft | Qt::AlignBottom);
 	layout->addWidget(&errorStatus, 0, 1, 6, 1);
 
 	profile.initialize (this); // this and inside it, "handleSelectConfigButton" connect the open config button to openning the config for all windows 

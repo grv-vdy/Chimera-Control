@@ -23,13 +23,19 @@ BoostAsyncSerial::BoostAsyncSerial(
 {
 	if (!safemode) {
 		port_ = std::make_unique<boost::asio::serial_port>(io_service_);
-
-		port_->open(portID);
-		port_->set_option(boost::asio::serial_port_base::baud_rate(baudrate));
-		port_->set_option(boost::asio::serial_port_base::character_size(character_size));
-		port_->set_option(boost::asio::serial_port_base::stop_bits(stop_bits));
-		port_->set_option(boost::asio::serial_port_base::parity(parity));
-		port_->set_option(boost::asio::serial_port_base::flow_control(flow_control));
+		try {
+			port_->open(portID);
+			port_->set_option(boost::asio::serial_port_base::baud_rate(baudrate));
+			port_->set_option(boost::asio::serial_port_base::character_size(character_size));
+			port_->set_option(boost::asio::serial_port_base::stop_bits(stop_bits));
+			port_->set_option(boost::asio::serial_port_base::parity(parity));
+			port_->set_option(boost::asio::serial_port_base::flow_control(flow_control));
+		}
+		catch (boost::system::system_error& ex) {
+			thrower("Failed to open/configure serial port " + portID + " @ " + str(baudrate)
+				+ " baud. Check that the device is connected, the COM port is correct, and no other process is using it. "
+				+ "Boost error: " + str(ex.what()));
+		}
 
 		io_thread = boost::thread(boost::bind(&BoostAsyncSerial::run, this));
 		Sleep(10); // give some time for the io_thread to run
@@ -182,7 +188,8 @@ void BoostAsyncSerial::reconnect()
 		port_->open(portID);
 	}
 	catch (boost::system::system_error& ex) {
-		throwNested("Error in reconnecting BoostAsyncSerial.");
+		thrower("Failed to reconnect serial port " + portID + " @ " + str(baudrate)
+			+ " baud. Check that the port exists and is not in use. Boost error: " + str(ex.what()));
 	}
 	port_->set_option(boost::asio::serial_port_base::baud_rate(baudrate));
 	port_->set_option(boost::asio::serial_port_base::character_size(8));

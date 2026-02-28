@@ -228,6 +228,10 @@ void IChimeraQtWindow::initializeMenu (){
 	auto* changeIndvAi = new QAction("View or Change Individual Analog Input Settings", this);
 	connect(changeIndvAi, &QAction::triggered, [this, cmnMsg]() {auxWin->ViewOrChangeAINames(); });
 	masterSystemsM->addAction(changeIndvAi);
+
+	auto* changeIndvStaticDds = new QAction("View or Change Individual Static Valon Channel Names", this);
+	connect(changeIndvStaticDds, &QAction::triggered, [this, cmnMsg]() {analysisWin->ViewOrChangeStaticDdsNames(); });
+	masterSystemsM->addAction(changeIndvStaticDds);
 	
 	auto helpM = menubar->addMenu ("Help");
 	helpM->addAction ("General Information_X");

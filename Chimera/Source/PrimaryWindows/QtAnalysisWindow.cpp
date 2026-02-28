@@ -5,6 +5,12 @@
 #include <PrimaryWindows/QtAuxiliaryWindow.h>
 #include <PrimaryWindows/QtMainWindow.h>
 #include <ExperimentMonitoringAndStatus/colorbox.h>
+#include <QDialog>
+#include <QGridLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
 
 
 QtAnalysisWindow::QtAnalysisWindow(QWidget* parent) 
@@ -95,4 +101,63 @@ void QtAnalysisWindow::initializeWidgets()
 void QtAnalysisWindow::prepareCalcForAcq()
 {
 	MOTAnalySys.prepareMOTAnalysis();
+}
+
+void QtAnalysisWindow::ViewOrChangeStaticDdsNames()
+{
+	mainWin->updateConfigurationSavedStatus(false);
+
+	auto* dialog = new QDialog(this);
+	dialog->setModal(false);
+	dialog->setWindowTitle("Static Valon Channel Names");
+	dialog->setStyleSheet(chimeraStyleSheets::stdStyleSheet());
+
+	auto names = staticDds.getChannelNames();
+	std::array<QLineEdit*, size_t(StaticDDSGrid::total)> edits;
+
+	QVBoxLayout* outerLayout = new QVBoxLayout(dialog);
+	QGridLayout* grid = new QGridLayout();
+	for (auto port : range(size_t(StaticDDSGrid::numOFunit))) {
+		grid->addWidget(new QLabel("PLL " + qstr(str(port))), int(port), 0);
+		for (auto ch : range(size_t(StaticDDSGrid::numPERunit))) {
+			auto idx = port * size_t(StaticDDSGrid::numPERunit) + ch;
+			grid->addWidget(new QLabel("Ch " + qstr(str(ch))), int(port), int(ch * 2 + 1));
+			edits[idx] = new QLineEdit(qstr(names[idx]));
+			grid->addWidget(edits[idx], int(port), int(ch * 2 + 2));
+		}
+	}
+	outerLayout->addLayout(grid);
+
+	QHBoxLayout* buttons = new QHBoxLayout();
+	auto* okBtn = new QPushButton("OK", dialog);
+	auto* cancelBtn = new QPushButton("Cancel", dialog);
+	buttons->addStretch(1);
+	buttons->addWidget(okBtn);
+	buttons->addWidget(cancelBtn);
+	outerLayout->addLayout(buttons);
+
+	connect(okBtn, &QPushButton::released, [this, dialog, edits]() {
+		std::array<std::string, size_t(StaticDDSGrid::total)> newNames;
+		for (auto idx : range(size_t(StaticDDSGrid::total))) {
+			auto txt = edits[idx]->text().trimmed();
+			if (txt.isEmpty()) {
+				txt = "dds" + qstr(str(idx));
+			}
+			if (txt[0].isDigit()) {
+				errBox("ERROR: " + str(txt) + " is an invalid name; names cannot start with numbers.");
+				return;
+			}
+			newNames[idx] = str(txt);
+		}
+		staticDds.setChannelNames(newNames);
+		dialog->close();
+		dialog->deleteLater();
+	});
+
+	connect(cancelBtn, &QPushButton::released, [dialog]() {
+		dialog->close();
+		dialog->deleteLater();
+	});
+
+	dialog->show();
 }

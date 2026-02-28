@@ -141,16 +141,25 @@ std::string StaticDDSFlume::read()
         Sleep(1);
     }
 
-    if (recv.empty() || !readComplete) {
-        thrower("Reading timed out or empty after 200ms from port " + str(boostFlume.portID));
+    if (recv.empty() && !readRegister.empty()) {
+        recv = std::string(readRegister.cbegin(), readRegister.cend());
+    }
+
+    if (recv.empty()) {
+        std::string msg = "Reading timed out or empty after 200ms from port " + str(boostFlume.portID);
+        if (!errorMsg.empty()) {
+            msg += ". Serial error: " + errorMsg;
+        }
+        thrower(msg);
     }
 
     if (!errorMsg.empty()) {
         thrower("Device returned error: " + errorMsg + "\nResponse: " + recv);
     }
 
-    // Strip trailing newline
+    // Strip trailing line terminators
     recv.erase(std::remove(recv.begin(), recv.end(), '\n'), recv.end());
+    recv.erase(std::remove(recv.begin(), recv.end(), '\r'), recv.end());
     return recv;
 }
 
@@ -167,7 +176,7 @@ void StaticDDSFlume::readCallback(int byte)
         thrower("Invalid byte read: must be in range 0–255.");
     }
     readRegister.push_back(static_cast<char>(byte));
-    if (byte == '\n') {
+    if (byte == '\n' || byte == '\r') {
         readComplete = true;
     }
 }
@@ -247,26 +256,36 @@ void StaticDDSFlume::stopSweep(int ch)
 std::string StaticDDSFlume::getSerialNumberOnly()
 {
     for (int attempt = 0; attempt < 2; ++attempt) {
-        write("ID?\r"); // sends ID?/r
-        Sleep(5);
-        read();
-        std::string idn(readRegister.begin(), readRegister.end());
-        // Split by commas
-        size_t first = idn.find(',');
-        if (first == std::string::npos) continue;
-        size_t second = idn.find(',', first + 1);
-        if (second == std::string::npos) continue;
-        size_t third = idn.find(',', second + 1);
-        if (third == std::string::npos) continue;
+        try {
+            write("ID?\r");
+            Sleep(20);
+            std::string idn = read();
 
-        // Serial number is between second and third comma
-        std::string serial = idn.substr(second + 1, third - second - 1);
+            // Split by commas if possible and extract serial field
+            size_t first = idn.find(',');
+            if (first != std::string::npos) {
+                size_t second = idn.find(',', first + 1);
+                size_t third = (second == std::string::npos) ? std::string::npos : idn.find(',', second + 1);
+                if (second != std::string::npos && third != std::string::npos) {
+                    std::string serial = idn.substr(second + 1, third - second - 1);
+                    serial.erase(0, serial.find_first_not_of(" \t\r\n"));
+                    serial.erase(serial.find_last_not_of(" \t\r\n") + 1);
+                    if (!serial.empty()) {
+                        return serial;
+                    }
+                }
+            }
 
-        // Trim whitespace
-        serial.erase(0, serial.find_first_not_of(" \t\r\n"));
-        serial.erase(serial.find_last_not_of(" \t\r\n") + 1);
-
-        return serial;
+            // Fallback: return any non-empty trimmed response.
+            idn.erase(0, idn.find_first_not_of(" \t\r\n"));
+            idn.erase(idn.find_last_not_of(" \t\r\n") + 1);
+            if (!idn.empty()) {
+                return idn;
+            }
+        }
+        catch (...) {
+            // Non-fatal: not all devices reliably answer ID? at startup.
+        }
     }
-    return "Unknown";
+    return "Unknown(" + boostFlume.portID + ")";
 }

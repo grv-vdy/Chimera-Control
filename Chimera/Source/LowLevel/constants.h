@@ -145,10 +145,10 @@
 	const int STATICAO_IPPORT = 804;
 
 	//static PLL
-	const unsigned int STATICDDS_NUMBER = 3; // Set to the number of StaticDDS systems you want
+	const unsigned int STATICDDS_NUMBER = 4; // Set to the number of StaticDDS systems you want
 	const bool STATICDDS_SAFEMODE = false;
-	const std::array<std::string, STATICDDS_NUMBER> STATICDDS_PORT = {"COM4", "COM5", "COM6" };
-	const std::array<unsigned int, STATICDDS_NUMBER> STATICDDS_BAUDRATE = {9600, 9600, 9600};
+	const std::array<std::string, STATICDDS_NUMBER> STATICDDS_PORT = {"COM4", "COM5", "COM6", "COM8" };
+	const std::array<unsigned int, STATICDDS_NUMBER> STATICDDS_BAUDRATE = {9600, 9600, 9600, 9600};
 
 	//Elliptec rotation stage
 	const bool ELLIPTEC_SAFEMODE = true;
