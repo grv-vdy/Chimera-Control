@@ -261,6 +261,12 @@ void StaticDdsCore::writeDDSs(
 				double freq = outputs_frequency[port][ch];
 				double level = outputs_level[port][ch];
 				try {
+					sddsFlume[port].setCwMode(static_cast<int>(ch));
+				}
+				catch (ChimeraError& e) {
+					throwNested("Failed to set CW mode on Static DDS port " + str(port) + " channel " + str(ch) + ": " + e.trace());
+				}
+				try {
 					sddsFlume[port].setFrequency(freq, static_cast<int>(ch));
 				}
 				catch (ChimeraError& e) {

@@ -289,9 +289,24 @@ void WieserlabsDDSCore::loadExpSettings(ConfigStream& script)
 	qDebug() << "WieserlabsDDSCore::loadExpSettings called - DDS does not use master script config, skipping";
 	experimentActive = waveformLoaded || expRunSettings.wieserlabsControl; // Scripted or static-control mode
 	if (waveformLoaded) {
-		// Any scripted run can leave DDS internal mode/queue state dirty,
-		// even if aborted before command execution.
+		// Any scripted run can leave DDS internal mode/queue state dirty.
+		// Issue a full dds reset to guarantee clean state for the new experiment.
 		needsReinitializeAfterScript = true;
+		if ((!isConnected || !ddsClient) && !initSettings.safemode) {
+			reconnect();
+		}
+		if (isConnected && ddsClient) {
+			qDebug() << "loadExpSettings: Issuing dds reset for clean experiment start";
+			try {
+				(void)ddsClient->sendBatchCommands("dds reset\n");
+			}
+			catch (...) {
+				reconnect();
+				if (isConnected && ddsClient) {
+					(void)ddsClient->sendBatchCommands("dds reset\n");
+				}
+			}
+		}
 	}
 	lastProgrammedScriptVariation = INVALID_SCRIPT_VARIATION;
 
@@ -434,8 +449,25 @@ void WieserlabsDDSCore::setWieserlabsDDS(unsigned variation, std::vector<paramet
 
 void WieserlabsDDSCore::programVariation(unsigned variation, std::vector<parameterType>& params, ExpThreadWorker* threadworker)
 {
+	static unsigned programCallCount = 0;
+	programCallCount++;
+	qDebug() << "=== programVariation CALL #" << programCallCount << "===";
+	qDebug() << "  variation =" << variation << ", lastProgrammed =" << lastProgrammedScriptVariation;
+
 	if (hasScriptedWaveform()) {
 		if (variation != lastProgrammedScriptVariation) {
+			qDebug() << "  RE-PARSING script for variation" << variation;
+			// Reset DDS before switching to a new variation to clear any stale state
+			if (isConnected && ddsClient && lastProgrammedScriptVariation != INVALID_SCRIPT_VARIATION) {
+				qDebug() << "  Issuing dds reset before variation change";
+				try {
+					(void)ddsClient->sendBatchCommands("dds reset\n");
+					std::this_thread::sleep_for(std::chrono::milliseconds(100));
+				}
+				catch (...) {
+					qDebug() << "  dds reset before variation change failed";
+				}
+			}
 			ScriptedWieserlabsDDSWaveform variationWaveform;
 			std::string warnings;
 			ScriptStream stream(activeWaveform.getScriptText());
@@ -451,6 +483,10 @@ void WieserlabsDDSCore::programVariation(unsigned variation, std::vector<paramet
 			activeWaveform = variationWaveform;
 			lastProgrammedScriptVariation = variation;
 		}
+		else {
+			qDebug() << "  REUSING cached waveform (same variation)";
+		}
+		qDebug() << "  Executing scripted commands, command count =" << activeWaveform.getCommandList().size();
 		executeScriptedCommands(activeWaveform, threadworker);
 		return;
 	}
@@ -555,7 +591,39 @@ void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWavef
 	
 	// Build all DCP commands into one batch
 	std::string batchCommands;
-	bool firstCommand = true;
+	bool channelUsed[2] = { false, false };
+	for (const auto& cmd : commands) {
+		if (cmd.channel >= 0 && cmd.channel < 2) {
+			channelUsed[cmd.channel] = true;
+		}
+	}
+	const bool dualChannelSync = channelUsed[0] && channelUsed[1];
+	if (dualChannelSync) {
+		for (int ch = 0; ch < 2; ++ch) {
+			batchCommands += "dcp " + std::to_string(ch) + " spi:CFR1=0x00402000\n";
+		}
+		for (int ch = 0; ch < 2; ++ch) {
+			batchCommands += "dcp " + std::to_string(ch) + " wait::BNC_IN_A_RISING\n";
+		}
+		for (int ch = 0; ch < 2; ++ch) {
+			batchCommands += "dcp " + std::to_string(ch) + " update:u\n";
+		}
+	}
+	else {
+		for (int ch = 0; ch < 2; ++ch) {
+			if (!channelUsed[ch]) {
+				continue;
+			}
+			std::string triggerLine = (ch == 0) ? "BNC_IN_A_RISING" : "BNC_IN_B_RISING";
+			batchCommands += "dcp " + std::to_string(ch) + " wait::" + triggerLine + "\n";
+		}
+	}
+	auto appendChannelWaitUs = [&](int channel, int waitUs) {
+		if (waitUs <= 0) {
+			return;
+		}
+		batchCommands += "dcp " + std::to_string(channel) + " wait:" + std::to_string(waitUs) + ":\n";
+	};
 	auto appendToneUpdate = [&](int channel, double freqMhz, double amplitude, double phaseDeg) {
 		double frequency = freqMhz * 1e6; // Convert MHz to Hz
 		batchCommands += "dcp " + std::to_string(channel) + " spi:CFR1=0x402000\n";
@@ -576,18 +644,13 @@ void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWavef
 	
 	for (size_t i = 0; i < commands.size(); i++) {
 		const auto& cmd = commands[i];
-
-		if (firstCommand) {
-			std::string triggerLine = (cmd.channel == 0) ? "BNC_IN_A_RISING" : "BNC_IN_B_RISING";
-			batchCommands += "dcp " + std::to_string(cmd.channel) + " wait::" + triggerLine + "\n";
-			firstCommand = false;
+		if (cmd.channel < 0 || cmd.channel > 1) {
+			continue;
 		}
 
 		if (cmd.preDelayMs > 0.0) {
 			int preDelayUs = static_cast<int>(std::round(cmd.preDelayMs * 1000.0));
-			if (preDelayUs > 0) {
-				batchCommands += "dcp " + std::to_string(cmd.channel) + " wait:" + std::to_string(preDelayUs) + ":\n";
-			}
+			appendChannelWaitUs(cmd.channel, preDelayUs);
 		}
 		
 		if (cmd.type == "tone") {
@@ -596,7 +659,7 @@ void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWavef
 			// Add delay if specified in script (convert ms to us for DCP wait command)
 			if (cmd.delayMs > 0.0) {
 				int delayUs = static_cast<int>(std::round(cmd.delayMs * 1000.0));
-				batchCommands += "dcp " + std::to_string(cmd.channel) + " wait:" + std::to_string(delayUs) + ":\n";
+				appendChannelWaitUs(cmd.channel, delayUs);
 			}
 		}
 		else if (cmd.type == "ramp") {
@@ -664,6 +727,21 @@ void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWavef
 				batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:CFR1=" + std::string(dcpBuf) + "\n";
 				batchCommands += "dcp " + std::to_string(cmd.channel) + " update:u\n";
 
+				// Write ramp parameters BEFORE enabling ramp mode
+				sprintf(dcpBuf, "0x%016llx", static_cast<unsigned long long>(DRL));
+				qDebug() << "  RAMP ch" << cmd.channel << ": fstart=" << fstartHz << "Hz, fend=" << fendHz << "Hz, duration=" << durationMs << "ms";
+				qDebug() << "    DRL  =" << dcpBuf;
+				batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:DRL=" + std::string(dcpBuf) + "\n";
+
+				sprintf(dcpBuf, "0x%016llx", static_cast<unsigned long long>(DRSS));
+				qDebug() << "    DRSS =" << dcpBuf;
+				batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:DRSS=" + std::string(dcpBuf) + "\n";
+
+				sprintf(dcpBuf, "0x%08x", DRR);
+				qDebug() << "    DRR  =" << dcpBuf << ", rampWait=" << static_cast<int>(std::round(durationMs * 1000.0)) << "us";
+				batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:DRR=" + std::string(dcpBuf) + "\n";
+
+				// Now enable ramp mode in CFR2 after parameters are set
 				uint32_t cfr2 = 0x004008C0u;
 				cfr2 = setBit(cfr2, 24, true);
 				cfr2 = setBit(cfr2, 4, false);
@@ -673,29 +751,20 @@ void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWavef
 				sprintf(dcpBuf, "0x%08x", cfr2);
 				batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:CFR2=" + std::string(dcpBuf) + "\n";
 
-				sprintf(dcpBuf, "0x%016llx", static_cast<unsigned long long>(DRL));
-				batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:DRL=" + std::string(dcpBuf) + "\n";
-
-				sprintf(dcpBuf, "0x%016llx", static_cast<unsigned long long>(DRSS));
-				batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:DRSS=" + std::string(dcpBuf) + "\n";
-
-				sprintf(dcpBuf, "0x%08x", DRR);
-				batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:DRR=" + std::string(dcpBuf) + "\n";
-
-				batchCommands += "dcp " + std::to_string(cmd.channel) + " update:u-d\n";
 				batchCommands += "dcp " + std::to_string(cmd.channel) + " update:u+d\n";
 
 				int rampWaitUs = static_cast<int>(std::round(durationMs * 1000.0));
-				if (rampWaitUs > 0) {
-					batchCommands += "dcp " + std::to_string(cmd.channel) + " wait:" + std::to_string(rampWaitUs) + ":\n";
-				}
+				appendChannelWaitUs(cmd.channel, rampWaitUs);
+
+				batchCommands += "dcp " + std::to_string(cmd.channel) + " update:u-d\n";
+				appendChannelWaitUs(cmd.channel, 1);
 
 				appendToneUpdate(cmd.channel, cmd.endFreq, cmd.amplitude, cmd.phase);
 			}
 
 			if (cmd.delayMs > 0.0) {
 				int delayUs = static_cast<int>(std::round(cmd.delayMs * 1000.0));
-				batchCommands += "dcp " + std::to_string(cmd.channel) + " wait:" + std::to_string(delayUs) + ":\n";
+				appendChannelWaitUs(cmd.channel, delayUs);
 			}
 		}
 		else if (cmd.type == "off") {
@@ -705,7 +774,7 @@ void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWavef
 			batchCommands += "dcp " + std::to_string(cmd.channel) + " update:u\n";
 			if (cmd.delayMs > 0.0) {
 				int delayUs = static_cast<int>(std::round(cmd.delayMs * 1000.0));
-				batchCommands += "dcp " + std::to_string(cmd.channel) + " wait:" + std::to_string(delayUs) + ":\n";
+				appendChannelWaitUs(cmd.channel, delayUs);
 			}
 		}
 	}
@@ -777,6 +846,7 @@ void WieserlabsDDSCore::errorFinish()
 		}
 
 		try {
+			resetChannels();
 			std::string cleanup;
 			for (int ch = 0; ch < 2; ++ch) {
 				cleanup += "dcp " + std::to_string(ch) + " spi:CFR1=0x402000\n";
@@ -831,15 +901,31 @@ void WieserlabsDDSCore::setScriptedWaveform(const ScriptedWieserlabsDDSWaveform&
 
 void WieserlabsDDSCore::resetChannels()
 {
-	if (!isConnected || !ddsClient) return;
-	
-	// Turn off all channels to clear any previous state
-	for (int ch = 0; ch < 2; ch++) {
-		try {
-			ddsClient->turnOffChannel(ch);
-		}
-		catch (...) {
-			// Ignore errors during reset
+	if ((!isConnected || !ddsClient) && !initSettings.safemode) {
+		reconnect();
+	}
+	if (!isConnected || !ddsClient) {
+		return;
+	}
+
+	bool resetOk = false;
+	try {
+		resetOk = ddsClient->sendBatchCommands("dds reset\n");
+	}
+	catch (...) {
+		resetOk = false;
+	}
+
+	if (!resetOk && !initSettings.safemode) {
+		reconnect();
+		if (isConnected && ddsClient) {
+			try {
+				(void)ddsClient->sendBatchCommands("dds reset\n");
+			}
+			catch (...) {
+			}
 		}
 	}
+
+	needsReinitializeAfterScript = false;
 }

@@ -1,6 +1,6 @@
 t = 1
 
-off: greenmot
+off: blueimg
 dac: blue2dmot blue2dmotpower
 
 dac: bias1 bias1
@@ -10,11 +10,11 @@ dac: blue3dmot blue3dmotpower
 dac: greenmot greenmotpower
 dac: pushbeam bluepushpower
 dac: blueimg 0
-
-
+%
+%
 %pulseon: dds0 0.1
 %pulseon: dds1 0.1
-%
+
 on: pushbeam
 on: greenmot
 on: blue3dmot
@@ -24,6 +24,7 @@ t += coreshellloadtime
 
 off: pushbeam
 off: blue3dmot
+dac: blue3dmot 0
 %motramp
 
 dacramp: bias1 bias1 (bias1+biasx+biasy) 1
@@ -56,28 +57,27 @@ dacramp: bias2 (bias2-biasx+biasy) bias2 1
 dacramp: biasz (biasz+biaszoff) biasz 1
 
 t += 10
-
-on: mako1
-t += 250
-off: mako1
-
-off: greenmot
-off: blue3dmot
 dac: blueimg blueimgpower
-on: blueimg
-
-t += 100
-
-off: blueimg
-dac: blueimg 0
-on: greenmot
-t += 2
+t += 1
 on: mako1
-t += 250
+t += 2
+on: blueimg
+t += 10
+off: blueimg
+t += 2
 off: mako1
-t += 10
+
 off: greenmot
+t += 200
+on: greenmot
+
+on: mako1
+t += 2
+on: blueimg
 t += 10
+off: blueimg
+t += 2
+off: mako1
 
 
 t += 33

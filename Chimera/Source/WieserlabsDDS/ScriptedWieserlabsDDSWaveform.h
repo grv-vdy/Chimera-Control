@@ -2,6 +2,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <array>
 #include "Scripts/ScriptStream.h"
 
 struct DdsCommand {
@@ -33,5 +34,5 @@ protected:
 	std::vector<std::string> commands;
 	std::vector<DdsCommand> commandList;
 	double nextCommandStartMs = 0.0;
-	double lastCommandEndMs = 0.0;
+	std::array<double, 2> channelEndMs = { 0.0, 0.0 };
 };

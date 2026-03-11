@@ -55,6 +55,9 @@ void ExpThreadWorker::experimentThreadProcedure () {
 		}
 		for (auto& device : input->devices.list) {
 			deviceLoadExpSettings (device, cStream);/*TODO: remove dds from device, and now device only has andor*/
+			if (device.get().getDelim().find("WIESERLABS_DDS") != std::string::npos) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(500));
+			}
 		}
 		input->numVariations = determineVariationNumber(expRuntime.expParams);
 
@@ -96,19 +99,23 @@ void ExpThreadWorker::experimentThreadProcedure () {
 				initVariation(variationInc, expRuntime.expParams);
 				emit notification("Programming Devices for Variation...#" + qstr(variationInc) + "\n");
 				for (auto& device : input->devices.list) {
-					deviceProgramVariation(device, expRuntime.expParams, variationInc);
+					if (device.get().getDelim().find("WIESERLABS_DDS") == std::string::npos) {
+							deviceProgramVariation(device, expRuntime.expParams, variationInc);
+						}
+
 				}
-				std::this_thread::sleep_for(std::chrono::milliseconds(300)); //temp added to make sure DDS programming works
+				// std::this_thread::sleep_for(std::chrono::milliseconds(300)); //temp added to make sure DDS programming works
 				emit notification("Running Experiment.\n");
 				for (const auto& repInc : range(expRuntime.repetitions)) {
 					inExpCalibrationRun(expRuntime);
 					emit notification(qstr("Starting Repetition #" + qstr(repInc) + "\n"), 2);
 					for (auto& device : input->devices.list) {
-						if (device.get().getDelim().find("DDS") != std::string::npos) {
+						if (device.get().getDelim().find("WIESERLABS_DDS") != std::string::npos) {
 							deviceProgramVariation(device, expRuntime.expParams, variationInc);
+							std::this_thread::sleep_for(std::chrono::milliseconds(500)); //temp added to make sure DDS programming works
 						}
 					}
-					std::this_thread::sleep_for(std::chrono::milliseconds(300)); //temp added to make sure DDS programming works
+					
 					handlePause(isPaused, isAborting);
 					startRep(repInc, variationInc, input->skipNext == nullptr ? false : input->skipNext->load());
 					waitForSequenceFinish(finaltimes[variationInc]);

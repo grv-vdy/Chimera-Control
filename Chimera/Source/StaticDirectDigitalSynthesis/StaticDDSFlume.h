@@ -13,6 +13,7 @@ public:
 	std::string getSerialNumberOnly();
 	void setFrequency(double frequencyMHz, int ch);
 	void setOutputLevel(double leveldBm, int ch);
+	void setCwMode(int ch);
 	void setReferenceFrequency(double refMHz);
 	// Sweep control (Valon native commands)
 	void startSweep(double startMHz, double stopMHz, double stepMHz, unsigned rateMs, int ch);

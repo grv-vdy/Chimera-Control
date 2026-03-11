@@ -61,5 +61,6 @@ private:
 	CQComboBox* modeCombo;
 	QLabel* header;
 	deviceOutputInfo currentGuiInfo;
+	bool lastScriptingMode = true;
 	bool saved = true;
 };

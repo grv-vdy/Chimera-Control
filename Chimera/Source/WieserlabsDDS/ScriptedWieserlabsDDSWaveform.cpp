@@ -62,21 +62,26 @@ bool ScriptedWieserlabsDDSWaveform::analyzeWieserlabsDDSScriptCommand(ScriptStre
 	};
 
 	auto finalizeCommand = [&](DdsCommand& cmdObj) {
-		double scheduledStartMs = nextCommandStartMs;
-		if (scheduledStartMs < lastCommandEndMs) {
-			warnings += "Requested DDS command start time is earlier than current timeline; clamping to current time\n";
-			scheduledStartMs = lastCommandEndMs;
+		if (cmdObj.channel < 0 || cmdObj.channel > 1) {
+			warnings += "DDS command channel must be 0 or 1\n";
+			return;
 		}
 
-		cmdObj.preDelayMs = std::max(0.0, scheduledStartMs - lastCommandEndMs);
+		double& channelTimelineEndMs = channelEndMs[cmdObj.channel];
+		double scheduledStartMs = nextCommandStartMs;
+		if (scheduledStartMs < channelTimelineEndMs) {
+			warnings += "Requested DDS command start time is earlier than channel timeline; clamping to channel time\n";
+			scheduledStartMs = channelTimelineEndMs;
+		}
+
+		cmdObj.preDelayMs = std::max(0.0, scheduledStartMs - channelTimelineEndMs);
 
 		double intrinsicDurationMs = 0.0;
 		if (cmdObj.type == "ramp") {
 			intrinsicDurationMs = std::max(0.0, cmdObj.duration);
 		}
 
-		lastCommandEndMs = scheduledStartMs + intrinsicDurationMs + std::max(0.0, cmdObj.delayMs);
-		nextCommandStartMs = lastCommandEndMs;
+		channelTimelineEndMs = scheduledStartMs + intrinsicDurationMs + std::max(0.0, cmdObj.delayMs);
 		commandList.push_back(cmdObj);
 	};
 

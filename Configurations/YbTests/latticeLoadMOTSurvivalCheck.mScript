@@ -1,3 +1,4 @@
+%%%%%%%%%%%%%%%%% Start With 1ms %%%%%%%%%%%%%%%%% 
 t = 1
 
 off: greenmot
@@ -9,10 +10,9 @@ dac: biasz biasz
 dac: blue3dmot blue3dmotpower
 dac: greenmot greenmotpower
 dac: pushbeam bluepushpower
-dac: blueimg 0
+dac: blueimg blueimgpower
 
-
-%pulseon: dds0 0.1
+pulseon: dds0 0.1
 %pulseon: dds1 0.1
 %
 on: pushbeam
@@ -23,7 +23,7 @@ on: blue3dmot
 t += coreshellloadtime
 
 off: pushbeam
-off: blue3dmot
+%off: blue3dmot
 %motramp
 
 dacramp: bias1 bias1 (bias1+biasx+biasy) 1
@@ -34,7 +34,7 @@ on: greennarrow
 t += 2
 %dacramp: greenmot greenmotpower greenmotpowerlow 1
 dac: greenmot greenmotpowerlow
-t += 20 %thermalize mot see 260225
+t += time %thermalize mot see 260225
 %t += 80
 
 %release mot
@@ -42,6 +42,27 @@ t += 20 %thermalize mot see 260225
 off: greenmot
 
 t += motreleasetime
+
+
+%%LATTICE MOVE
+
+%on: scopetrigger 
+%
+%t += (2*latramptime)
+%t += latmovetime
+%
+%%pulseon: blueimg 2
+%t += 3
+%on: blueimg
+%t += latpausetime-6
+%off: blueimg
+%t += 3
+%
+%t += latmovetime
+%t += (2*latramptime)
+%
+%off: scopetrigger
+
 
 %recapture mot
 %
@@ -63,13 +84,12 @@ off: mako1
 
 off: greenmot
 off: blue3dmot
-dac: blueimg blueimgpower
 on: blueimg
 
 t += 100
 
 off: blueimg
-dac: blueimg 0
+
 on: greenmot
 t += 2
 on: mako1

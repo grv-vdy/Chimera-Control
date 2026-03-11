@@ -156,6 +156,10 @@ void WieserlabsDDSSystem::handleChannelPress(int chan, std::string configPath, R
 void WieserlabsDDSSystem::handleModeCombo()
 {
 	bool scripting = (modeCombo->currentIndex() == 0);
+	if (lastScriptingMode && !scripting) {
+		core.resetChannels();
+	}
+	lastScriptingMode = scripting;
 	wieserlabsDdsScript->setEnabled(scripting, false);
 	refreshScriptedWaveform();
 }

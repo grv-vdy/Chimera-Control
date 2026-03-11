@@ -9,12 +9,11 @@ dac: biasz biasz
 dac: blue3dmot blue3dmotpower
 dac: greenmot greenmotpower
 dac: pushbeam bluepushpower
-dac: blueimg 0
+dac: blueimg blueimgpower
 
+pulseon: dds0 0.1
+pulseon: dds1 0.1
 
-%pulseon: dds0 0.1
-%pulseon: dds1 0.1
-%
 on: pushbeam
 on: greenmot
 on: blue3dmot
@@ -43,6 +42,27 @@ off: greenmot
 
 t += motreleasetime
 
+
+%%LATTICE MOVE
+
+on: scopetrigger 
+
+t += (2*latramptime)
+t += latmovetime
+
+
+t += 3
+%on: blueimg
+t += latpausetime-6
+%off: blueimg
+t += 3
+
+t += latmovetime
+t += (2*latramptime)
+
+off: scopetrigger
+
+
 %recapture mot
 %
 
@@ -63,13 +83,12 @@ off: mako1
 
 off: greenmot
 off: blue3dmot
-dac: blueimg blueimgpower
 on: blueimg
 
 t += 100
 
 off: blueimg
-dac: blueimg 0
+
 on: greenmot
 t += 2
 on: mako1

@@ -214,6 +214,13 @@ void StaticDDSFlume::setOutputLevel(double plevel, int ch)
     write(cmd);
 }
 
+void StaticDDSFlume::setCwMode(int ch)
+{
+    if (SAFEMODE) return;
+    std::string cmd = "Source " + std::to_string(ch + 1) + "; MODe CW\r";
+    write(cmd);
+}
+
 void StaticDDSFlume::setReferenceFrequency(double refMHz)
 {
     std::string cmd = "REF " + std::to_string(refMHz);

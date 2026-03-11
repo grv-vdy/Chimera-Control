@@ -1,17 +1,17 @@
 Version 1.0
-pushbeam
+greenmot
 1
-blue3dmot
+ blueimg
 1
 mako1
 1
 greennarrow
 1
-greenmot
+greenpush
 1
 pixis_trg
 1
-blueimg
+d6
 1
 prbshutter
 1
@@ -21,15 +21,15 @@ dds1
 1
 xymotshutter
 1
-greenpush
+d11
 1
-d1lgmprbshutter
+scopetrigger
 1
 camerashutter
 1
-srcmotvalve
+blue3dmot
 1
-srcmotvalveenable
+pushbeam
 1
 tweezerhold
 1

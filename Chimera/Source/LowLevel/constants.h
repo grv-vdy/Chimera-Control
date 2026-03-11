@@ -118,7 +118,7 @@
 	/*the first is the label on the box minus 1, has minus'd 1 explicitly and this is not used in the code, just a reminder*/
 
 	//GIGAMOOG
-	const bool GIGAMOOG_SAFEMODE = false;
+	const bool GIGAMOOG_SAFEMODE = true;
 	const std::string GIGAMOOG_IPADDRESS = "192.168.7.179";
 	const int GIGAMOOG_IPPORT = 804;
 	//const std::string GIGAMOOG_PORT = "COM5";
