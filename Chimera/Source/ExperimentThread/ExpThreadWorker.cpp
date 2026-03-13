@@ -104,7 +104,6 @@ void ExpThreadWorker::experimentThreadProcedure () {
 						}
 
 				}
-				// std::this_thread::sleep_for(std::chrono::milliseconds(300)); //temp added to make sure DDS programming works
 				emit notification("Running Experiment.\n");
 				for (const auto& repInc : range(expRuntime.repetitions)) {
 					inExpCalibrationRun(expRuntime);
@@ -112,7 +111,7 @@ void ExpThreadWorker::experimentThreadProcedure () {
 					for (auto& device : input->devices.list) {
 						if (device.get().getDelim().find("WIESERLABS_DDS") != std::string::npos) {
 							deviceProgramVariation(device, expRuntime.expParams, variationInc);
-							std::this_thread::sleep_for(std::chrono::milliseconds(500)); //temp added to make sure DDS programming works
+							std::this_thread::sleep_for(std::chrono::milliseconds(10)); //temp added to make sure DDS programming works. No dds reset needed.
 						}
 					}
 					

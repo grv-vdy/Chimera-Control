@@ -289,24 +289,8 @@ void WieserlabsDDSCore::loadExpSettings(ConfigStream& script)
 	qDebug() << "WieserlabsDDSCore::loadExpSettings called - DDS does not use master script config, skipping";
 	experimentActive = waveformLoaded || expRunSettings.wieserlabsControl; // Scripted or static-control mode
 	if (waveformLoaded) {
-		// Any scripted run can leave DDS internal mode/queue state dirty.
-		// Issue a full dds reset to guarantee clean state for the new experiment.
+		// Scripted runs may require reconnect before next manual tone programming.
 		needsReinitializeAfterScript = true;
-		if ((!isConnected || !ddsClient) && !initSettings.safemode) {
-			reconnect();
-		}
-		if (isConnected && ddsClient) {
-			qDebug() << "loadExpSettings: Issuing dds reset for clean experiment start";
-			try {
-				(void)ddsClient->sendBatchCommands("dds reset\n");
-			}
-			catch (...) {
-				reconnect();
-				if (isConnected && ddsClient) {
-					(void)ddsClient->sendBatchCommands("dds reset\n");
-				}
-			}
-		}
 	}
 	lastProgrammedScriptVariation = INVALID_SCRIPT_VARIATION;
 
@@ -457,17 +441,6 @@ void WieserlabsDDSCore::programVariation(unsigned variation, std::vector<paramet
 	if (hasScriptedWaveform()) {
 		if (variation != lastProgrammedScriptVariation) {
 			qDebug() << "  RE-PARSING script for variation" << variation;
-			// Reset DDS before switching to a new variation to clear any stale state
-			if (isConnected && ddsClient && lastProgrammedScriptVariation != INVALID_SCRIPT_VARIATION) {
-				qDebug() << "  Issuing dds reset before variation change";
-				try {
-					(void)ddsClient->sendBatchCommands("dds reset\n");
-					std::this_thread::sleep_for(std::chrono::milliseconds(100));
-				}
-				catch (...) {
-					qDebug() << "  dds reset before variation change failed";
-				}
-			}
 			ScriptedWieserlabsDDSWaveform variationWaveform;
 			std::string warnings;
 			ScriptStream stream(activeWaveform.getScriptText());
@@ -614,7 +587,7 @@ void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWavef
 			if (!channelUsed[ch]) {
 				continue;
 			}
-			std::string triggerLine = (ch == 0) ? "BNC_IN_A_RISING" : "BNC_IN_B_RISING";
+			std::string triggerLine = "BNC_IN_A_RISING";
 			batchCommands += "dcp " + std::to_string(ch) + " wait::" + triggerLine + "\n";
 		}
 	}

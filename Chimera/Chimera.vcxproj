@@ -309,6 +309,9 @@
     <ClCompile Include="Source\WieserlabsDDS\WieserlabsClient.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Source\WieserlabsDDS\WieserlabsBinaryClient.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Source\ConfigurationSystems\ConfigStream.cpp" />
     <ClCompile Include="Source\ConfigurationSystems\ConfigSystem.cpp" />
     <ClCompile Include="Source\ConfigurationSystems\MasterConfiguration.cpp" />
@@ -432,6 +435,7 @@
     <ClInclude Include="Source\WieserlabsDDS\WieserlabsDDSSettings.h" />
     <ClInclude Include="Source\WieserlabsDDS\ScriptedWieserlabsDDSWaveform.h" />
     <ClInclude Include="Source\WieserlabsDDS\WieserlabsClient.h" />
+    <ClInclude Include="Source\WieserlabsDDS\WieserlabsBinaryClient.h" />
     <ClInclude Include="Source\ConfigurationSystems\ConfigStream.h" />
     <ClInclude Include="Source\ConfigurationSystems\MasterConfiguration.h" />
     <ClInclude Include="Source\ConfigurationSystems\profileSettings.h" />

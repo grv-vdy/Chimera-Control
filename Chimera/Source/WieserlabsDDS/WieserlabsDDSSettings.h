@@ -13,7 +13,7 @@ const wieserlabsDdsSettings WIESERLABS_DDS_SETTINGS = {
 	"Wieserlabs DDS",
 	// trigger line for Channel 0 (BNC_IN_A)
 	WIESERLABS_CH0_TRIGGER_LINE,
-	// trigger line for Channel 1 (BNC_IN_B)
+	// trigger line for Channel 1 (BNC_IN_A)
 	WIESERLABS_CH1_TRIGGER_LINE,
 	// Configuration file delimiter
 	"WIESERLABS_DDS"

@@ -103,9 +103,9 @@
 	const bool WIESERLABS_SAFEMODE = false;
 	const std::string WIESERLABS_IPADDRESS = "192.168.105.5";
 	const int WIESERLABS_IPPORT = 26000;
-	// Per-channel hardware triggers on FlexDDS-NG: Channel 0 on BNC_IN_A, Channel 1 on BNC_IN_B
+	// Per-channel hardware triggers on FlexDDS-NG: both channels use BNC_IN_A
 	const std::pair<unsigned, unsigned> WIESERLABS_CH0_TRIGGER_LINE = std::make_pair(1, 0); /*BNC_IN_A: Row 1, Column 0*/
-	const std::pair<unsigned, unsigned> WIESERLABS_CH1_TRIGGER_LINE = std::make_pair(1, 1); /*BNC_IN_B: Row 1, Column 1*/
+	const std::pair<unsigned, unsigned> WIESERLABS_CH1_TRIGGER_LINE = std::make_pair(1, 0); /*BNC_IN_A: Row 1, Column 0*/
 	const std::array<bool, 6> SLOT_CONNECTED = { true, false, false, false, false, false };
 
 	//Mako camera

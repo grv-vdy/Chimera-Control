@@ -22,6 +22,8 @@ bool WieserlabsClient::connect() {
         boost::asio::ip::tcp::resolver resolver(io_context_);
         auto endpoints = resolver.resolve(ip_, std::to_string(port_));
         boost::asio::connect(socket_, endpoints);
+        // Disable Nagle so each write is sent immediately without buffering delay
+        socket_.set_option(boost::asio::ip::tcp::no_delay(true));
         connected_ = true;
         // Send authentication for slot 0
         std::string auth = "75f4a4e10dd4b6b0\r\n";
@@ -127,33 +129,38 @@ bool WieserlabsClient::sendCommand(const std::string& command) {
     }
 
     try {
-        // Split command into individual lines and send each one
+        // Build the entire payload in one string with \r\n line endings,
+        // then send as a single TCP write so all lines arrive in one packet.
+        // Append "dcp flush" at the end to ensure all instructions are executed
+        // and get a single response for the whole batch.
+        std::string payload;
+        payload.reserve(command.size() + 64);
         std::istringstream iss(command);
         std::string line;
         while (std::getline(iss, line)) {
             if (!line.empty()) {
                 qDebug() << "DDS CMD >" << QString::fromStdString(line);
-                // Add \r\n for proper line ending
-                std::string cmd = line + "\r\n";
-                boost::asio::write(socket_, boost::asio::buffer(cmd));
-                // Read response for each command
-                std::string response = receiveResponse();
-                if (response.empty()) {
-                    // If transport has dropped, don't report success.
-                    if (!connected_) {
-                        std::cerr << "DDS command transport dropped while sending: " << line << std::endl;
-                        return false;
-                    }
-                    qDebug() << "DDS RSP < <empty>";
-                    // Some firmware revisions may not answer every command line.
-                    continue;
-                }
-                qDebug() << "DDS RSP <" << QString::fromStdString(response);
-                if (response.find("error") != std::string::npos) {
-                    std::cerr << "DDS error for command '" << line << "': " << response << std::endl;
-                    return false;
-                }
+                payload += line;
+                payload += "\r\n";
             }
+        }
+        if (payload.empty()) {
+            return true;
+        }
+        // Append flush to execute all queued DCP instructions
+        payload += "dcp flush\r\n";
+        qDebug() << "DDS CMD > dcp flush";
+        
+        boost::asio::write(socket_, boost::asio::buffer(payload));
+        // Read the single response for the whole batch
+        std::string response = receiveResponse();
+        qDebug() << "DDS RSP <" << QString::fromStdString(response);
+        if (!connected_) {
+            return false;
+        }
+        if (response.find("error") != std::string::npos) {
+            std::cerr << "DDS batch error: " << response << std::endl;
+            return false;
         }
         return true;
     } catch (const boost::system::system_error& e) {
