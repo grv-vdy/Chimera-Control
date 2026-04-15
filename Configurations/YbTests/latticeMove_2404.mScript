@@ -22,8 +22,9 @@ on: pushbeam
 on: greenmot
 on: blue3dmot
 
-
+on: d11
 t += coreshellloadtime
+off: d11
 
 off: pushbeam
 off: blue3dmot
@@ -44,18 +45,22 @@ t += 20 %thermalize mot see 260225
 
 off: greenmot
 
-t += motreleasetime
+
 
 %recapture mot
 %
 pulseon: scopetrigger 1
-t += 100
+%pulseon: d11 1
+
+t += 10
 t += (2*latramptime + latmovetime)
 %on: blueimg
 t += latpausetime
 %off: blueimg
 t += (2*latramptime + latmovetime)
-t += 100
+t += 10
+
+pulseon: scopetrigger 1
 on: greenmot
 off: greennarrow
 %dacramp: greenmot greenmotpowerlow greenmotpower 1

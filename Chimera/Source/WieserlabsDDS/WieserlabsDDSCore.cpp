@@ -750,6 +750,20 @@ void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWavef
 				appendChannelWaitUs(cmd.channel, delayUs);
 			}
 		}
+		else if (cmd.type == "bnc") {
+			// BNC C output control via CFG_BNC_C register (0x082)
+			// bncValue 0 = LOW (DIR=1, INV=0): 0x200
+			// bncValue 1 = HIGH (DIR=1, INV=1): 0x300
+			// Note: Only DCP channel 0 can write to BNC config registers
+			uint32_t bncRegValue = (cmd.bncValue == 0) ? 0x200 : 0x300;
+			char bncBuf[16];
+			sprintf(bncBuf, "0x%03x", bncRegValue);
+			batchCommands += "dcp 0 wr:0x082=" + std::string(bncBuf) + "\n";
+			if (cmd.delayMs > 0.0) {
+				int delayUs = static_cast<int>(std::round(cmd.delayMs * 1000.0));
+				appendChannelWaitUs(0, delayUs);
+			}
+		}
 	}
 	
 	// Send all commands as one batch; reconnect and retry once on failure.

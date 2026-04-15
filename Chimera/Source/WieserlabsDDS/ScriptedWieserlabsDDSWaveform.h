@@ -6,7 +6,7 @@
 #include "Scripts/ScriptStream.h"
 
 struct DdsCommand {
-	std::string type; // "tone", "ramp", "off"
+	std::string type; // "tone", "ramp", "off", "bnc"
 	double preDelayMs; // delay before this command executes (in milliseconds)
 	double delayMs;   // inter-command delay after this command (in milliseconds)
 	int channel;
@@ -15,6 +15,7 @@ struct DdsCommand {
 	double amplitude;
 	double duration;  // ramp duration (in milliseconds)
 	double phase;
+	int bncValue;     // for bnc command: 0=LOW, 1=HIGH (controls BNC C output)
 };
 
 class ScriptedWieserlabsDDSWaveform

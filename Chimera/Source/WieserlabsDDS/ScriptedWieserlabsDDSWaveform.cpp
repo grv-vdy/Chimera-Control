@@ -147,6 +147,7 @@ bool ScriptedWieserlabsDDSWaveform::analyzeWieserlabsDDSScriptCommand(ScriptStre
 		}
 		cmdObj.endFreq = cmdObj.startFreq;
 		cmdObj.duration = 0.0;
+		cmdObj.bncValue = 0;
 		if (phaseStr.empty()) {
 			cmdObj.phase = 0.0;
 		}
@@ -194,6 +195,7 @@ bool ScriptedWieserlabsDDSWaveform::analyzeWieserlabsDDSScriptCommand(ScriptStre
 			warnings += "Invalid expression in ramp command\n";
 			return true;
 		}
+		cmdObj.bncValue = 0;
 		if (phaseStr.empty()) {
 			cmdObj.phase = 0.0;
 		}
@@ -241,6 +243,7 @@ bool ScriptedWieserlabsDDSWaveform::analyzeWieserlabsDDSScriptCommand(ScriptStre
 		cmdObj.duration = 0.0;
 		cmdObj.phase = 0.0;
 		cmdObj.delayMs = 0.0;
+		cmdObj.bncValue = 0;
 		
 		if (!delayStr.empty()) {
 			try {
@@ -254,6 +257,46 @@ bool ScriptedWieserlabsDDSWaveform::analyzeWieserlabsDDSScriptCommand(ScriptStre
 
 		finalizeCommand(cmdObj);
 		scriptText += command + " " + channelStr + (delayStr.empty() ? "" : " " + delayStr) + "\n";
+	}
+	else if (command == "bnc") {
+		// Syntax: bnc value [delay:X]
+		// value: 0 = BNC C LOW, 1 = BNC C HIGH
+		// Note: Only DCP channel 0 can write to BNC configuration registers
+		std::string valueStr, delayStr = "";
+		lineStream >> valueStr;
+		
+		std::string token;
+		while (lineStream >> token) {
+			boost::to_lower(token);
+			if (token.find("delay:") == 0) {
+				delayStr = token;
+			}
+		}
+
+		DdsCommand cmdObj;
+		cmdObj.type = "bnc";
+		cmdObj.preDelayMs = 0.0;
+		cmdObj.channel = 0; // BNC config registers only accessible via DCP channel 0
+		cmdObj.startFreq = 0.0;
+		cmdObj.endFreq = 0.0;
+		cmdObj.amplitude = 0.0;
+		cmdObj.duration = 0.0;
+		cmdObj.phase = 0.0;
+		cmdObj.delayMs = 0.0;
+		cmdObj.bncValue = std::stoi(valueStr);
+		
+		if (!delayStr.empty()) {
+			try {
+				if (!evalToken(delayStr.substr(6), cmdObj.delayMs)) {
+					warnings += "Invalid delay format in bnc command\n";
+				}
+			} catch (...) {
+				warnings += "Invalid delay format in bnc command\n";
+			}
+		}
+
+		finalizeCommand(cmdObj);
+		scriptText += command + " " + valueStr + (delayStr.empty() ? "" : " " + delayStr) + "\n";
 	}
 	else {
 		warnings += "Unrecognized Wieserlabs DDS command: " + command + "\n";

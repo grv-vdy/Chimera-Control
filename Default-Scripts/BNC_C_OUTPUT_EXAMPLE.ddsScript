@@ -1,0 +1,23 @@
+// BNC C Output Control Example
+// This script configures BNC C as an output and controls its state
+// BNC A and B are reserved for triggers
+//
+// Simple syntax:
+//   bnc 0          - Set BNC C output LOW
+//   bnc 1          - Set BNC C output HIGH
+//   bnc 0 delay:X  - Set LOW with X ms delay after
+//
+// The bnc command uses CFG_BNC_C register (0x082) internally:
+//   - bnc 0: DIR=1, INV=0 (0x200) -> output LOW
+//   - bnc 1: DIR=1, INV=1 (0x300) -> output HIGH
+
+// Example: Toggle BNC C with timing
+bnc 0                  // Set BNC C LOW
+t += 1                 // Wait 1 ms in timeline
+bnc 1                  // Set BNC C HIGH
+t += 1                 // Wait 1 ms
+bnc 0                  // Set BNC C LOW
+t += 0.2               // Wait 200 us
+bnc 1                  // Set BNC C HIGH
+t += 0.2
+bnc 0                  // Set BNC C LOW

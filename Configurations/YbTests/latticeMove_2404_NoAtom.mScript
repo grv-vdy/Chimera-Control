@@ -1,0 +1,42 @@
+t = 100
+
+dac: greenmot greenmotpower
+
+pulseon: dds0 0.1
+%pulseon: dds1 0.1
+%
+
+t += 1
+t += 2
+t += 20 %thermalize mot see 260225
+
+
+off: greenmot
+t += coreshellloadtime
+
+t += motreleasetime
+
+%
+pulseon: scopetrigger 1
+
+
+t += 100
+t += (2*latramptime + latmovetime)
+%on: blueimg
+t += latpausetime
+%off: blueimg
+t += (2*latramptime + latmovetime)
+t += 100
+
+
+
+t += 33
+t += 3
+on: pixis_trg 
+t += 2
+off: pixis_trg
+t += 1
+on: pixis_trg
+t += 2
+off: pixis_trg
+t += 5

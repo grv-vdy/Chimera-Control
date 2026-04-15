@@ -1,7 +1,7 @@
 tone 0 120 1 0
-tone 1 80 1 0
+tone 1 120 1 0
 
-t += (coreshellloadtime-145)
+t += (coreshellloadtime-123)
 
 t += 3
 
@@ -9,20 +9,24 @@ t += 20
 
 t += motreleasetime
 
+
+
 ramp 0 120 (120-latdeviation) 1 latramptime 0
-ramp 1 80 (80+2*latdeviation) 1 latramptime 0
+ramp 1 120 (120+latdeviation) 1 latramptime 0
 
 t += (latmovetime-2*latramptime)
-
+bnc 1
 ramp 0 (120-latdeviation) 120 1 latramptime 0
-ramp 1 (80+2*latdeviation) 80 1 latramptime 0
+ramp 1 (120+latdeviation) 120 1 latramptime 0
 
 t += latpausetime 
 
 ramp 0 120 (120+latdeviation) 1 latramptime 0
-ramp 1 80 (80-2*latdeviation) 1 latramptime 0
+ramp 1 120 (120-latdeviation) 1 latramptime 0
 
 t += (latmovetime-2*latramptime)
 
 ramp 0 (120+latdeviation) 120 1 latramptime 0
-ramp 1 (80-2*latdeviation) 80 1 latramptime 0
+ramp 1 (120-latdeviation) 120 1 latramptime 0
+
+bnc 0
