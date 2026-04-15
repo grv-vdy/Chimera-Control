@@ -5,7 +5,7 @@ dac: blue3dmot blue3dmotpower
 dac: pushbeam bluepushpower
 dac: blue2dmot blue2dmotpower
 dac: greenmot greenmotpower
-dac: greenpushbeam greennarrowpushpower
+
 dac: blueimg blueimgpower
 dac: bias1 (bias1+biasx+biasy)
 dac: bias2 (bias2-biasx+biasy)

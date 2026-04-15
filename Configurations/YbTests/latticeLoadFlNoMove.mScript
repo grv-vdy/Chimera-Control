@@ -6,9 +6,9 @@ off: blue3dmot
 t += 100
 dac: blue2dmot blue2dmotpower
 
-dac: bias1 bias1
-dac: bias2 bias2
-dac: biasz biasz
+dac: bias1 (bias1+biasx+biasy)
+dac: bias2 (bias2-biasx+biasy)
+dac: biasz (biasz+biaszoff)
 dac: blue3dmot blue3dmotpower
 dac: greenmot greenmotpower
 dac: pushbeam bluepushpower
@@ -28,15 +28,15 @@ t += coreshellloadtime
 off: pushbeam
 off: blue3dmot
 %motramp
-dacramp: bias1 bias1 (bias1+biasx+biasy) 1
-dacramp: bias2 bias2 (bias2-biasx+biasy) 1
-dacramp: biasz biasz (biasz+biaszoff) 1
+
+%dacramp: bias1 bias1 (bias1+biasx+biasy) 1
+%dacramp: bias2 bias2 (bias2-biasx+biasy) 1
+%dacramp: biasz biasz (biasz+biaszoff) 1
 t += 1
 on: greennarrow
 t += 2
 %dacramp: greenmot greenmotpower greenmotpowerlow 1
 dac: greenmot greenmotpowerlow
-dac: blueimg blueimgpower
 t += 20 %thermalize mot see 260225
 %t += 80
 
@@ -46,44 +46,46 @@ off: greenmot
 
 t += motreleasetime
 
+%recapture mot
+%
+
+on: greenmot
+off: greennarrow
+%dacramp: greenmot greenmotpowerlow greenmotpower 1
+dac: greenmot greenimgpower %greenmotpower
+
+
+t += 1
+%dacramp: bias1 (bias1+biasx+biasy) bias1 1
+%dacramp: bias2 (bias2-biasx+biasy) bias2 1
+%dacramp: biasz (biasz+biaszoff) biasz 1
+
+t += 10
 
 on: mako1
-t += 0.1
-on: blueimg
-t += 0.016
-off: blueimg
-t += 0.1
+t += 250
 off: mako1
 
-% make sure to destoroy atom
-t += 0.3
+off: greenmot
+off: blue3dmot
+dac: blueimg blueimgpower
 on: blueimg
-t += 20
-off: blueimg
-t += 0.3
-% img 2
-on: mako1
-t += 0.1
-on: blueimg
-t += 0.016
-off: blueimg
-t += 0.1
-off: mako1
-t += 0.1
-
-t += 21
-
-on: mako1
-t += 0.1
-
-t += 0.016
-
-t += 0.1
-off: mako1
-t += 0.1
 
 t += 100
 
+off: blueimg
+dac: blueimg 0
+on: greenmot
+t += 2
+on: mako1
+t += 250
+off: mako1
+t += 10
+off: greenmot
+t += 10
+
+
+t += 33
 t += 3
 on: pixis_trg 
 t += 2
@@ -93,6 +95,3 @@ on: pixis_trg
 t += 2
 off: pixis_trg
 t += 5
-
-
-

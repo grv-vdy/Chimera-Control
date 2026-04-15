@@ -6,9 +6,9 @@ off: blue3dmot
 t += 100
 dac: blue2dmot blue2dmotpower
 
-dac: bias1 bias1
-dac: bias2 bias2
-dac: biasz biasz
+dac: bias1 (bias1+biasx+biasy)
+dac: bias2 (bias2-biasx+biasy)
+dac: biasz (biasz+biaszoff)
 dac: blue3dmot blue3dmotpower
 dac: greenmot greenmotpower
 dac: pushbeam bluepushpower
@@ -29,9 +29,9 @@ off: pushbeam
 off: blue3dmot
 %motramp
 
-dacramp: bias1 bias1 (bias1+biasx+biasy) 1
-dacramp: bias2 bias2 (bias2-biasx+biasy) 1
-dacramp: biasz biasz (biasz+biaszoff) 1
+%dacramp: bias1 (bias1+biasxfix) (bias1+biasx+biasy) 1
+%dacramp: bias2 (bias2-biasxfix) (bias2-biasx+biasy) 1
+%dacramp: biasz (biasz+biaszofffix) (biasz+biaszoff) 1
 t += 1
 on: greennarrow
 t += 2
@@ -56,9 +56,9 @@ dac: greenmot greenimgpower %greenmotpower
 
 
 t += 1
-dacramp: bias1 (bias1+biasx+biasy) bias1 1
-dacramp: bias2 (bias2-biasx+biasy) bias2 1
-dacramp: biasz (biasz+biaszoff) biasz 1
+dacramp: bias1 (bias1+biasx+biasy) (bias1+biasxfix) 1
+dacramp: bias2 (bias2-biasx+biasy) (bias2-biasxfix) 1
+dacramp: biasz (biasz+biaszoff) (biasz+biaszofffix) 1
 
 t += 10
 

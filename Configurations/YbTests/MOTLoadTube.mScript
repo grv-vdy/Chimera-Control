@@ -6,9 +6,9 @@ off: blue3dmot
 t += 100
 dac: blue2dmot blue2dmotpower
 
-dac: bias1 bias1
-dac: bias2 bias2
-dac: biasz biasz
+dac: bias1 (bias1+biasx+biasy)
+dac: bias2 (bias2-biasx+biasy)
+dac: biasz (biasz+biaszoff)
 dac: blue3dmot blue3dmotpower
 dac: greenmot greenmotpower
 dac: pushbeam bluepushpower
@@ -21,19 +21,22 @@ dac: blueimg 0
 on: pushbeam
 on: greenmot
 on: blue3dmot
+on: greennarrow
 
-
+pulseon: tubeshutter 1 %shutter open
+t += 1
 t += coreshellloadtime
+
+
 
 off: pushbeam
 off: blue3dmot
 %motramp
 
-dacramp: bias1 bias1 (bias1+biasx+biasy) 1
-dacramp: bias2 bias2 (bias2-biasx+biasy) 1
-dacramp: biasz biasz (biasz+biaszoff) 1
-t += 1
-on: greennarrow
+%dacramp: bias1 (bias1+biasxfix) (bias1+biasx+biasy) 1
+%dacramp: bias2 (bias2-biasxfix) (bias2-biasx+biasy) 1
+%dacramp: biasz (biasz+biaszofffix) (biasz+biaszoff) 1
+
 t += 2
 %dacramp: greenmot greenmotpower greenmotpowerlow 1
 dac: greenmot greenmotpowerlow
@@ -43,24 +46,25 @@ t += 20 %thermalize mot see 260225
 %release mot
 
 off: greenmot
-
-t += motreleasetime
-
 %recapture mot
 %
 
 on: greenmot
-off: greennarrow
 %dacramp: greenmot greenmotpowerlow greenmotpower 1
 dac: greenmot greenimgpower %greenmotpower
-
+pulseon: tubeshutter 1 %shutter close
 
 t += 1
-dacramp: bias1 (bias1+biasx+biasy) bias1 1
-dacramp: bias2 (bias2-biasx+biasy) bias2 1
-dacramp: biasz (biasz+biaszoff) biasz 1
+dacramp: bias1 (bias1+biasx+biasy) (bias1+biasxfix) 1
+dacramp: bias2 (bias2-biasx+biasy) (bias2-biasxfix) 1
+dacramp: biasz (biasz+biaszoff) (biasz+biaszofffix) 1
 
 t += 10
+on: mako1
+t += 150
+off: mako1
+
+t += 100
 
 on: mako1
 t += 250
@@ -71,7 +75,7 @@ off: blue3dmot
 dac: blueimg blueimgpower
 on: blueimg
 
-t += 100
+t += 500
 
 off: blueimg
 dac: blueimg 0
