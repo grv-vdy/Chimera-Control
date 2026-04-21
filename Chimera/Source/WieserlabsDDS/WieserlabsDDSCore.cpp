@@ -552,6 +552,11 @@ void WieserlabsDDSCore::programSingleTone(unsigned channel, double freq, double 
 
 void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWaveform& waveform, ExpThreadWorker* expWorker)
 {
+	// Reconnect before every scripted batch to discard any unread response left
+	// in the TCP receive buffer from the previous rep. Without this, unread responses
+	// accumulate each rep until the TCP receive buffer fills (~6-7 reps), the DDS
+	// blocks on its write, and the connection deadlocks.
+	reconnect();
 	if (!isConnected || !ddsClient) {
 		return;
 	}
@@ -678,7 +683,7 @@ void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWavef
 			}
 			else {
 	
-				const double stepTimeMs = 0.02; // 
+				const double stepTimeMs = 0.005; // 
 				int numSteps = static_cast<int>(std::ceil(durationMs / stepTimeMs));
 				numSteps = std::max(2, std::min(numSteps, 10000)); // Limit to reasonable range
 

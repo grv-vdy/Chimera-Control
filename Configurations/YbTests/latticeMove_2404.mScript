@@ -54,12 +54,13 @@ on: d11
 %pulseon: d11 1
 
 
-t += (2*latramptime + latmovetime)
-
+t += (2*latramptime*nrep + latmovetime*nrep)
+t += (latpausetime*nrep)
 %on: blueimg
-t += latpausetime
+
 %off: blueimg
-t += (2*latramptime + latmovetime)
+t += (2*latramptime*nrep + latmovetime*nrep)
+t += (latpausetime*nrep)
 t += 200
 off: d11
 

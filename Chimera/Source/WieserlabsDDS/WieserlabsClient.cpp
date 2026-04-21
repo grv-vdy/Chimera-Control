@@ -22,8 +22,12 @@ bool WieserlabsClient::connect() {
         boost::asio::ip::tcp::resolver resolver(io_context_);
         auto endpoints = resolver.resolve(ip_, std::to_string(port_));
         boost::asio::connect(socket_, endpoints);
-        // Disable Nagle so each write is sent immediately without buffering delay
         socket_.set_option(boost::asio::ip::tcp::no_delay(true));
+        // Set a receive timeout so receiveResponse() never blocks forever
+        // (e.g. DDS stuck waiting for a BNC trigger that never comes)
+        DWORD rcvTimeout = 10000; // 10 seconds
+        setsockopt(socket_.native_handle(), SOL_SOCKET, SO_RCVTIMEO,
+                   reinterpret_cast<const char*>(&rcvTimeout), sizeof(rcvTimeout));
         connected_ = true;
         // Send authentication for slot 0
         std::string auth = "75f4a4e10dd4b6b0\r\n";
@@ -120,7 +124,38 @@ bool WieserlabsClient::abortChannel(int channel) {
 }
 
 bool WieserlabsClient::sendBatchCommands(const std::string& commands) {
-    return sendCommand(commands);
+    // Fire-and-forget: send the batch to the DDS hardware and return immediately
+    // without waiting for the response. The DDS executes the DCP program
+    // asynchronously (waiting for hardware triggers, running ramp steps, etc.).
+    // Blocking here would freeze the experiment thread for the entire script duration.
+    // The socket is reconnected before next static use (needsReinitializeAfterScript),
+    // so any unread response in the TCP buffer is discarded cleanly.
+    if (!connected_) {
+        return false;
+    }
+    try {
+        std::string payload;
+        payload.reserve(commands.size() + 64);
+        std::istringstream iss(commands);
+        std::string line;
+        while (std::getline(iss, line)) {
+            if (!line.empty()) {
+                payload += line;
+                payload += "\r\n";
+            }
+        }
+        if (payload.empty()) {
+            return true;
+        }
+        payload += "dcp flush\r\n";
+        boost::asio::write(socket_, boost::asio::buffer(payload));
+        // Do NOT read the response — the DDS is now running its program.
+        return true;
+    } catch (const boost::system::system_error& e) {
+        std::cerr << "sendBatchCommands failed: " << e.what() << std::endl;
+        connected_ = false;
+        return false;
+    }
 }
 
 bool WieserlabsClient::sendCommand(const std::string& command) {
@@ -139,7 +174,6 @@ bool WieserlabsClient::sendCommand(const std::string& command) {
         std::string line;
         while (std::getline(iss, line)) {
             if (!line.empty()) {
-                qDebug() << "DDS CMD >" << QString::fromStdString(line);
                 payload += line;
                 payload += "\r\n";
             }
@@ -149,12 +183,10 @@ bool WieserlabsClient::sendCommand(const std::string& command) {
         }
         // Append flush to execute all queued DCP instructions
         payload += "dcp flush\r\n";
-        qDebug() << "DDS CMD > dcp flush";
         
         boost::asio::write(socket_, boost::asio::buffer(payload));
         // Read the single response for the whole batch
         std::string response = receiveResponse();
-        qDebug() << "DDS RSP <" << QString::fromStdString(response);
         if (!connected_) {
             return false;
         }
@@ -173,13 +205,20 @@ bool WieserlabsClient::sendCommand(const std::string& command) {
 std::string WieserlabsClient::receiveResponse() {
     try {
         boost::asio::streambuf buffer;
-        size_t n = boost::asio::read(socket_, buffer, boost::asio::transfer_at_least(1));
+        boost::asio::read(socket_, buffer, boost::asio::transfer_at_least(1));
         std::istream is(&buffer);
         std::string response;
         std::getline(is, response);
         return response;
     } catch (const boost::system::system_error& e) {
-        std::cerr << "Receive response failed: " << e.what() << std::endl;
+        // WSAETIMEDOUT means the SO_RCVTIMEO expired (DDS never sent a response,
+        // e.g. stuck waiting for a BNC trigger). Disconnect so the next operation
+        // triggers a reconnect and starts fresh.
+        if (e.code().value() == WSAETIMEDOUT || e.code().value() == WSAECONNRESET) {
+            std::cerr << "DDS receive timeout/reset - reconnecting: " << e.what() << std::endl;
+        } else {
+            std::cerr << "Receive response failed: " << e.what() << std::endl;
+        }
         connected_ = false;
         return "";
     }

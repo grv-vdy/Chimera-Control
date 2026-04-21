@@ -13,13 +13,16 @@ t += motreleasetime
 ramp 0 120 (120-latdeviation) 1 latramptime 0
 ramp 1 120 (120+latdeviation) 1 latramptime 0
 t += (latmovetime)
-
+bnc 1
 
 ramp 0 (120-latdeviation) 120 1 latramptime 1
 ramp 1 (120+latdeviation) 120 1 latramptime 1
-%bnc 1
+
 t += latpausetime 
 %bnc 0
+
+
+%repeat N times
 ramp 0 120 (120+latdeviation) 1 latramptime 0
 ramp 1 120 (120-latdeviation) 1 latramptime 0
 
@@ -27,3 +30,5 @@ t += (latmovetime)
 
 ramp 0 (120+latdeviation) 120 1 latramptime 0
 ramp 1 (120-latdeviation) 120 1 latramptime 0
+
+bnc 0

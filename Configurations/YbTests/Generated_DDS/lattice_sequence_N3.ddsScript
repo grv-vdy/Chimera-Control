@@ -1,0 +1,45 @@
+tone 0 120 1 0
+tone 1 120 1 0
+t += (coreshellloadtime-delayDDS)
+t += 3
+t += 20
+t += motreleasetime
+bnc 1
+ramp 0 120 (120-latdeviation) 1 latramptime 0
+ramp 1 120 (120+latdeviation) 1 latramptime 0
+t += (latmovetime)
+ramp 0 (120-latdeviation) 120 1 latramptime 1
+ramp 1 (120+latdeviation) 120 1 latramptime 1
+t += latpausetime
+ramp 0 120 (120-latdeviation) 1 latramptime 0
+ramp 1 120 (120+latdeviation) 1 latramptime 0
+t += (latmovetime)
+ramp 0 (120-latdeviation) 120 1 latramptime 1
+ramp 1 (120+latdeviation) 120 1 latramptime 1
+t += latpausetime
+ramp 0 120 (120-latdeviation) 1 latramptime 0
+ramp 1 120 (120+latdeviation) 1 latramptime 0
+t += (latmovetime)
+ramp 0 (120-latdeviation) 120 1 latramptime 1
+ramp 1 (120+latdeviation) 120 1 latramptime 1
+t += latpausetime
+% Start return ---
+ramp 0 120 (120+latdeviation) 1 latramptime 0
+ramp 1 120 (120-latdeviation) 1 latramptime 0
+t += (latmovetime)
+ramp 0 (120+latdeviation) 120 1 latramptime 0
+ramp 1 (120-latdeviation) 120 1 latramptime 0
+t += latpausetime
+ramp 0 120 (120+latdeviation) 1 latramptime 0
+ramp 1 120 (120-latdeviation) 1 latramptime 0
+t += (latmovetime)
+ramp 0 (120+latdeviation) 120 1 latramptime 0
+ramp 1 (120-latdeviation) 120 1 latramptime 0
+t += latpausetime
+ramp 0 120 (120+latdeviation) 1 latramptime 0
+ramp 1 120 (120-latdeviation) 1 latramptime 0
+t += (latmovetime)
+ramp 0 (120+latdeviation) 120 1 latramptime 0
+ramp 1 (120-latdeviation) 120 1 latramptime 0
+t += latpausetime
+bnc 0
