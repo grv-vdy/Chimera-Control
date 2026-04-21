@@ -14,8 +14,7 @@ dac: greenmot greenmotpower
 dac: pushbeam bluepushpower
 dac: blueimg 0
 
-dac: latticedown 0
-dac: latticeup 0
+
 %pulseon: dds0 0.1
 %pulseon: dds1 0.1
 %
@@ -43,24 +42,29 @@ t += 20 %thermalize mot see 260225
 
 %release mot
 
-off: greenmot
+
+
 
 t += motreleasetime
 
 %recapture mot
 %
 
-on: greenmot
+%on: greenmot
+on: pushbeam
+on: blue3dmot
 off: greennarrow
 %dacramp: greenmot greenmotpowerlow greenmotpower 1
-dac: greenmot greenimgpower %greenmotpower
+dac: greenmot greenmotpower %greenmotpower
 
-
+t += shellloadtime
 t += 1
-dacramp: bias1 (bias1+biasx+biasy) (bias1+biasxfix+biasy) 1
-dacramp: bias2 (bias2-biasx+biasy) (bias2-biasxfix+biasy) 1
-dacramp: biasz (biasz+biaszoff) (biasz+biaszofffix) 1
-
+off: blue3dmot
+off: pushbeam
+%dacramp: bias1 (bias1+biasx+biasy) (bias1+biasxfix+biasy) 1
+%dacramp: bias2 (bias2-biasx+biasy) (bias2-biasxfix+biasy) 1
+%dacramp: biasz (biasz+biaszoff) (biasz+biaszofffix) 1
+%
 t += 10
 
 on: mako1

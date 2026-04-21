@@ -159,12 +159,12 @@ blue2dmot
 0 - 2
 0
 dac0_7
-bias1_old
-0 - 5
+latticedown
+-1 - 1
 0
 dac0_8
-bias2_old
-0 - 5
+latticeup
+-1 - 1
 0
 dac0_9
 biasz_old

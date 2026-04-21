@@ -552,6 +552,11 @@ void WieserlabsDDSCore::programSingleTone(unsigned channel, double freq, double 
 
 void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWaveform& waveform, ExpThreadWorker* expWorker)
 {
+	// Reconnect before every scripted batch to discard any unread response left
+	// in the TCP receive buffer from the previous rep. Without this, unread responses
+	// accumulate each rep until the TCP receive buffer fills (~6-7 reps), the DDS
+	// blocks on its write, and the connection deadlocks.
+	reconnect();
 	if (!isConnected || !ddsClient) {
 		return;
 	}
@@ -614,6 +619,36 @@ void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWavef
 		batchCommands += "dcp " + std::to_string(channel) + " spi:stp0=" + std::string(stp0_buf) + "\n";
 		batchCommands += "dcp " + std::to_string(channel) + " update:u\n";
 	};
+	// Setup for phase-continuous mode: CFR1 with autoclear DISABLED (bit 13 = 0)
+	// Phase offset = 0 for phase-continuous operation (accumulator provides phase)
+	auto appendPhaseContinuousSetup = [&](int channel, double freqMhz, double amplitude) {
+		double frequency = freqMhz * 1e6;
+		// CFR1=0x400000: bit 13 = 0 means phase accumulator is NOT cleared on I/O update
+		batchCommands += "dcp " + std::to_string(channel) + " spi:CFR1=0x400000\n";
+		batchCommands += "dcp " + std::to_string(channel) + " spi:CFR2=0x1000080\n";
+
+		unsigned long long freq_val = static_cast<unsigned long long>(std::round((1ULL << 32) / 1e9 * frequency)) & 0xFFFFFFFFULL;
+		int amp_val = static_cast<int>(std::round(std::max(0.0, std::min(16383.0, 16383.0 * amplitude))));
+		int phase_val = 0; // Phase offset = 0 for phase-continuous ramps
+
+		char stp0_buf[32];
+		sprintf(stp0_buf, "0x%04x%04x%08llx", amp_val, phase_val, freq_val);
+		batchCommands += "dcp " + std::to_string(channel) + " spi:stp0=" + std::string(stp0_buf) + "\n";
+		batchCommands += "dcp " + std::to_string(channel) + " update:u\n";
+	};
+	// Phase-continuous frequency update: ONLY touches stp0, no CFR1/CFR2 changes
+	// This avoids any glitches from reconfiguring the DDS during ramp
+	auto appendFreqOnlyUpdate = [&](int channel, double freqMhz, double amplitude) {
+		double frequency = freqMhz * 1e6;
+		unsigned long long freq_val = static_cast<unsigned long long>(std::round((1ULL << 32) / 1e9 * frequency)) & 0xFFFFFFFFULL;
+		int amp_val = static_cast<int>(std::round(std::max(0.0, std::min(16383.0, 16383.0 * amplitude))));
+		int phase_val = 0; // Keep phase offset at 0 - accumulator provides the phase
+
+		char stp0_buf[32];
+		sprintf(stp0_buf, "0x%04x%04x%08llx", amp_val, phase_val, freq_val);
+		batchCommands += "dcp " + std::to_string(channel) + " spi:stp0=" + std::string(stp0_buf) + "\n";
+		batchCommands += "dcp " + std::to_string(channel) + " update:u\n";
+	};
 	
 	for (size_t i = 0; i < commands.size(); i++) {
 		const auto& cmd = commands[i];
@@ -636,103 +671,49 @@ void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWavef
 			}
 		}
 		else if (cmd.type == "ramp") {
-			double fstartHz = cmd.startFreq * 1e6;
-			double fendHz = cmd.endFreq * 1e6;
+			// Phase-continuous point-by-point ramp: program each frequency step
+			// Uses CFR1 with bit 13 cleared so phase accumulator is NOT reset between updates
+			double fstartMHz = cmd.startFreq;
+			double fendMHz = cmd.endFreq;
 			double durationMs = std::max(0.0, cmd.duration);
-			double trampSec = std::max(1e-6, durationMs / 1000.0);
 
-			if (std::abs(fendHz - fstartHz) < 1e-6) {
-				appendToneUpdate(cmd.channel, cmd.endFreq, cmd.amplitude, cmd.phase);
+			if (std::abs(fendMHz - fstartMHz) < 1e-9 || durationMs < 0.001) {
+				// No ramp needed, just set final frequency
+				appendToneUpdate(cmd.channel, fendMHz, cmd.amplitude, cmd.phase);
 			}
 			else {
-				if (fendHz < fstartHz) {
-					fstartHz = 1e9 - fstartHz;
-					fendHz = 1e9 - fendHz;
-				}
+	
+				const double stepTimeMs = 0.005; // 
+				int numSteps = static_cast<int>(std::ceil(durationMs / stepTimeMs));
+				numSteps = std::max(2, std::min(numSteps, 10000)); // Limit to reasonable range
 
-				auto setBit = [](uint32_t value, int bit, bool bitValue) {
-					if (bitValue) {
-						value |= (1u << bit);
+				double actualStepTimeMs = durationMs / static_cast<double>(numSteps);
+				int stepTimeUs = static_cast<int>(std::round(actualStepTimeMs * 1000.0));
+				stepTimeUs = std::max(1, stepTimeUs);
+
+				double freqStepMHz = (fendMHz - fstartMHz) / static_cast<double>(numSteps);
+
+				qDebug() << "  RAMP (phase-continuous) ch" << cmd.channel 
+					<< ": fstart=" << fstartMHz << "MHz, fend=" << fendMHz << "MHz"
+					<< ", duration=" << durationMs << "ms, steps=" << numSteps
+					<< ", stepTime=" << stepTimeUs << "us";
+
+				// First point: setup phase-continuous mode (CFR1 without autoclear)
+				// Phase offset = 0 throughout for true phase continuity
+				appendPhaseContinuousSetup(cmd.channel, fstartMHz, cmd.amplitude);
+				appendChannelWaitUs(cmd.channel, stepTimeUs);
+
+				// Subsequent points: ONLY update stp0 - don't touch CFR1/CFR2
+				// This keeps phase accumulator running continuously
+				for (int step = 1; step <= numSteps; step++) {
+					double currentFreqMHz = fstartMHz + freqStepMHz * static_cast<double>(step);
+					appendFreqOnlyUpdate(cmd.channel, currentFreqMHz, cmd.amplitude);
+					
+					// Add wait between steps (except after the last one)
+					if (step < numSteps) {
+						appendChannelWaitUs(cmd.channel, stepTimeUs);
 					}
-					else {
-						value &= ~(1u << bit);
-					}
-					return value;
-				};
-
-				auto freqToWord = [](double fHz) -> uint32_t {
-					double clamped = std::max(0.0, std::min(999999999.0, fHz));
-					return static_cast<uint32_t>(std::llround((4294967296.0 / 1e9) * clamped)) & 0xFFFFFFFFu;
-				};
-
-				const double deltaHz = std::abs(fendHz - fstartHz);
-				int rampSteps = static_cast<int>(std::ceil((trampSec * 250e6) / 65535.0));
-				rampSteps = std::max(2, rampSteps);
-
-				double fstepHz = deltaHz / static_cast<double>(rampSteps);
-				if (fstepHz < 1.0) {
-					fstepHz = 1.0;
 				}
-
-				double tStepNs = (fstepHz / deltaHz) * trampSec * 1e9;
-				int timeInDdsClock = static_cast<int>(std::round(tStepNs / 4.0));
-				timeInDdsClock = std::max(1, std::min(0xFFFF, timeInDdsClock));
-
-				const uint32_t upRampLimit = freqToWord(std::max(fstartHz, fendHz));
-				const uint32_t downRampLimit = freqToWord(std::min(fstartHz, fendHz));
-				const uint32_t stepWord = freqToWord(fstepHz);
-
-				const uint64_t DRL = (static_cast<uint64_t>(upRampLimit) << 32) | static_cast<uint64_t>(downRampLimit);
-				const uint64_t DRSS = (static_cast<uint64_t>(stepWord) << 32) | static_cast<uint64_t>(stepWord);
-				const uint32_t DRR = (static_cast<uint32_t>(timeInDdsClock) << 16) | static_cast<uint32_t>(timeInDdsClock);
-
-				char dcpBuf[64];
-
-				appendToneUpdate(cmd.channel, cmd.startFreq, cmd.amplitude, cmd.phase);
-
-				uint32_t cfr1Set = setBit(0x00410002u, 12, true);
-				sprintf(dcpBuf, "0x%08x", cfr1Set);
-				batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:CFR1=" + std::string(dcpBuf) + "\n";
-				batchCommands += "dcp " + std::to_string(cmd.channel) + " update:u\n";
-
-				uint32_t cfr1Clr = setBit(0x00410002u, 12, false);
-				sprintf(dcpBuf, "0x%08x", cfr1Clr);
-				batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:CFR1=" + std::string(dcpBuf) + "\n";
-				batchCommands += "dcp " + std::to_string(cmd.channel) + " update:u\n";
-
-				// Write ramp parameters BEFORE enabling ramp mode
-				sprintf(dcpBuf, "0x%016llx", static_cast<unsigned long long>(DRL));
-				qDebug() << "  RAMP ch" << cmd.channel << ": fstart=" << fstartHz << "Hz, fend=" << fendHz << "Hz, duration=" << durationMs << "ms";
-				qDebug() << "    DRL  =" << dcpBuf;
-				batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:DRL=" + std::string(dcpBuf) + "\n";
-
-				sprintf(dcpBuf, "0x%016llx", static_cast<unsigned long long>(DRSS));
-				qDebug() << "    DRSS =" << dcpBuf;
-				batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:DRSS=" + std::string(dcpBuf) + "\n";
-
-				sprintf(dcpBuf, "0x%08x", DRR);
-				qDebug() << "    DRR  =" << dcpBuf << ", rampWait=" << static_cast<int>(std::round(durationMs * 1000.0)) << "us";
-				batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:DRR=" + std::string(dcpBuf) + "\n";
-
-				// Now enable ramp mode in CFR2 after parameters are set
-				uint32_t cfr2 = 0x004008C0u;
-				cfr2 = setBit(cfr2, 24, true);
-				cfr2 = setBit(cfr2, 4, false);
-				cfr2 = setBit(cfr2, 19, true);
-				cfr2 = setBit(cfr2, 20, false);
-				cfr2 = setBit(cfr2, 21, false);
-				sprintf(dcpBuf, "0x%08x", cfr2);
-				batchCommands += "dcp " + std::to_string(cmd.channel) + " spi:CFR2=" + std::string(dcpBuf) + "\n";
-
-				batchCommands += "dcp " + std::to_string(cmd.channel) + " update:u+d\n";
-
-				int rampWaitUs = static_cast<int>(std::round(durationMs * 1000.0));
-				appendChannelWaitUs(cmd.channel, rampWaitUs);
-
-				batchCommands += "dcp " + std::to_string(cmd.channel) + " update:u-d\n";
-				appendChannelWaitUs(cmd.channel, 1);
-
-				appendToneUpdate(cmd.channel, cmd.endFreq, cmd.amplitude, cmd.phase);
 			}
 
 			if (cmd.delayMs > 0.0) {

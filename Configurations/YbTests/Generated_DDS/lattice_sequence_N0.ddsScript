@@ -1,0 +1,9 @@
+tone 0 120 1 0
+tone 1 120 1 0
+t += (coreshellloadtime-delayDDS)
+t += 3
+t += 20
+t += motreleasetime
+bnc 1
+% Start return ---
+bnc 0
