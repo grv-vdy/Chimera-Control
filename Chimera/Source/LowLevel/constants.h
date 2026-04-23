@@ -100,7 +100,7 @@
 	const std::string AI_SOCKET_PORT = "80";
 
 	//Wieserlabs DDS
-	const bool WIESERLABS_SAFEMODE = false;
+	const bool WIESERLABS_SAFEMODE = true;
 	const std::string WIESERLABS_IPADDRESS = "192.168.105.5";
 	const int WIESERLABS_IPPORT = 26000;
 	// Per-channel hardware triggers on FlexDDS-NG: both channels use BNC_IN_A

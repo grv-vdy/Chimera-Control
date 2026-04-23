@@ -59,7 +59,7 @@ dac: greenmot greenimgpower %greenmotpower
 t += 1
 dacramp: bias1 (bias1+biasx+biasy) (bias1+biasxfix+biasy) 1
 dacramp: bias2 (bias2-biasx+biasy) (bias2-biasxfix+biasy) 1
-dacramp: biasz (biasz+biaszoff) (biasz+biaszofffix) 1
+dacramp: biasz (biasz+biaszoff) (biasz+biaszofffix+biasy) 1
 
 t += 10
 

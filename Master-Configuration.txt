@@ -13,13 +13,13 @@ pixis_trg
 1
 d6
 1
-prbshutter
+latmove
 1
 dds0
 1
 dds1
 1
-tubeshutter
+blueshutter
 1
 d11
 1

@@ -25,9 +25,9 @@ on: blue3dmot
 
 t += coreshellloadtime
 
-dac: blue3dmot 0.5
+
 off: pushbeam
-%off: blue3dmot
+off: blue3dmot
 %motramp
 
 %dacramp: bias1 (bias1+biasxfix) (bias1+biasx+biasy) 1
@@ -38,14 +38,14 @@ on: greennarrow
 t += 2
 %dacramp: greenmot greenmotpower greenmotpowerlow 1
 dac: greenmot greenmotpowerlow
-t += 20 %thermalize mot see 260225
+t += latloadtime %thermalize mot see 260225
 %t += 80
 
 %release mot
 
 off: greenmot
 t += motreleasetime %for cleanup
-dac: blueimg blueimgpower
+%dac: blueimg blueimgpower
 
 %recapture mot
 %
@@ -87,12 +87,15 @@ off: mako1
 
 off: greenmot
 off: blue3dmot
-dac: blueimg blueimgpower
-on: blueimg
+%pulseon: blueshutter 2 %open
+t += 2
+%dac: blueimg blueimgpower
+%on: blueimg
 
 t += 100
-
-off: blueimg
+%pulseon: blueshutter 2 % close
+t += 2
+%off: blueimg
 dac: blueimg 0
 on: greenmot
 t += 2
