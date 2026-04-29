@@ -1,5 +1,5 @@
 t = 1
-
+on: lattice
 off: greenmot
 off: pushbeam
 off: blue3dmot
@@ -26,13 +26,10 @@ on: blue3dmot
 
 t += coreshellloadtime
 
-off: pushbeam
-off: blue3dmot
-%motramp
 
-%dacramp: bias1 (bias1+biasxfix) (bias1+biasx+biasy) 1
-%dacramp: bias2 (bias2-biasxfix) (bias2-biasx+biasy) 1
-%dacramp: biasz (biasz+biaszofffix) (biasz+biaszoff) 1
+
+dac: blue3dmot bluelatpower
+off: pushbeam
 t += 1
 on: greennarrow
 t += 2
@@ -52,16 +49,14 @@ off: scopetrigger
 
 on: greenmot
 off: greennarrow
+off: blue3dmot
+t += 2
 %dacramp: greenmot greenmotpowerlow greenmotpower 1
-dac: greenmot greenimgpower %greenmotpower
-
+dac: greenmot greenmotpower %greenmotpower
+off: lattice
 
 t += 1
-dacramp: bias1 (bias1+biasx+biasy) (bias1+biasxfix+biasy) 1
-dacramp: bias2 (bias2-biasx+biasy) (bias2-biasxfix+biasy) 1
-dacramp: biasz (biasz+biaszoff) (biasz+biaszofffix+biasy) 1
 
-t += 10
 
 on: mako1
 t += 250

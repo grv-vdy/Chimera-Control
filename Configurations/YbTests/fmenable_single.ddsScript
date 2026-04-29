@@ -1,0 +1,7 @@
+tone 0 120 1 0
+tone 1 120 1 0
+t += 1
+fmenable 1 120.0 (120+latdeviation) (120-latdeviation)
+fmenable 0 120.0 (120+latdeviation) (120-latdeviation)
+t += 1
+

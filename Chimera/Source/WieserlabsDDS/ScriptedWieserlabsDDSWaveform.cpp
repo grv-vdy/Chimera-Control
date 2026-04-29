@@ -298,6 +298,143 @@ bool ScriptedWieserlabsDDSWaveform::analyzeWieserlabsDDSScriptCommand(ScriptStre
 		finalizeCommand(cmdObj);
 		scriptText += command + " " + valueStr + (delayStr.empty() ? "" : " " + delayStr) + "\n";
 	}
+	else if (command == "fmenable" || command == "fm_enable") {
+		// Syntax: fmenable channel f0MHz fPlusMHz fMinusMHz [gain:X] [delay:X]
+		// f0MHz is frequency at 0V input; fPlusMHz at +1V; fMinusMHz at -1V.
+		std::string channelStr, f0Str, fPlusStr, fMinusStr, gainStr = "", delayStr = "";
+		lineStream >> channelStr >> f0Str >> fPlusStr >> fMinusStr;
+
+		if (channelStr.empty() || f0Str.empty() || fPlusStr.empty() || fMinusStr.empty()) {
+			warnings += "Invalid fmenable command. Expected: fmenable ch f0 fplus fminus [gain:X] [delay:X]\n";
+			return true;
+		}
+
+		std::string token;
+		while (lineStream >> token) {
+			boost::to_lower(token);
+			if (token.find("delay:") == 0) {
+				delayStr = token;
+			}
+			else if (token.find("gain:") == 0) {
+				gainStr = token;
+			}
+		}
+
+		DdsCommand cmdObj;
+		cmdObj.type = "fmenable";
+		cmdObj.preDelayMs = 0.0;
+		cmdObj.channel = std::stoi(channelStr);
+		if (!evalToken(f0Str, cmdObj.startFreq) || !evalToken(fPlusStr, cmdObj.endFreq)
+			|| !evalToken(fMinusStr, cmdObj.amplitude)) {
+			warnings += "Invalid expression in fmenable command\n";
+			return true;
+		}
+		cmdObj.duration = 0.0;
+		cmdObj.phase = 0.0;
+		cmdObj.bncValue = 0;
+		cmdObj.delayMs = 0.0;
+		cmdObj.fmGain = -1;
+
+		if (!gainStr.empty()) {
+			double gainVal = 0.0;
+			if (!evalToken(gainStr.substr(5), gainVal)) {
+				warnings += "Invalid gain format in fmenable command\n";
+			}
+			else {
+				cmdObj.fmGain = static_cast<int>(std::round(gainVal));
+			}
+		}
+
+		if (!delayStr.empty()) {
+			if (!evalToken(delayStr.substr(6), cmdObj.delayMs)) {
+				warnings += "Invalid delay format in fmenable command\n";
+			}
+		}
+
+		finalizeCommand(cmdObj);
+		scriptText += "fmenable " + channelStr + " " + f0Str + " " + fPlusStr + " " + fMinusStr
+			+ (gainStr.empty() ? "" : " " + gainStr)
+			+ (delayStr.empty() ? "" : " " + delayStr) + "\n";
+	}
+	else if (command == "fmdisable" || command == "fm_disable") {
+		// Syntax: fmdisable channel [delay:X]
+		std::string channelStr, delayStr = "";
+		lineStream >> channelStr;
+		if (channelStr.empty()) {
+			warnings += "Invalid fmdisable command. Expected: fmdisable ch [delay:X]\n";
+			return true;
+		}
+
+		std::string token;
+		while (lineStream >> token) {
+			boost::to_lower(token);
+			if (token.find("delay:") == 0) {
+				delayStr = token;
+			}
+		}
+
+		DdsCommand cmdObj;
+		cmdObj.type = "fmdisable";
+		cmdObj.preDelayMs = 0.0;
+		cmdObj.channel = std::stoi(channelStr);
+		cmdObj.startFreq = 0.0;
+		cmdObj.endFreq = 0.0;
+		cmdObj.amplitude = 0.0;
+		cmdObj.duration = 0.0;
+		cmdObj.phase = 0.0;
+		cmdObj.bncValue = 0;
+		cmdObj.fmGain = -1;
+		cmdObj.delayMs = 0.0;
+		if (!delayStr.empty() && !evalToken(delayStr.substr(6), cmdObj.delayMs)) {
+			warnings += "Invalid delay format in fmdisable command\n";
+		}
+
+		finalizeCommand(cmdObj);
+		scriptText += "fmdisable " + channelStr + (delayStr.empty() ? "" : " " + delayStr) + "\n";
+	}
+	else if (command == "fmgain" || command == "fm_gain") {
+		// Syntax: fmgain channel gain [delay:X]
+		std::string channelStr, gainToken, delayStr = "";
+		lineStream >> channelStr >> gainToken;
+		if (channelStr.empty() || gainToken.empty()) {
+			warnings += "Invalid fmgain command. Expected: fmgain ch gain [delay:X]\n";
+			return true;
+		}
+
+		std::string token;
+		while (lineStream >> token) {
+			boost::to_lower(token);
+			if (token.find("delay:") == 0) {
+				delayStr = token;
+			}
+		}
+
+		DdsCommand cmdObj;
+		cmdObj.type = "fmgain";
+		cmdObj.preDelayMs = 0.0;
+		cmdObj.channel = std::stoi(channelStr);
+		cmdObj.startFreq = 0.0;
+		cmdObj.endFreq = 0.0;
+		cmdObj.amplitude = 0.0;
+		cmdObj.duration = 0.0;
+		cmdObj.phase = 0.0;
+		cmdObj.bncValue = 0;
+		cmdObj.delayMs = 0.0;
+
+		double gainVal = 0.0;
+		if (!evalToken(gainToken, gainVal)) {
+			warnings += "Invalid gain value in fmgain command\n";
+			return true;
+		}
+		cmdObj.fmGain = static_cast<int>(std::round(gainVal));
+
+		if (!delayStr.empty() && !evalToken(delayStr.substr(6), cmdObj.delayMs)) {
+			warnings += "Invalid delay format in fmgain command\n";
+		}
+
+		finalizeCommand(cmdObj);
+		scriptText += "fmgain " + channelStr + " " + gainToken + (delayStr.empty() ? "" : " " + delayStr) + "\n";
+	}
 	else {
 		warnings += "Unrecognized Wieserlabs DDS command: " + command + "\n";
 		return true;

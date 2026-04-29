@@ -3,6 +3,7 @@ t = 1
 off: greenmot
 off: pushbeam
 off: blue3dmot
+on: lattice
 t += 100
 dac: blue2dmot blue2dmotpower
 
@@ -25,143 +26,73 @@ on: blue3dmot
 
 t += coreshellloadtime
 
-
+off: lattice
 off: pushbeam
 off: blue3dmot
 
-%--Rep start 
+
 t += 1
 on: greennarrow
 t += 2
-
+on: lattice
 dac: greenmot greenmotpowerlow
 t += 20 %thermalize mot see 260225
 
-
 t += motreleasetime
+off: lattice
 
+repeat: 1
 
-on: pushbeam
-on: blue3dmot
 off: greennarrow
 
 dac: greenmot greenmotpower %greenmotpower
+t += 1
+on: pushbeam
+on: blue3dmot
+t += shellloadtime
+t += 1
+off: blue3dmot
+off: pushbeam
+
+t += 1
+on: greennarrow
+t += 2
+on: lattice
+dac: greenmot greenmotpowerlow
+t += 20 %thermalize mot see 260225
+
+t += motreleasetime
+off: lattice
+end
+
+off: greennarrow
+dac: greenmot greenmotpower %greenmotpower
+
+t += 1
+on: pushbeam
+on: blue3dmot
 
 t += shellloadtime
 t += 1
 off: blue3dmot
 off: pushbeam
 
-%---Rep end
-
-
-%--Rep start 
 t += 1
 on: greennarrow
 t += 2
-
+on: lattice
 dac: greenmot greenmotpowerlow
 t += 20 %thermalize mot see 260225
-
-
+off: greenmot
 t += motreleasetime
-
-
-on: pushbeam
-on: blue3dmot
+on: greenmot
 off: greennarrow
-
+%dacramp: greenmot greenmotpowerlow greenmotpower 1
 dac: greenmot greenmotpower %greenmotpower
 
-t += shellloadtime
-t += 1
-off: blue3dmot
-off: pushbeam
 
-%---Rep end
-
-%--Rep start 
-t += 1
-on: greennarrow
-t += 2
-
-dac: greenmot greenmotpowerlow
-t += 20 %thermalize mot see 260225
-
-
-t += motreleasetime
-
-
-on: pushbeam
-on: blue3dmot
-off: greennarrow
-
-dac: greenmot greenmotpower %greenmotpower
-
-t += shellloadtime
-t += 1
-off: blue3dmot
-off: pushbeam
-
-%---Rep end
-
-%--Rep start 
-t += 1
-on: greennarrow
-t += 2
-
-dac: greenmot greenmotpowerlow
-t += 20 %thermalize mot see 260225
-
-
-t += motreleasetime
-
-
-on: pushbeam
-on: blue3dmot
-off: greennarrow
-
-dac: greenmot greenmotpower %greenmotpower
-
-t += shellloadtime
-t += 1
-off: blue3dmot
-off: pushbeam
-
-%---Rep end
-
-%--Rep start 
-t += 1
-on: greennarrow
-t += 2
-
-dac: greenmot greenmotpowerlow
-t += 20 %thermalize mot see 260225
-
-
-t += motreleasetime
-
-
-on: pushbeam
-on: blue3dmot
-off: greennarrow
-
-dac: greenmot greenmotpower %greenmotpower
-
-t += shellloadtime
-t += 1
-off: blue3dmot
-off: pushbeam
-
-%---Rep end
-
-
-%dacramp: bias1 (bias1+biasx+biasy) (bias1+biasxfix+biasy) 1
-%dacramp: bias2 (bias2-biasx+biasy) (bias2-biasxfix+biasy) 1
-%dacramp: biasz (biasz+biaszoff) (biasz+biaszofffix) 1
-%
 t += 10
-
+off: lattice
 on: mako1
 t += 250
 off: mako1

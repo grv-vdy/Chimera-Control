@@ -1,5 +1,5 @@
 t = 1
-
+on: lattice
 off: greenmot
 off: pushbeam
 off: blue3dmot
@@ -13,23 +13,23 @@ dac: blue3dmot blue3dmotpower
 dac: greenmot greenmotpower
 dac: pushbeam bluepushpower
 dac: blueimg 0
-
+dac: greenimg greenimgpower
 dac: latticedown 0
 dac: latticeup 0
-%pulseon: dds0 0.1
+pulseon: dds0 0.1
 %pulseon: dds1 0.1
 %
 on: pushbeam
 on: greenmot
 on: blue3dmot
-
+on: greenimg
 
 t += coreshellloadtime
-
+off: greenimg
 off: pushbeam
 off: blue3dmot
 %motramp
-
+dac: greenimg 0
 %dacramp: bias1 (bias1+biasxfix) (bias1+biasx+biasy) 1
 %dacramp: bias2 (bias2-biasxfix) (bias2-biasx+biasy) 1
 %dacramp: biasz (biasz+biaszofffix) (biasz+biaszoff) 1
@@ -44,46 +44,46 @@ t += 20 %thermalize mot see 260225
 %release mot
 
 off: greenmot
+
+
+%% Lattice Move
+
 on: scopetrigger
-t += motreleasetime
+
+t += (latmovetime+2*latramptime)
+%off: latmove
+
+t += 200
 off: scopetrigger
-%recapture mot
-%
 
-on: greenmot
-off: greennarrow
-%dacramp: greenmot greenmotpowerlow greenmotpower 1
-dac: greenmot greenimgpower %greenmotpower
 
+dac: greenimg greenimgpower 
 
 t += 1
-dacramp: bias1 (bias1+biasx+biasy) (bias1+biasxfix+biasy) 1
-dacramp: bias2 (bias2-biasx+biasy) (bias2-biasxfix+biasy) 1
-dacramp: biasz (biasz+biaszoff) (biasz+biaszofffix+biasy) 1
-
-t += 10
+off: scopetrigger
 
 on: mako1
-t += 250
+
+t += 10
+on: greenimg
+t += 10
+off: greenimg
+
 off: mako1
-
-off: greenmot
-off: blue3dmot
-dac: blueimg blueimgpower
-on: blueimg
-
+t += 10
+off: lattice
 t += 100
-
-off: blueimg
-dac: blueimg 0
-on: greenmot
-t += 2
+on: lattice
+t += 10
 on: mako1
-t += 250
+t += 10
+on: greenimg
+t += 10
+off: greenimg
+t += 10
 off: mako1
-t += 10
-off: greenmot
-t += 10
+
+
 
 
 t += 33

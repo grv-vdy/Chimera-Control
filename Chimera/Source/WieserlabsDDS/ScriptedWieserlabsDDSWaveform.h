@@ -6,7 +6,7 @@
 #include "Scripts/ScriptStream.h"
 
 struct DdsCommand {
-	std::string type; // "tone", "ramp", "off", "bnc"
+	std::string type; // "tone", "ramp", "off", "bnc", "fmenable", "fmdisable", "fmgain"
 	double preDelayMs; // delay before this command executes (in milliseconds)
 	double delayMs;   // inter-command delay after this command (in milliseconds)
 	int channel;
@@ -16,6 +16,7 @@ struct DdsCommand {
 	double duration;  // ramp duration (in milliseconds)
 	double phase;
 	int bncValue;     // for bnc command: 0=LOW, 1=HIGH (controls BNC C output)
+	int fmGain = -1;  // optional FM gain override (0-15), used by fmenable/fmgain
 };
 
 class ScriptedWieserlabsDDSWaveform

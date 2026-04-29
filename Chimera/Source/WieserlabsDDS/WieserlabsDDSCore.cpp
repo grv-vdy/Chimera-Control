@@ -649,6 +649,89 @@ void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWavef
 		batchCommands += "dcp " + std::to_string(channel) + " spi:stp0=" + std::string(stp0_buf) + "\n";
 		batchCommands += "dcp " + std::to_string(channel) + " update:u\n";
 	};
+	auto appendFmGainOnly = [&](int channel, int gainBits) {
+		int gain = std::max(0, std::min(15, gainBits));
+		// Base CFR2 used by this integration, with parallel dataport enabled (bit 4)
+		// and frequency gain bits [0..3] set to requested value.
+		unsigned int cfr2 = 0x01000080;
+		cfr2 |= 0x10;
+		cfr2 = (cfr2 & ~0xFu) | static_cast<unsigned int>(gain);
+		char cfr2Buf[16];
+		sprintf(cfr2Buf, "0x%08x", cfr2);
+		batchCommands += "dcp " + std::to_string(channel) + " spi:CFR2=" + std::string(cfr2Buf) + "\n";
+		batchCommands += "dcp " + std::to_string(channel) + " update:u\n";
+	};
+	auto appendFmEnable = [&](int channel, double f0Mhz, double fPlusMhz, double fMinusMhz, int gainOverride) {
+		auto ftwHz = [](double hz) -> unsigned int {
+			unsigned long long val = static_cast<unsigned long long>(std::round((1ULL << 32) / 1e9 * hz)) & 0xFFFFFFFFULL;
+			return static_cast<unsigned int>(val);
+		};
+		auto signedHex = [](int value) -> std::string {
+			char buf[32];
+			if (value < 0) {
+				sprintf(buf, "-0x%x", -value);
+			}
+			else {
+				sprintf(buf, "0x%x", value);
+			}
+			return std::string(buf);
+		};
+
+		double f0Hz = f0Mhz * 1e6;
+		double fPlusHz = fPlusMhz * 1e6;
+		double fMinusHz = fMinusMhz * 1e6;
+
+		unsigned int w0 = ftwHz(f0Hz);
+		unsigned int wPlus = ftwHz(fPlusHz);
+		unsigned int wMinus = ftwHz(fMinusHz);
+
+		int gain = gainOverride;
+		if (gain < 0) {
+			unsigned int wMax = std::max(w0, std::max(wPlus, wMinus));
+			if (wMax == 0) {
+				gain = 0;
+			}
+			else {
+				double lg = std::log2(static_cast<double>(wMax));
+				gain = static_cast<int>(std::ceil(lg) - 16.0);
+			}
+		}
+		gain = std::max(0, std::min(15, gain));
+
+		double out0 = static_cast<double>(w0 >> gain);
+		double outPlus = static_cast<double>(wPlus >> gain);
+		double outMinus = static_cast<double>(wMinus >> gain);
+
+		// Match python VoltageToOutputMap convention: +1V -> 32767, -1V -> -32768.
+		const double vPlus = 32767.0;
+		const double vMinus = -32768.0;
+		double slopeFromPlus = (outPlus - out0) * (4096.0 / vPlus);
+		double slopeFromMinus = (outMinus - out0) * (4096.0 / vMinus);
+		double slope = 0.5 * (slopeFromPlus + slopeFromMinus);
+
+		int s0 = 0;
+		int s1 = 0;
+		if (channel == 0) {
+			s0 = static_cast<int>(std::round(slope));
+		}
+		else {
+			s1 = static_cast<int>(std::round(slope));
+		}
+		int offset = static_cast<int>(std::round(out0));
+
+		batchCommands += "dcp " + std::to_string(channel) + " wr:AM_S0=" + signedHex(s0) + "\n";
+		batchCommands += "dcp " + std::to_string(channel) + " wr:AM_S1=" + signedHex(s1) + "\n";
+		batchCommands += "dcp " + std::to_string(channel) + " wr:AM_O0=0x0\n";
+		batchCommands += "dcp " + std::to_string(channel) + " wr:AM_O1=0x0\n";
+		batchCommands += "dcp " + std::to_string(channel) + " wr:AM_O=" + signedHex(offset) + "\n";
+		batchCommands += "dcp " + std::to_string(channel) + " wr:AM_CFG=0x20000002\n";
+		appendFmGainOnly(channel, gain);
+	};
+	auto appendFmDisable = [&](int channel) {
+		// Disable parallel dataport path to stop external analog FM.
+		batchCommands += "dcp " + std::to_string(channel) + " spi:CFR2=0x01000080\n";
+		batchCommands += "dcp " + std::to_string(channel) + " update:u\n";
+	};
 	
 	for (size_t i = 0; i < commands.size(); i++) {
 		const auto& cmd = commands[i];
@@ -683,7 +766,7 @@ void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWavef
 			}
 			else {
 	
-				const double stepTimeMs = 0.005; // 
+				const double stepTimeMs = 0.01; // change
 				int numSteps = static_cast<int>(std::ceil(durationMs / stepTimeMs));
 				numSteps = std::max(2, std::min(numSteps, 10000)); // Limit to reasonable range
 
@@ -743,6 +826,27 @@ void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWavef
 			if (cmd.delayMs > 0.0) {
 				int delayUs = static_cast<int>(std::round(cmd.delayMs * 1000.0));
 				appendChannelWaitUs(0, delayUs);
+			}
+		}
+		else if (cmd.type == "fmenable") {
+			appendFmEnable(cmd.channel, cmd.startFreq, cmd.endFreq, cmd.amplitude, cmd.fmGain);
+			if (cmd.delayMs > 0.0) {
+				int delayUs = static_cast<int>(std::round(cmd.delayMs * 1000.0));
+				appendChannelWaitUs(cmd.channel, delayUs);
+			}
+		}
+		else if (cmd.type == "fmdisable") {
+			appendFmDisable(cmd.channel);
+			if (cmd.delayMs > 0.0) {
+				int delayUs = static_cast<int>(std::round(cmd.delayMs * 1000.0));
+				appendChannelWaitUs(cmd.channel, delayUs);
+			}
+		}
+		else if (cmd.type == "fmgain") {
+			appendFmGainOnly(cmd.channel, cmd.fmGain);
+			if (cmd.delayMs > 0.0) {
+				int delayUs = static_cast<int>(std::round(cmd.delayMs * 1000.0));
+				appendChannelWaitUs(cmd.channel, delayUs);
 			}
 		}
 	}

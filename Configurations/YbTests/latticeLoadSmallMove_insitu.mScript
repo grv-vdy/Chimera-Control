@@ -1,5 +1,5 @@
 t = 1
-
+on: lattice
 off: greenmot
 off: pushbeam
 off: blue3dmot
@@ -36,8 +36,10 @@ off: blue3dmot
 t += 1
 on: greennarrow
 t += 2
-%dacramp: greenmot greenmotpower greenmotpowerlow 1
-dac: greenmot greenmotpowerlow
+dacramp: greenmot greenmotpower greenmotpowerlow 1
+t += 1
+
+%dac: greenmot greenmotpowerlow
 t += 20 %thermalize mot see 260225
 %t += 80
 
@@ -52,19 +54,20 @@ off: scopetrigger
 
 on: greenmot
 off: greennarrow
-%dacramp: greenmot greenmotpowerlow greenmotpower 1
-dac: greenmot greenimgpower %greenmotpower
-
-
-t += 1
-dacramp: bias1 (bias1+biasx+biasy) (bias1+biasxfix+biasy) 1
-dacramp: bias2 (bias2-biasx+biasy) (bias2-biasxfix+biasy) 1
-dacramp: biasz (biasz+biaszoff) (biasz+biaszofffix+biasy) 1
+dac: greenmot greenmotpower %greenmotpower
+off: lattice
 
 t += 10
 
 on: mako1
-t += 250
+t += 100
+off: mako1
+
+t += 100
+
+
+on: mako1
+t += 100
 off: mako1
 
 off: greenmot
@@ -79,7 +82,7 @@ dac: blueimg 0
 on: greenmot
 t += 2
 on: mako1
-t += 250
+t += 100
 off: mako1
 t += 10
 off: greenmot

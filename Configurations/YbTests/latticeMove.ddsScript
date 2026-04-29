@@ -1,29 +1,32 @@
 tone 0 120 1 0
 tone 1 120 1 0
 
-t += (coreshellloadtime-delayDDS)
+fmdisable 0
+fmdisable 1
 
+t += coreshellloadtime
 t += 3
 
 t += 20
 
-t += motreleasetime
-
 
 ramp 0 120 (120-latdeviation) 1 latramptime 0
 ramp 1 120 (120+latdeviation) 1 latramptime 0
-t += (latmovetime)
+
+t += latmovetime
 
 
-ramp 0 (120-latdeviation) 120 1 latramptime 1
-ramp 1 (120+latdeviation) 120 1 latramptime 1
-%bnc 1
-t += latpausetime + 10
-%bnc 0
+ramp 0 (120-latdeviation) 120 1 latramptime 0
+ramp 1 (120+latdeviation) 120 1 latramptime 0
+
+bnc 1
+t += latpausetime 
+bnc 0
 ramp 0 120 (120+latdeviation) 1 latramptime 0
 ramp 1 120 (120-latdeviation) 1 latramptime 0
 
-t += (latmovetime)
+t += latmovetime
 
 ramp 0 (120+latdeviation) 120 1 latramptime 0
 ramp 1 (120-latdeviation) 120 1 latramptime 0
+

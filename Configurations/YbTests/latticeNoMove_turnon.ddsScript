@@ -1,0 +1,9 @@
+tone 0 (120-latdeviationload) 0 0
+tone 1 (120+latdeviationload) 0 0
+
+t += 1000
+
+bnc 1
+tone 0 (120-latdeviationload) 0 0
+tone 1 (120+latdeviationload) 0 0
+bnc 0

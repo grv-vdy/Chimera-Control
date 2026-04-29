@@ -7,17 +7,17 @@ mako1
 1
 greennarrow
 1
-greenpush
+greenimg
 1
 pixis_trg
 1
-d6
+lattice
 1
 latmove
 1
 dds0
 1
-dds1
+latmoveback
 1
 blueshutter
 1
@@ -143,7 +143,7 @@ dipolepushamp
 0 - 7.3
 0
 dac0_3
-greenpush
+greenimg
 0 - 2
 0
 dac0_4
