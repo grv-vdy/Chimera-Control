@@ -7,7 +7,8 @@
 #include <algorithm>
 #include <thread>
 #include <chrono>
-#include <QDebug>
+#include <qdebug.h>
+#include <sstream>
 
 WieserlabsClient::WieserlabsClient(const std::string& ip, int port)
     : ip_(ip), port_(port), socket_(io_context_), connected_(false) {
@@ -26,8 +27,11 @@ bool WieserlabsClient::connect() {
         // Set a receive timeout so receiveResponse() never blocks forever
         // (e.g. DDS stuck waiting for a BNC trigger that never comes)
         DWORD rcvTimeout = 10000; // 10 seconds
+        DWORD sndTimeout = 10000; // 10 seconds
         setsockopt(socket_.native_handle(), SOL_SOCKET, SO_RCVTIMEO,
                    reinterpret_cast<const char*>(&rcvTimeout), sizeof(rcvTimeout));
+        setsockopt(socket_.native_handle(), SOL_SOCKET, SO_SNDTIMEO,
+               reinterpret_cast<const char*>(&sndTimeout), sizeof(sndTimeout));
         connected_ = true;
         // Send authentication for slot 0
         std::string auth = "75f4a4e10dd4b6b0\r\n";
@@ -147,8 +151,17 @@ bool WieserlabsClient::sendBatchCommands(const std::string& commands) {
         if (payload.empty()) {
             return true;
         }
+        // Append exactly one flush at the end of the whole program.
+        // This preserves ordering semantics while still allowing chunked writes.
         payload += "dcp flush\r\n";
-        boost::asio::write(socket_, boost::asio::buffer(payload));
+        constexpr std::size_t CHUNK_BYTES = 1024 * 1024;
+        std::size_t offset = 0;
+        while (offset < payload.size()) {
+            const std::size_t remaining = payload.size() - offset;
+            const std::size_t thisChunk = (std::min)(CHUNK_BYTES, remaining);
+            boost::asio::write(socket_, boost::asio::buffer(payload.data() + offset, thisChunk));
+            offset += thisChunk;
+        }
         // Do NOT read the response — the DDS is now running its program.
         return true;
     } catch (const boost::system::system_error& e) {

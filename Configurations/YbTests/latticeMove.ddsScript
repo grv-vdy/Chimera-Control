@@ -1,10 +1,7 @@
 tone 0 120 1 0
 tone 1 120 1 0
 
-fmdisable 0
-fmdisable 1
-
-t += coreshellloadtime
+t += (coreshellloadtime-23)
 t += 3
 
 t += 20

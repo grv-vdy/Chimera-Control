@@ -1,0 +1,73 @@
+tone 0 120 1 0
+tone 1 120 1 0
+
+fmdisable 0
+fmdisable 1
+
+t += coreshellloadtime
+t += 3
+t += 20
+
+ramp 0 120 (120 - step) 1 dt 0
+ramp 1 120 (120 + step) 1 dt 0
+t += dt
+t += 1
+
+ramp 0 (120 - step) (120 - 2*step) 1 dt 0
+ramp 1 (120 + step) (120 + 2*step) 1 dt 0
+t += dt
+t += 1
+
+ramp 0 (120 - 2*step) (120 - latdeviation) 1 dt 0
+ramp 1 (120 + 2*step) (120 + latdeviation) 1 dt 0
+t += dt
+
+t += latmovetime
+
+ramp 0 (120 - latdeviation) (120 - 2*step) 1 dt 0
+ramp 1 (120 + latdeviation) (120 + 2*step) 1 dt 0
+t += dt
+t += 1
+
+ramp 0 (120 - 2*step) (120 - step) 1 dt 0
+ramp 1 (120 + 2*step) (120 + step) 1 dt 0
+t += dt
+t += 1
+
+ramp 0 (120 - step) 120 1 dt 0
+ramp 1 (120 + step) 120 1 dt 0
+t += dt
+
+bnc 1
+t += latpausetime
+bnc 0
+
+ramp 0 120 (120 + step) 1 dt 0
+ramp 1 120 (120 - step) 1 dt 0
+t += dt
+t += 1
+
+ramp 0 (120 + step) (120 + 2*step) 1 dt 0
+ramp 1 (120 - step) (120 - 2*step) 1 dt 0
+t += dt
+t += 1
+
+ramp 0 (120 + 2*step) (120 + latdeviation) 1 dt 0
+ramp 1 (120 - 2*step) (120 - latdeviation) 1 dt 0
+t += dt
+
+t += latmovetime
+
+ramp 0 (120 + latdeviation) (120 + 2*step) 1 dt 0
+ramp 1 (120 - latdeviation) (120 - 2*step) 1 dt 0
+t += dt
+t += 1
+
+ramp 0 (120 + 2*step) (120 + step) 1 dt 0
+ramp 1 (120 - 2*step) (120 - step) 1 dt 0
+t += dt
+t += 1
+
+ramp 0 (120 + step) 120 1 dt 0
+ramp 1 (120 - step) 120 1 dt 0
+t += dt

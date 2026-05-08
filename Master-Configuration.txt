@@ -13,11 +13,11 @@ pixis_trg
 1
 lattice
 1
-latmove
+latmove1
 1
 dds0
 1
-latmoveback
+latmove2
 1
 blueshutter
 1

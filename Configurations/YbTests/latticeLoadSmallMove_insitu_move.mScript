@@ -53,7 +53,6 @@ on: scopetrigger
 t += (2*latramptime + latmovetime)
 t += latpausetime
 t += (2*latramptime + latmovetime)
-t += 200
 off: scopetrigger
 %recapture mot
 %

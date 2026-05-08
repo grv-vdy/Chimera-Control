@@ -765,10 +765,11 @@ void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWavef
 				appendToneUpdate(cmd.channel, fendMHz, cmd.amplitude, cmd.phase);
 			}
 			else {
-	
-				const double stepTimeMs = 0.01; // change
-				int numSteps = static_cast<int>(std::ceil(durationMs / stepTimeMs));
-				numSteps = std::max(2, std::min(numSteps, 10000)); // Limit to reasonable range
+				// Keep scripted ramps bounded so one command cannot generate an unbounded DCP batch.
+				const double targetStepTimeMs = 0.01;
+				constexpr int maxRampSteps = 10000;
+				int numSteps = static_cast<int>(std::ceil(durationMs / targetStepTimeMs));
+				numSteps = std::max(2, std::min(numSteps, maxRampSteps));
 
 				double actualStepTimeMs = durationMs / static_cast<double>(numSteps);
 				int stepTimeUs = static_cast<int>(std::round(actualStepTimeMs * 1000.0));
@@ -853,6 +854,14 @@ void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWavef
 	
 	// Send all commands as one batch; reconnect and retry once on failure.
 	if (!batchCommands.empty()) {
+		constexpr std::size_t maxBatchBytes = 1 * 1024 * 1024; // 4 MB; chunked TCP writes handle large payloads safely
+		if (batchCommands.size() > maxBatchBytes) {
+			if (expWorker) {
+				emit expWorker->warn(qstr("Wieserlabs DDS command batch exceeded 4MB and was skipped. Reduce ramp duration/resolution or trigger multiplicity.\r\n"), 0);
+			}
+			qDebug() << "WieserlabsDDSCore: batch too large, bytes =" << batchCommands.size();
+			return;
+		}
 		try {
 			bool sent = ddsClient->sendBatchCommands(batchCommands);
 			if (!sent) {

@@ -1,46 +1,46 @@
 %%%%%%%%%%%%%%%%% Start With 1ms %%%%%%%%%%%%%%%%% 
 t = 1
 
-dac: blue3dmot blue3dmotpower
-dac: pushbeam bluepushpower
-dac: blue2dmot blue2dmotpower
-dac: greenmot greenmotpower
 
+dac: blue2dmot blue2dmotpower
 dac: blueimg blueimgpower
 dac: bias1 (bias1+biasx+biasy)
 dac: bias2 (bias2-biasx+biasy)
 dac: biasz (biasz+biaszoff)
-
-off: blueimg
+dac: blue3dmot blue3dmotpower
+dac: greenmot greenmotpower
+dac: pushbeam bluepushpower
+on: lattice
 off: greenmot
-off: pushbeam
 off: blue3dmot
-t += 10
-on: pushbeam
-on: greenmot
+off: pushbeam
+off: blueimg
+t += 100
 
+on: pushbeam
 on: blue3dmot
+on: greenmot
 t += coreshellloadtime
 
-%mot rampdown
-%dacramp: greenmot greenmotpower greenmotpowerlow 1
-%t += 3
-
-off: pushbeam
 off: blue3dmot
+off: pushbeam
+%dac: blue3dmot blue3dmotpowerlow
+t += 1
+on: greennarrow
+t += 2
+dacramp: greenmot greenmotpower greenmotpowerlow 1
+t += 1
 
+%dac: greenmot greenmotpowerlow
+t += 20 %thermalize mot see 260225
+%t += 80
 
-%t += 1
-% img 1
+%release mot
 
-%t += 301
-
-%t += 0.1
-
-%t += 10
 off: greenmot
-
+on: scopetrigger
 t += motreleasetime
+off: scopetrigger
 on: mako1
 t += 0.1
 on: blueimg
@@ -50,11 +50,11 @@ t += 0.1
 off: mako1
 
 % make sure to destoroy atom
-t += 0.3
+t += 1
 on: blueimg
 t += 20
 off: blueimg
-t += 0.3
+t += 1
 % img 2
 on: mako1
 t += 0.1

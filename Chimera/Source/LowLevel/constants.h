@@ -100,7 +100,7 @@
 	const std::string AI_SOCKET_PORT = "80";
 
 	//Wieserlabs DDS
-	const bool WIESERLABS_SAFEMODE = false;
+	const bool WIESERLABS_SAFEMODE = true;
 	const std::string WIESERLABS_IPADDRESS = "192.168.105.5";
 	const int WIESERLABS_IPPORT = 26000;
 	// Per-channel hardware triggers on FlexDDS-NG: both channels use BNC_IN_A
@@ -112,7 +112,7 @@
 	const unsigned MAKO_NUMBER = 4;
 	const std::array<bool, MAKO_NUMBER> MAKO_SAFEMODE = { false,false,true,true};
 	const std::array<std::string, MAKO_NUMBER> MAKO_DELIMS = { "MAKO1_CAM"/*MOT G125*/, "MAKO2_CAM"/*MOT G319*/, "MAKO3_CAM"/*420 MON*/, "MAKO4_CAM"/*1013 MON*/};
-	const std::array<std::string, MAKO_NUMBER> MAKO_IPADDRS = { "192.168.105.2", "192.168.105.6","10.10.0.12","10.10.0.11" };
+	const std::array<std::string, MAKO_NUMBER> MAKO_IPADDRS = { "192.168.105.6", "192.168.105.2","10.10.0.12","10.10.0.11" };
 	const std::vector<std::pair<unsigned, unsigned>> MAKO_TRIGGER_LINE
 		= { std::make_pair(1 - 1,2),std::make_pair(3 - 1,5),std::make_pair(5 - 1,3),std::make_pair(5 - 1,7) };
 	/*the first is the label on the box minus 1, has minus'd 1 explicitly and this is not used in the code, just a reminder*/
@@ -134,10 +134,10 @@
 	const std::pair<unsigned, unsigned> MW_TRIGGER_LINE = std::make_pair(4 - 1, 2); /*the first is the label on the box minus 1, has minus'd 1 explicitly */
 
 	//PicoScrew
-	const bool PICOSCREW_SAFEMODE = true;
-	const std::string PICOSCREW_KEY = "8742 101956";
+	const bool PICOSCREW_SAFEMODE = false;
+	const std::string PICOSCREW_KEY = "8742 107036";
 	const unsigned PICOSCREW_NUM = 4;
-	const std::array<bool, PICOSCREW_NUM> PICOSCREW_CONNECTED = { true,true,true,true };
+	const std::array<bool, PICOSCREW_NUM> PICOSCREW_CONNECTED = { true,true,false,false };
 
 	//20-bit static DAC
 	const bool STATICAO_SAFEMODE = true;
