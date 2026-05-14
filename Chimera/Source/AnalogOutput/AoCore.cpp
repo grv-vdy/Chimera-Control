@@ -1168,8 +1168,8 @@ void AoCore::writeDacsToNI(unsigned variation,
 
 
 
-    // // External trigger
-    //DAQmxCfgDigEdgeStartTrig(taskHandle, triggerSource.c_str(), DAQmx_Val_Rising);
+    // External trigger
+    DAQmxCfgDigEdgeStartTrig(taskHandle, triggerSource.c_str(), DAQmx_Val_Rising);
 
 
 	// Use an internal clock rate (Hz)
