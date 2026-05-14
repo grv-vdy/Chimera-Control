@@ -48,9 +48,9 @@
     <Import Project="$(QtMsBuild)\qt_defaults.props" />
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <LibraryPath>C:\Users\yb2\Chimera-Control\Chimera\3rd_Party\NI\Lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>C:\Users\yb2\Chimera-Control\Chimera\3rd_Party\NI\include;$(ExecutablePath)</ExecutablePath>
-    <IncludePath>C:\Program Files %28x86%29\National Instruments\Shared\ExternalCompilerSupport\C\lib64\msvc;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\ronak\Chimera-Control\Chimera\3rd_Party\NI\Lib;$(LibraryPath)</LibraryPath>
+    <ExecutablePath>C:\Users\ronak\Chimera-Control\Chimera\3rd_Party\NI\include;$(ExecutablePath)</ExecutablePath>
+    <IncludePath>C:\Users\ronak\Downloads\ExternalCompilerSupport\C\lib64\msvc;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
   </PropertyGroup>
@@ -84,10 +84,11 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Users\ronak\Desktop\Chimera-Control\Chimera\3rd_Party\NI\Lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="QtSettings">
-    <QtModules>charts;concurrent;core;gui;network;printsupport;serialport;uitools;widgets</QtModules>
+    <QtModules>core;network;gui;uitools;widgets;serialport;printsupport;concurrent;charts</QtModules>
     <QtBuildConfig>debug</QtBuildConfig>
     <QtInstall>5.15.18_msvc2019_64</QtInstall>
     <QtQMakeTemplate>app</QtQMakeTemplate>

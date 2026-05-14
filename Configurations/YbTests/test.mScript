@@ -1,0 +1,9 @@
+/Siglent FM Control:/ 1
+/Siglent FM External Clock:/ 1
+/Siglent FM CH1 Amplitude:/ 1.0
+/Siglent FM CH1 Phase:/ 0
+/Siglent FM CH1 Burst Cycles:/ 1 + hi
+/Siglent FM CH2 Frequency:/ 30 + hi
+/Siglent FM CH2 Amplitude:/ 2.0
+/Siglent FM CH2 Phase:/ 0
+/Siglent FM Deviation:/ 0.05 + 0.01*hi

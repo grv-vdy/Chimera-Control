@@ -1,5 +1,16 @@
 #include "stdafx.h"
 #include "SiglentCore.h"
+#include <algorithm>
+#include <cctype>
+#include <cstdlib>
+#include <cmath>
+#include <fstream>
+#include <iterator>
+#include <limits>
+#include <sstream>
+#include <iostream>
+#include <vector>
+#include <string>
 
 SiglentCore::SiglentCore(const arbGenSettings& settings) :
 	ArbGenCore(settings)
@@ -368,5 +379,172 @@ void SiglentCore::compileSequenceString(scriptedArbInfo& scriptInfo, int totalSe
 	//tempSegmentInfoString.pop_back();
 	//totalSequence = tempSequenceString + str((str(tempSegmentInfoString.size())).size())
 	//	+ str(tempSegmentInfoString.size()) + tempSegmentInfoString;
+}
+
+unsigned SiglentCore::uploadBinWaveformToChannel1(const std::string& binFilePath, double durationMs, const std::string& waveformName)
+{
+    if (durationMs <= 0) {
+        thrower("Binary upload failed: duration must be > 0 ms.");
+    }
+
+    // 1. Read the raw binary file in one instant chunk
+    std::ifstream file(binFilePath, std::ios::binary | std::ios::ate);
+    if (!file.is_open() || !file.good()) {
+        thrower("Binary upload failed: could not open file " + binFilePath);
+    }
+
+    std::streamsize fileSize = file.tellg();
+    if (fileSize <= 0) {
+        file.close();
+        thrower("Binary upload failed: file is empty or unreadable (size=" + std::to_string(fileSize) + ").");
+    }
+    
+    file.seekg(0, std::ios::beg);
+    if (!file.good()) {
+        file.close();
+        thrower("Binary upload failed: could not seek to start of file.");
+    }
+
+    // Basic validation: A valid 16-bit binary file must have an even number of bytes
+    if (fileSize % 2 != 0) {
+        file.close();
+        thrower("Binary upload failed: file size (" + std::to_string(fileSize) + " bytes) is not even.");
+    }
+
+    // Read the exact byte payload directly into a string buffer
+    std::string payload(fileSize, '\0');
+    file.read(payload.data(), fileSize);
+    
+    std::streamsize bytesRead = file.gcount();
+    file.close();
+    
+    if (bytesRead != fileSize) {
+        thrower("Binary upload failed: read " + std::to_string(bytesRead) + " bytes but expected " + std::to_string(fileSize) + ".");
+    }
+
+    // 2. Calculate Sample Rate (Every point is 2 bytes)
+    size_t numPoints = fileSize / 2;
+    double durationSeconds = durationMs * 1e-3;
+    auto calculatedRate = static_cast<unsigned>(std::llround(numPoints / durationSeconds));
+    
+    if (calculatedRate == 0) {
+        thrower("Binary upload failed: calculated sample rate is zero.");
+    }
+    
+    const unsigned MAX_SAMPLE_RATE = 75000000u; // 75 MSa/s
+    if (calculatedRate > MAX_SAMPLE_RATE) {
+        double minDurationMs = (numPoints / static_cast<double>(MAX_SAMPLE_RATE)) * 1e3;
+        thrower("Calculated sample rate (" + std::to_string(calculatedRate) + " Sa/s) exceeds 75 MSa/s.\n"
+            "Minimum pulse duration for this waveform is " + std::to_string(minDurationMs) + " ms.");
+    }
+
+	// Program the waveform sample rate before selecting the uploaded arb.
+	this->visaFlume.write("C1:SRATE MODE,TARB,VALUE," + str(calculatedRate));
+
+    // 3. Build Header and Send Command
+    std::string safeName = waveformName.empty() ? "USERBIN" : waveformName;
+    if (safeName.size() > 16) {
+        safeName = safeName.substr(0, 16);
+    }
+
+    // Siglent WVDT command format: C1:WVDT WVNM,<name>,TYPE,6,LENGTH,<bytes>B,WAVEDATA,<binary_data>
+    // Send header first
+    std::string commandHeader = "C1:WVDT WVNM," + safeName + ",TYPE,6,LENGTH," + std::to_string(fileSize) + "B,WAVEDATA,";
+    
+    // Build complete command with binary payload
+    std::string command;
+    command.reserve(commandHeader.size() + fileSize);
+    command.append(commandHeader);
+    command.append(payload);
+    
+    // Send via VISA - note: this sends the binary data directly as part of the string
+    this->visaFlume.write(command);
+    
+    return calculatedRate;
+}
+
+void SiglentCore::selectWaveformOnChannel1(const std::string& waveformName)
+{
+    // Select the waveform by name on CH1
+    std::string safeName = waveformName.empty() ? "USERBIN" : waveformName;
+    if (safeName.size() > 16) {
+        safeName = safeName.substr(0, 16);
+    }
+    
+	// Put CH1 into arbitrary waveform mode, then select the uploaded waveform.
+	this->visaFlume.write("C1:BSWV WVTP,ARB");
+    this->visaFlume.write("C1:ARWV NAME," + safeName);
+    
+    // Enable output on CH1
+    outputOn(1);
+}
+
+void SiglentCore::programFmModulationProfile(double ch1AmplitudeVpp, double ch1StartPhaseDeg,
+	double ch2FrequencyMHz, double ch2AmplitudeVpp, double ch2PhaseDeg, double frequencyDeviationMHz,
+	bool useExternalClock, unsigned ch1BurstCycles)
+{
+	if (ch1BurstCycles == 0) {
+		thrower("CH1 burst cycle count must be greater than zero.");
+	}
+
+	if (useExternalClock) {
+		visaFlume.write("CLKSRC EXT");
+	}
+	else {
+		visaFlume.write("CLKSRC INT");
+	}
+
+	visaFlume.write("C2:BSWV WVTP,SINE,FRQ," + std::to_string(ch2FrequencyMHz * 1e6) + 
+                "HZ,AMP," + std::to_string(ch2AmplitudeVpp) + 
+                "V,OFST,0V,PHSE," + std::to_string(ch2PhaseDeg));
+
+	
+
+	visaFlume.write("C2:MDWV FM,STATE,ON,FM,MDSP,SINE,SRC,CH1,DEVI," + 
+                std::to_string(frequencyDeviationMHz * 1e6) + "HZ");
+
+	//visaFlume.write("C2:BSWV WVTP,SINE,FRQ," + str(ch2FrequencyMHz * 1e6) + "HZ,AMP," + str(ch2AmplitudeVpp)
+	//	+ "VPP,PHSE," + str(ch2PhaseDeg));
+	//visaFlume.write("C2:MDWV FM");
+	//visaFlume.write("C2:MDWV FM,STATE,ON,MDSP,SRCE,CH1,DEVI," + str(frequencyDeviationMHz * 1e6) + "HZ");
+
+	// Do not set CH1 frequency here; CH1 waveform timing is determined by uploaded arb/sample-rate settings.
+	visaFlume.write("C1:BSWV AMP," + str(ch1AmplitudeVpp) + "VPP,PHSE," + str(ch1StartPhaseDeg));
+
+	visaFlume.write("C1:BTWV STATE,ON");
+	visaFlume.write("C1:BTWV GATE_NCYC,NCYC");
+	visaFlume.write("C1:BTWV TIME," + str(ch1BurstCycles));
+	// Keep this period sequence as the final CH1 burst setup step.
+	visaFlume.write("C1:BTWV TRSR,INT");
+	visaFlume.write("C1:BTWV PRD,MIN");
+	// Keep external trigger as the final state.
+	visaFlume.write("C1:BTWV TRSR,EXT");
+
+	outputOn(1);
+	outputOn(2);
+}
+
+void SiglentCore::programSpecializedVariation(unsigned variation, std::vector<parameterType>& params,
+	deviceOutputInfo& runSettings, ExpThreadWorker* expWorker)
+{
+	if (!runSettings.siglentFm.control) {
+		return;
+	}
+
+	auto ch1BurstCyclesValue = runSettings.siglentFm.ch1BurstCycles.getValue(variation);
+	auto roundedCycles = std::llround(ch1BurstCyclesValue);
+	if (roundedCycles <= 0 || std::fabs(ch1BurstCyclesValue - roundedCycles) > 1e-6) {
+		thrower("Siglent FM CH1 burst cycles must evaluate to a positive integer. Expression: "
+			+ runSettings.siglentFm.ch1BurstCycles.expressionStr + ", value: " + str(ch1BurstCyclesValue));
+	}
+
+	notify({ "Programming Siglent FM workflow variation " + qstr(str(variation)) + "\n", 1 }, expWorker);
+	programFmModulationProfile(runSettings.siglentFm.ch1AmplitudeVpp.getValue(variation),
+		runSettings.siglentFm.ch1StartPhaseDeg.getValue(variation),
+		runSettings.siglentFm.ch2FrequencyMHz.getValue(variation),
+		runSettings.siglentFm.ch2AmplitudeVpp.getValue(variation),
+		runSettings.siglentFm.ch2PhaseDeg.getValue(variation),
+		runSettings.siglentFm.ch2FrequencyDeviationMHz.getValue(variation),
+		runSettings.siglentFm.useExternalClock, static_cast<unsigned>(roundedCycles));
 }
 

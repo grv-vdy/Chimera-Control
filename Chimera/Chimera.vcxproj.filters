@@ -9,7 +9,7 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Resource Files">
+    <Filter Include="Resource FiFNIles">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
@@ -519,6 +519,21 @@
     <ClCompile Include="Source\StaticDirectDigitalSynthesis\StaticDdsSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\WieserlabsDDS\WieserlabsDDSCore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\WieserlabsDDS\WieserlabsDDSSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\WieserlabsDDS\ScriptedWieserlabsDDSWaveform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\WieserlabsDDS\WieserlabsClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\WieserlabsDDS\WieserlabsBinaryClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="3rd_Party\qcustomplot\qcustomplot.h">
@@ -1003,9 +1018,6 @@
     <ClInclude Include="Source\Scripts\ScriptStream.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\RIO\ZynqTCP.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="3rd_Party\NI\include\NiFpga.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -1166,6 +1178,30 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\StaticDirectDigitalSynthesis\StaticDDSFlume.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\WieserlabsDDS\WieserlabsDDSCore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\WieserlabsDDS\WieserlabsDDSSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\WieserlabsDDS\WieserlabsDDSStructures.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\WieserlabsDDS\WieserlabsDDSSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\WieserlabsDDS\ScriptedWieserlabsDDSWaveform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\WieserlabsDDS\WieserlabsClient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\WieserlabsDDS\WieserlabsBinaryClient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ZynqTCP\ZynqTCP.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

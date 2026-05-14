@@ -164,25 +164,7 @@ void IChimeraQtWindow::initializeMenu (){
 
 	///
 	scriptsM->addSeparator();
-	if (scriptWin != nullptr) {
-		auto arbGensRefs = scriptWin->getArbGenSystem();
-		for (auto arbGensRef : arbGensRefs) {
-			QString deviceName = qstr(arbGensRef.get().initSettings.deviceName);
-			QMenu* arbM = scriptsM->addMenu(deviceName + " Script");
-			QAction* newS = new QAction("Ne&w " + deviceName + " Sctript", this);
-			connect(newS, &QAction::triggered, [this, deviceName]() { scriptWin->newArbGenScript( ArbGenEnum::fromStr( deviceName.toStdString() ) ); });
-			arbM->addAction(newS);
-			QAction* openS = new QAction("Op&en " + deviceName + " Script", this);
-			connect(openS, &QAction::triggered, [this, deviceName]() {scriptWin->openArbGenScript( ArbGenEnum::fromStr( deviceName.toStdString() ), scriptWin); });
-			arbM->addAction(openS);
-			QAction* saveS = new QAction("&Save " + deviceName + " Script", this);
-			connect(saveS, &QAction::triggered, [this, deviceName]() {scriptWin->saveArbGenScript( ArbGenEnum::fromStr( deviceName.toStdString() ) ); });
-			arbM->addAction(saveS);
-			QAction* saveasS = new QAction("Save " + deviceName + " Script &As", this);
-			connect(saveasS, &QAction::triggered, [this, deviceName]() {scriptWin->saveArbGenScriptAs( ArbGenEnum::fromStr( deviceName.toStdString() ), scriptWin); });
-			arbM->addAction(saveasS);
-		}
-	}
+	// ArbGen script menu entries are intentionally removed.
 
 	///
 	scriptsM->addSeparator();
