@@ -19,7 +19,7 @@ dds0
 1
 latmove2
 1
-blueshutter
+greenshutter
 1
 d11
 1

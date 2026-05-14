@@ -54,9 +54,18 @@ off: scopetrigger
 %recapture mot
 %
 
+dac: greenimg greenimgpower
+on: greenshutter
+t += 5
+on: greenimg
+t += greenimgtime
+off: greenimg
+off: greenshutter
+t += 40
+
 on: greenmot
 %off: greennarrow
-dac: greenmot greenmotpower
+dac: greenmot greenmotpower %greenmotpower
 off: lattice
 
 %dacramp: bias1 (bias1+biasx+biasy) (bias1+biasxfix)  1
@@ -64,10 +73,17 @@ off: lattice
 %dacramp: biasz (biasz+biaszoff) (biasz+biaszofffix) 1
 
 t += 10
+%
+%on: mako1
+%t += 100
+%off: mako1
+%
+%t += 100
 
 on: mako1
 t += 100
 off: mako1
+
 
 
 off: greenmot
@@ -80,6 +96,7 @@ t += 100
 off: blueimg
 dac: blueimg 0
 on: greenmot
+
 t += 2
 on: mako1
 t += 100
