@@ -98,12 +98,14 @@ void ExpThreadWorker::experimentThreadProcedure () {
 			for (const auto& variationInc : range(determineVariationNumber(expRuntime.expParams))) {
 				initVariation(variationInc, expRuntime.expParams);
 				emit notification("Programming Devices for Variation...#" + qstr(variationInc) + "\n");
+				std::vector<IDeviceCore*> activeDevices;
 				for (auto& device : input->devices.list) {
+					activeDevices.push_back(&device.get());
 					if (device.get().getDelim().find("WIESERLABS_DDS") == std::string::npos) {
 							deviceProgramVariation(device, expRuntime.expParams, variationInc);
-						}
-
+					}
 				}
+				
 				emit notification("Running Experiment.\n");
 				for (const auto& repInc : range(expRuntime.repetitions)) {
 					inExpCalibrationRun(expRuntime);
@@ -133,8 +135,9 @@ void ExpThreadWorker::experimentThreadProcedure () {
 					inExpCalibrationRun(expRuntime);
 					emit notification("Programming Devices for Variation...\n", 2);
 					qDebug() << "Programming Devices for Variation"<< variationInc;
+					std::vector<IDeviceCore*> activeDevices;
 					for (auto& device : input->devices.list) {
-						deviceProgramVariation(device, expRuntime.expParams, variationInc);
+						activeDevices.push_back(&device.get());
 					}
 					initVariation(variationInc, expRuntime.expParams);
 					handlePause(isPaused, isAborting);
@@ -1249,19 +1252,18 @@ void ExpThreadWorker::deviceLoadExpSettings (IDeviceCore& device, ConfigStream& 
 	}
 }
 
-void ExpThreadWorker::deviceProgramVariation (IDeviceCore& device, std::vector<parameterType>& expParams, 
-	unsigned variationInc) {
-	if (device.experimentActive) {
-		try {
-			emit notification (qstr ("Programming Devce " + device.getDelim () + "...\n"), 3);
-			device.programVariation (variationInc, expParams, this);
-			emit updateBoxColor ("Blue", device.getDelim ().c_str ());
-		}
-		catch (ChimeraError&) {
-			emit updateBoxColor ("Red", device.getDelim ().c_str ());
-			throwNested ("Error seen while programming variation for system: " + device.getDelim ());
-		}
-	}
+void ExpThreadWorker::deviceProgramVariation (IDeviceCore& device, std::vector<parameterType>& expParams, unsigned variationInc) {
+    if (device.experimentActive) {
+        try {
+            emit notification (qstr ("Programming Device " + device.getDelim () + "...\n"), 3);
+            device.programVariation (variationInc, expParams, this);
+            emit updateBoxColor ("Blue", device.getDelim ().c_str ());
+        }
+        catch (ChimeraError&) {
+            emit updateBoxColor ("Red", device.getDelim ().c_str ());
+            throwNested ("Error seen while programming variation for system: " + device.getDelim ());
+        }
+    }
 }
 
 void ExpThreadWorker::deviceCalculateVariations (IDeviceCore& device, std::vector<parameterType>& expParams) {

@@ -83,17 +83,14 @@
 
 	//ArbGens
 	const bool UWAVE_SAFEMODE = true;
-	const bool UWAVE_SAFEMODE_SIG = true;
-	// NOTE: Agilent AWG is currently NOT USED - Commenting out
-	// const bool UWAVE_SAFEMODE_AGI = true;
-	const int numArbGen = 1;	// Only Siglent0, Agilent0 removed
-	//const std::string UWAVE_AGILENT_ADDRESS = "TCPIP0::10.10.0.5::inst0::INSTR";
-	// const std::string UWAVE_AGILENT_ADDRESS = "USB0::0x0957::0x2807::MY57400998::INSTR";
-	// const std::pair<unsigned, unsigned> UWAVE_AGILENT_TRIGGER_LINE = std::make_pair(7 - 1, 0); /*the first is the label on the box minus 1, has minus'd 1 explicitly */
-	const std::string UWAVE_SIGLENT_ADDRESS = "USB0::0xF4EC::0x1102::SDG2XCAC6R0238::INSTR";
+	const bool UWAVE_SAFEMODE_SIG = false;
+	const int numArbGen = 2;	// Siglent0 (192.168.105.52) and Siglent1 (192.168.105.54)
+	const std::array<std::string, 2> UWAVE_SIGLENT_ADDRESSES = {
+    "TCPIP0::192.168.105.53::inst0::INSTR",
+    "TCPIP0::192.168.105.54::inst0::INSTR"
+	};
 	const std::pair<unsigned, unsigned> UWAVE_SIGLENT_TRIGGER_LINE = std::make_pair(7 - 1, 1); /*the first is the label on the box minus 1, has minus'd 1 explicitly */
 	const std::string RAMP_LOCATION = str(CODE_ROOT) + "\\Ramp_Files\\";
-
 	//Analog in 
 	const bool AI_SAFEMODE = true;
 	const std::string AI_SOCKET_ADDRESS = "10.10.0.10";

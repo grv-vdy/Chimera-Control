@@ -43,3 +43,6 @@ enc_temp_folder
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
+
+# Generated waveforms
+Chimera/generated waveforms/

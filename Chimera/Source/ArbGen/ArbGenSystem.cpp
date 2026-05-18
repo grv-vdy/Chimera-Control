@@ -8,12 +8,25 @@
 #include <algorithm>
 #include <numeric>
 #include <fstream>
+#include <filesystem>
 #include "GeneralUtilityFunctions/range.h"
 #include <PrimaryWindows/QtMainWindow.h>
 #include <PrimaryWindows/QtAuxiliaryWindow.h>
+#include <LowLevel/constants.h>
 #include "boost/lexical_cast.hpp"
+#include <qdir.h>
+#include <qfile.h>
+#include <qgroupbox.h>
+#include <qregularexpression.h>
+#include <qstringlist.h>
+#include <qtextstream.h>
 #include <qbuttongroup.h>
 #include <qlayout.h>
+#include <qcoreapplication.h>
+#include <qeventloop.h>
+#include <QtConcurrent/qtconcurrentrun.h>
+#include <cctype>
+#include <cmath>
 
 ArbGenSystem::ArbGenSystem( const arbGenSettings& settings, ArbGenType type, IChimeraQtWindow* parent )
 	: IChimeraSystem(parent)
@@ -33,27 +46,19 @@ ArbGenSystem::ArbGenSystem( const arbGenSettings& settings, ArbGenType type, ICh
 
 ArbGenSystem::~ArbGenSystem()
 {
+	if (csvUploadWatcher && csvUploadWatcher->isRunning()) {
+		csvUploadWatcher->waitForFinished();
+	}
 	delete pCore;
 }
 
 void ArbGenSystem::programArbGenNow(std::vector<parameterType> constants){
-	readGuiSettings ();
-	std::string warnings_;
-	if (currentGuiInfo.channel[0].scriptedArb.fileAddress.expressionStr != ""){
-		currentGuiInfo.channel[0].scriptedArb.wave = ScriptedArbGenWaveform();
-		pCore->analyzeArbGenScript (currentGuiInfo.channel[0].scriptedArb, constants, warnings_);
-	}
-	if (currentGuiInfo.channel[1].scriptedArb.fileAddress.expressionStr != ""){
-		currentGuiInfo.channel[1].scriptedArb.wave = ScriptedArbGenWaveform();
-		pCore->analyzeArbGenScript (currentGuiInfo.channel[1].scriptedArb, constants, warnings_);
-	}
+	currentGuiInfo = getOutputInfo();
 	pCore->convertInputToFinalSettings (0, currentGuiInfo, constants);
 	pCore->convertInputToFinalSettings (1, currentGuiInfo, constants);
 	pCore->setArbGen (0, constants, currentGuiInfo, nullptr);
 	pCore->setRunSettings(currentGuiInfo); // This is meant to let the core save the gui setting
-	//if (dynamic_cast<SiglentCore*>(pCore)) {
-	//	burstButton->setChecked(true);
-	//}
+
 }
 
 std::string ArbGenSystem::getDeviceIdentity (){
@@ -65,18 +70,26 @@ std::string ArbGenSystem::getConfigDelim (){
 }
 
 bool ArbGenSystem::getSavedStatus (){
-	return arbGenScript.savedStatus ();
+	return true;
 }
 
 void ArbGenSystem::updateSavedStatus (bool isSaved){
-	arbGenScript.updateSavedStatus (isSaved);
+	(void)isSaved;
 }
 
 void ArbGenSystem::initialize(std::string headerText, IChimeraQtWindow* win)
 {
 	QVBoxLayout* layout = new QVBoxLayout(this);
 	layout->setContentsMargins(0, 0, 0, 0);
-	pCore->initialize ();
+	layout->setSpacing(4);
+	layout->setAlignment(Qt::AlignTop);
+	try {
+		pCore->initialize ();
+	}
+	catch (ChimeraError& err) {
+		// Device not connected - continue with "Disconnected" status
+		// User can click Reconnect button later to retry
+	}
 	header = new QLabel (cstr (headerText), win);
 	auto deviceInfo = pCore->getDeviceInfo ();
 	if (deviceInfo.size () > 1) {// deal with trailing newline
@@ -84,126 +97,454 @@ void ArbGenSystem::initialize(std::string headerText, IChimeraQtWindow* win)
 	}
 	deviceInfoDisplay = new QLabel (qstr (deviceInfo), win);
 	deviceInfoDisplay->setStyleSheet ("QLabel { font: 8pt }; ");
+	deviceInfoDisplay->setVisible(false);
 	layout->addWidget(header, 0);
-	layout->addWidget(deviceInfoDisplay, 0);
 
-
-	channelButtonsGroup = new QButtonGroup (win);
-	QHBoxLayout* layout1 = new QHBoxLayout(this);
-	layout1->setContentsMargins(0, 0, 0, 0);
-	channel1Button = new CQRadioButton ("Channel 1 - No Control", win);
-	channel1Button->setChecked( true );
-	win->connect (channel1Button, &QRadioButton::toggled, [win, this]() {
-		try {
-			auto channel = (channel2Button->isChecked () ? 2 : 1);
-			handleChannelPress (channel, win->mainWin->getProfileSettings ().configLocation, win->mainWin->getRunInfo ());
-		}
-		catch (ChimeraError & err) {
-			win->reportErr (err.qtrace ());
-		}
-		});
-	channelButtonsGroup->addButton (channel1Button);
-
-	channel2Button = new CQRadioButton ("Channel 2 - No Control", win);
-	channel2Button->setChecked (false);
-	win->connect (channel2Button, &QRadioButton::toggled, [win, this]() {
-		try {
-			auto channel = (channel2Button->isChecked () ? 2 : 1);
-			handleChannelPress (channel, win->mainWin->getProfileSettings ().configLocation, win->mainWin->getRunInfo ());
-		}
-		catch (ChimeraError & err) {
-			win->reportErr (err.qtrace ());
-		}
-	});
-	channelButtonsGroup->addButton (channel2Button);
-
-	QPushButton* reconnectButton = new QPushButton("Reconnect", this);
-	connect(reconnectButton, &QPushButton::released, this, [this, win]() {
-		try {
-			pCore->reconnectFlume();
-		}
-		catch (ChimeraError& e) {
-			win->reportErr("Reconecting to " + qstr(pCore->configDelim) + "failed, check cable connection.\r\n" + e.qtrace());
-		}});
-	layout1->addWidget(channel1Button, 1);
-	layout1->addWidget(channel2Button, 1);
-	layout1->addWidget(reconnectButton, 1);
-	layout->addLayout(layout1, 0);
-
-
-	QHBoxLayout* layout2 = new  QHBoxLayout(this);
-	layout2->setContentsMargins(0, 0, 0, 0);
-	syncedButton = new CQCheckBox ("Synced?", win);
-
-	calibratedButton = new CQCheckBox ("Use Cal?", win);
-	calibratedButton->setChecked( true );
-
-	burstButton = new CQCheckBox ("Burst?", win);
-	burstButton->setChecked (false);
 
 	polarityButton = new CQCheckBox("Polarity Invert?", win);
 	polarityButton->setChecked(false);
 
-	programNow = new CQPushButton ("Program", win);
-	win->connect (programNow, &QPushButton::released, [win, this]() {
-		try	{ 
-			checkSave (win->mainWin->getProfileSettings ().configLocation, win->mainWin->getRunInfo ()); 
-			programArbGenNow (win->auxWin->getUsableConstants ()); 
-			win->reportStatus (qstr("Programmed ArbGen " + getConfigDelim () + ".\r\n")); 
+	uploadCsvNow = new CQPushButton("Upload Binary", win);
+	connect(uploadCsvNow, &QPushButton::released, this, [this, win]() {
+		try {
+			handleUploadCsvPressed(win);
 		}
 		catch (ChimeraError& err) {
-			win->reportErr (qstr("Error while programming arbGen " + getConfigDelim () + ": " + err.trace () + "\r\n"));
+			win->reportErr("CSV upload failed: " + err.qtrace());
 		}
+		});
+
+	QGroupBox* siglentGroup = new QGroupBox("Siglent FM Workflow", win);
+	QGridLayout* siglentLayout = new QGridLayout(siglentGroup);
+
+	siglentFmCtrlButton = new CQCheckBox("Ctrl?", win);
+	siglentFmCtrlButton->setChecked(false);
+	siglentLayout->addWidget(siglentFmCtrlButton, 0, 0, 1, 1);
+
+	clockExternalButton = new CQCheckBox("External Clock", win);
+	clockExternalButton->setChecked(true);
+	siglentLayout->addWidget(clockExternalButton, 0, 1, 1, 1);
+
+	CQPushButton* reconnectButton = new CQPushButton("Reconnect", win);
+	connect(reconnectButton, &QPushButton::released, this, [this, win]() {
+		try {
+			if (csvUploadInProgress) {
+				thrower("Cannot reconnect while an upload is in progress.");
+			}
+			pCore->reconnectFlume();
+			if (win) {
+				win->reportStatus("Reconnected to Siglent AWG.\r\n");
+			}
+		}
+		catch (ChimeraError& err) {
+			if (win) {
+				win->reportErr("Reconnect failed: " + err.qtrace());
+			}
+		}
+		});
+	siglentLayout->addWidget(reconnectButton, 1, 0, 1, 2);
+
+	siglentLayout->addWidget(new QLabel("Binary Waveforms", win), 2, 0);
+	QHBoxLayout* csvLayout = new QHBoxLayout();
+	generatedWaveformCombo = new CQComboBox(win);
+	csvLayout->addWidget(generatedWaveformCombo, 1);
+	CQPushButton* refreshBinButton = new CQPushButton("Refresh", win);
+	refreshBinButton->setMaximumWidth(80);
+	connect(refreshBinButton, &QPushButton::released, this, [this]() {
+		refreshGeneratedWaveforms();
 	});
+	connect(generatedWaveformCombo, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+		this, [this](int) {
+			updateCalculatedSampleRateDisplay();
+		});
+	csvLayout->addWidget(refreshBinButton, 0);
+	siglentLayout->addLayout(csvLayout, 2, 1);
 
-	layout2->addWidget(syncedButton, 0);
-	layout2->addWidget(calibratedButton, 0);
-	layout2->addWidget(burstButton, 0);
-	layout2->addWidget(polarityButton, 0);
-	layout2->addWidget(programNow, 0);
+	siglentLayout->addWidget(uploadCsvNow, 3, 0, 1, 2);
 
-	layout->addLayout(layout2, 0);
+	siglentLayout->addWidget(new QLabel("Pulse Duration (ms)", win), 4, 0);
+	ch1PulseDurationMsEdit = new QLineEdit("1.0", win);
+	connect(ch1PulseDurationMsEdit, &QLineEdit::textChanged, this, [this](const QString&) {
+		updateCalculatedSampleRateDisplay();
+	});
+	siglentLayout->addWidget(ch1PulseDurationMsEdit, 4, 1);
 
-	QHBoxLayout* layout3 = new  QHBoxLayout(this);
-	layout3->setContentsMargins(0, 0, 0, 0);
-	settingCombo = new CQComboBox (win);
-	win->connect ( settingCombo, qOverload<int> (&QComboBox::activated), [win, this](int) {
-		try	{
-			checkSave (win->mainWin->getProfileSettings ().configLocation, win->mainWin->getRunInfo ());
-			readGuiSettings ();
-			handleModeCombo ();
-			updateSettingsDisplay (win->mainWin->getProfileSettings ().configLocation, win->mainWin->getRunInfo ());
+	siglentLayout->addWidget(new QLabel("Sample Rate (Sa/s)", win), 5, 0);
+	ch1SampleRateLabel = new QLabel("-", win);
+	ch1SampleRateLabel->setText("(Calculated on Send)");
+	siglentLayout->addWidget(ch1SampleRateLabel, 5, 1);
+
+	QHBoxLayout* channelColumns = new QHBoxLayout();
+
+	QGroupBox* ch2Group = new QGroupBox("CH2 / Carrier", win);
+	QGridLayout* ch2Layout = new QGridLayout(ch2Group);
+	ch2Layout->addWidget(new QLabel("Frequency (MHz)", win), 0, 0);
+	ch2FrequencyMHzEdit = new QLineEdit("100.0", win);
+	ch2FrequencyMHzEdit->setPlaceholderText("e.g. 100.0 or fm_freq_var");
+	ch2Layout->addWidget(ch2FrequencyMHzEdit, 0, 1);
+	ch2Layout->addWidget(new QLabel("Amplitude (Vpp)", win), 1, 0);
+	ch2AmplitudeEdit = new QLineEdit("2.0", win);
+	ch2AmplitudeEdit->setPlaceholderText("e.g. 2.0 or fm_amp_var");
+	ch2Layout->addWidget(ch2AmplitudeEdit, 1, 1);
+	ch2Layout->addWidget(new QLabel("Phase (deg)", win), 2, 0);
+	ch2PhaseEdit = new QLineEdit("0", win);
+	ch2PhaseEdit->setPlaceholderText("e.g. 0 or fm_phase_var");
+	ch2Layout->addWidget(ch2PhaseEdit, 2, 1);
+	ch2Layout->addWidget(new QLabel("FM Deviation (MHz)", win), 3, 0);
+	ch2FrequencyDeviationMHzEdit = new QLineEdit("0.05", win);
+	ch2FrequencyDeviationMHzEdit->setPlaceholderText("e.g. 0.05 or fm_dev_var");
+	ch2Layout->addWidget(ch2FrequencyDeviationMHzEdit, 3, 1);
+
+	QGroupBox* ch1Group = new QGroupBox("CH1 / Modulator", win);
+	QGridLayout* ch1Layout = new QGridLayout(ch1Group);
+	ch1Layout->addWidget(new QLabel("Amplitude (Vpp)", win), 0, 0);
+	ch1AmplitudeEdit = new QLineEdit("1.0", win);
+	ch1AmplitudeEdit->setPlaceholderText("e.g. 1.0 or fm_ch1_amp_var");
+	ch1Layout->addWidget(ch1AmplitudeEdit, 0, 1);
+	ch1Layout->addWidget(new QLabel("Start Phase (deg)", win), 1, 0);
+	ch1StartPhaseEdit = new QLineEdit("0", win);
+	ch1StartPhaseEdit->setPlaceholderText("e.g. 0 or fm_ch1_phase_var");
+	ch1Layout->addWidget(ch1StartPhaseEdit, 1, 1);
+	ch1Layout->addWidget(new QLabel("Burst Cycles (NCYC)", win), 2, 0);
+	ch1BurstCyclesEdit = new QLineEdit("1", win);
+	ch1BurstCyclesEdit->setPlaceholderText("e.g. 1 or burst_cycles_var");
+	ch1Layout->addWidget(ch1BurstCyclesEdit, 2, 1);
+
+	channelColumns->addWidget(ch2Group, 1);
+	channelColumns->addWidget(ch1Group, 1);
+	siglentLayout->addLayout(channelColumns, 6, 0, 1, 2);
+
+	CQPushButton* programSettingsButton = new CQPushButton("Program AWG", win);
+	connect(programSettingsButton, &QPushButton::released, this, [this, win, programSettingsButton]() {
+		programSettingsButton->setEnabled(false);
+		programSettingsButton->setText("Programming...");
+		QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+		try {
+			handleProgramSettingsPressed(win);
+			if (win) {
+				win->reportStatus("Programmed Siglent FM settings.\r\n");
+			}
 		}
-		catch (ChimeraError& err){
-			win->reportErr (qstr("Error while handling agilent combo change: " + err.trace ()));
+		catch (ChimeraError& err) {
+			if (win) {
+				win->reportErr("Programming Siglent FM settings failed: " + err.qtrace());
+			}
 		}
-	} );
-	settingCombo->addItem ("No Control");
-	settingCombo->addItem ("Output Off");
-	settingCombo->addItem ("DC");
-	settingCombo->addItem ("Sine");
-	settingCombo->addItem ("Square");
-	settingCombo->addItem ("Preloaded");
-	settingCombo->addItem ("Scripted");
-	settingCombo->setCurrentIndex (0);
+		programSettingsButton->setText("Program AWG");
+		programSettingsButton->setEnabled(true);
+		});
+	siglentLayout->addWidget(programSettingsButton, 7, 0, 1, 2);
 
-	optionsFormat = new QLabel ("---", win);
-	layout3->addWidget(settingCombo, 0);
-	layout3->addWidget(optionsFormat, 1);
-	layout->addLayout(layout3, 0);
+	layout->addWidget(siglentGroup, 0);
 
-	arbGenScript.initialize(win, "ArbGen", "" );
+	refreshGeneratedWaveforms();
+	updateCalculatedSampleRateDisplay();
 
-	currentGuiInfo.channel[0].option = ArbGenChannelMode::which::No_Control;
-	currentGuiInfo.channel[1].option = ArbGenChannelMode::which::No_Control;
-	arbGenScript.setEnabled ( false, false );
+	(void)win;
+}
+
+void ArbGenSystem::refreshGeneratedWaveforms() {
+	if (!generatedWaveformCombo) {
+		return;
+	}
+	QString selectedPath;
+	if (generatedWaveformCombo->currentIndex() >= 0) {
+		selectedPath = generatedWaveformCombo->currentData().toString();
+	}
+	QString waveformDir = qstr(str(CODE_ROOT) + "\\Chimera\\generated waveforms");
+	QDir dir(waveformDir);
+	if (!dir.exists()) {
+		dir.mkpath(".");
+	}
+	QStringList binFilters;
+	binFilters << "*.bin";
+	QFileInfoList files = dir.entryInfoList(binFilters, QDir::Files | QDir::NoDotAndDotDot, QDir::Name);
+
+	generatedWaveformCombo->blockSignals(true);
+	generatedWaveformCombo->clear();
+	for (const auto& fileInfo : files) {
+		generatedWaveformCombo->addItem(fileInfo.fileName(), fileInfo.absoluteFilePath());
+	}
+	if (!selectedPath.isEmpty()) {
+		int selectedIndex = generatedWaveformCombo->findData(selectedPath);
+		if (selectedIndex >= 0) {
+			generatedWaveformCombo->setCurrentIndex(selectedIndex);
+		}
+	}
+	generatedWaveformCombo->blockSignals(false);
+	updateCalculatedSampleRateDisplay();
+}
+
+int ArbGenSystem::getSelectedCsvPointCount() const {
+	if (!generatedWaveformCombo || generatedWaveformCombo->currentIndex() < 0) {
+		return 0;
+	}
+	QString path = generatedWaveformCombo->currentData().toString();
+	QFile binFile(path);
+	if (!binFile.open(QIODevice::ReadOnly)) {
+		return 0;
+	}
+	// Binary format is int16, so 2 bytes per sample
+	qint64 fileSize = binFile.size();
+	binFile.close();
+	if (fileSize <= 0 || fileSize % 2 != 0) {
+		return 0;  // Invalid file size for int16 samples
+	}
+	return static_cast<int>(fileSize / 2);
+}
+
+double ArbGenSystem::getPulseDurationMs(IChimeraQtWindow* win) const {
+	if (!ch1PulseDurationMsEdit) {
+		return 0;
+	}
+	bool ok = false;
+	double durationMs = ch1PulseDurationMsEdit->text().toDouble(&ok);
+	if (ok && durationMs > 0) {
+		return durationMs;
+	}
+	// Expression evaluation requires access to currently defined variables.
+	if (!win || !win->auxWin) {
+		return 0;
+	}
+	Expression durationExpr = str(ch1PulseDurationMsEdit->text());
+	std::vector<parameterType> constants = win->auxWin->getAllParams();
+	for (auto& param : constants) {
+		if (!param.constant && !param.ranges.empty()) {
+			param.constant = true;
+			param.constantValue = param.ranges[0].initialValue;
+		}
+	}
+	ScanRangeInfo constantRange;
+	constantRange.defaultInit();
+	ParameterSystem::generateKey(constants, false, constantRange);
+	durationExpr.assertValid(constants, GLOBAL_PARAMETER_SCOPE);
+	durationExpr.internalEvaluate(constants, 1);
+	durationMs = durationExpr.getValue(0);
+	if (!std::isfinite(durationMs) || durationMs <= 0) {
+		thrower("Pulse duration expression must evaluate to a positive finite value in ms.");
+	}
+	return durationMs;
+}
+
+void ArbGenSystem::updateCalculatedSampleRateDisplay() {
+	if (!ch1SampleRateLabel) {
+		return;
+	}
+	int points = getSelectedCsvPointCount();
+	if (points <= 0) {
+		ch1SampleRateLabel->setText("-");
+		return;
+	}
+	const double maxSampleRate = 75e6;
+	double minDurationMs = (points / maxSampleRate) * 1e3;
+	double durationMs = 0;
 	try {
-		pCore->programSetupCommands ();
+		durationMs = getPulseDurationMs(parentWin);
 	}
-	catch (ChimeraError & error) {
-		errBox ("Failed to program ArbGen " + getConfigDelim () + " initial settings: " + error.trace ());
+	catch (ChimeraError&) {
+		// While the user is typing, expressions may be temporarily invalid.
+		ch1SampleRateLabel->setText("Enter valid duration");
+		return;
 	}
-	layout->addWidget(&arbGenScript, 1);
+	if (durationMs <= 0) {
+		ch1SampleRateLabel->setText("Min duration: " + QString::number(minDurationMs, 'f', 3) + " ms");
+		return;
+	}
+	double sampleRate = points / (durationMs * 1e-3);
+	if (sampleRate > maxSampleRate) {
+		ch1SampleRateLabel->setText("Min duration: " + QString::number(minDurationMs, 'f', 3) + " ms");
+		return;
+	}
+	ch1SampleRateLabel->setText(QString::number(sampleRate, 'f', 0));
+}
+
+void ArbGenSystem::handleUploadCsvPressed(IChimeraQtWindow* win) {
+	if (csvUploadInProgress) {
+		if (win) {
+			win->reportStatus("Binary waveform upload already in progress.\r\n");
+		}
+		return;
+	}
+
+	auto* siglent = dynamic_cast<SiglentCore*>(pCore);
+	if (!siglent) {
+		thrower("CSV upload is only implemented for Siglent AWGs.");
+	}
+	if (!generatedWaveformCombo || generatedWaveformCombo->currentIndex() < 0) {
+		thrower("No binary waveform selected. Put .bin files in Chimera/generated waveforms and select one.");
+	}
+	double durationMs = getPulseDurationMs(win);
+	if (durationMs <= 0) {
+		int points = getSelectedCsvPointCount();
+		if (points > 0 && ch1SampleRateLabel) {
+			double minDurationMs = (points / 75e6) * 1e3;
+			ch1SampleRateLabel->setText("Min duration: " + QString::number(minDurationMs, 'f', 3) + " ms");
+		}
+		thrower("Pulse duration is invalid. Use the displayed minimum duration.");
+	}
+	{
+		int points = getSelectedCsvPointCount();
+		if (points > 0) {
+			const double maxSampleRate = 75e6;
+			double requestedSampleRate = points / (durationMs * 1e-3);
+			if (requestedSampleRate > maxSampleRate) {
+				double minDurationMs = (points / maxSampleRate) * 1e3;
+				if (ch1SampleRateLabel) {
+					ch1SampleRateLabel->setText("Min duration: " + QString::number(minDurationMs, 'f', 3) + " ms");
+				}
+				thrower("Pulse duration is too short. Use the displayed minimum duration.");
+			}
+		}
+	}
+	QString csvPath = generatedWaveformCombo->currentData().toString();
+	const std::string csvPathStd = csvPath.toStdString();
+	
+	// Verify file exists before attempting upload
+	if (!std::filesystem::exists(csvPathStd)) {
+		thrower("Binary waveform file not found: " + csvPathStd);
+	}
+	
+	std::string waveName = generatedWaveformCombo->currentText().toStdString();
+	// Remove .bin extension if present
+	if (waveName.size() > 4 && waveName.substr(waveName.size() - 4) == ".bin") {
+		waveName = waveName.substr(0, waveName.size() - 4);
+	}
+	// Clean up filename to be a valid waveform name
+	for (char& c : waveName) {
+		if (!std::isalnum(static_cast<unsigned char>(c))) {
+			c = '_';
+		}
+	}
+	if (uploadCsvNow) {
+		uploadCsvNow->setEnabled(false);
+	}
+	if (generatedWaveformCombo) {
+		generatedWaveformCombo->setEnabled(false);
+	}
+	csvUploadInProgress = true;
+	if (ch1SampleRateLabel) {
+		ch1SampleRateLabel->setText("Uploading...");
+	}
+	if (win) {
+		win->reportStatus("Uploading binary waveform '" + qstr(waveName) + "' to Siglent CH1...\r\n");
+	}
+
+	if (csvUploadWatcher) {
+		csvUploadWatcher->deleteLater();
+		csvUploadWatcher = nullptr;
+	}
+	csvUploadWatcher = new QFutureWatcher<unsigned>(this);
+	connect(csvUploadWatcher, &QFutureWatcher<unsigned>::finished, this, [this, win, waveName]() {
+		try {
+			auto sampleRate = csvUploadWatcher->result();
+						// Select the uploaded waveform on CH1 and enable output
+						auto* siglent = dynamic_cast<SiglentCore*>(pCore);
+						if (siglent) {
+							siglent->selectWaveformOnChannel1(waveName);
+						}
+			if (ch1SampleRateLabel) {
+				ch1SampleRateLabel->setText(qstr(str(sampleRate)));
+			}
+			if (win) {
+				win->reportStatus("Successfully uploaded waveform '" + qstr(waveName) + "' (Sample Rate: " + qstr(str(sampleRate)) + " Sa/s).\r\n");
+			}
+		}
+		catch (ChimeraError& err) {
+			updateCalculatedSampleRateDisplay();
+			if (win) {
+				win->reportErr("Binary waveform upload failed: " + err.qtrace());
+			}
+		}
+		catch (std::exception& err) {
+			updateCalculatedSampleRateDisplay();
+			if (win) {
+				win->reportErr("Binary waveform upload failed: " + qstr(err.what()) + "\r\n");
+			}
+		}
+
+		csvUploadInProgress = false;
+		if (uploadCsvNow) {
+			uploadCsvNow->setEnabled(true);
+		}
+		if (generatedWaveformCombo) {
+			generatedWaveformCombo->setEnabled(true);
+		}
+		csvUploadWatcher->deleteLater();
+		csvUploadWatcher = nullptr;
+		});
+
+	auto future = QtConcurrent::run([siglent, csvPathStd, durationMs, waveName]() {
+		return siglent->uploadBinWaveformToChannel1(csvPathStd, durationMs, waveName);
+		});
+	csvUploadWatcher->setFuture(future);
+}
+
+void ArbGenSystem::handleProgramSettingsPressed(IChimeraQtWindow* win) {
+	auto* siglent = dynamic_cast<SiglentCore*>(pCore);
+	if (!siglent) {
+		thrower("Direct FM settings programming is only implemented for Siglent AWGs.");
+	}
+	std::string selectedWaveName;
+	if (generatedWaveformCombo && generatedWaveformCombo->currentIndex() >= 0) {
+		selectedWaveName = generatedWaveformCombo->currentText().toStdString();
+		if (selectedWaveName.size() > 4 && selectedWaveName.substr(selectedWaveName.size() - 4) == ".bin") {
+			selectedWaveName = selectedWaveName.substr(0, selectedWaveName.size() - 4);
+		}
+		for (char& c : selectedWaveName) {
+			if (!std::isalnum(static_cast<unsigned char>(c))) {
+				c = '_';
+			}
+		}
+	}
+	// If a binary waveform and pulse duration are provided, retime CH1 without re-uploading bytes.
+	int points = getSelectedCsvPointCount();
+	double durationMs = getPulseDurationMs(win);
+	if (points > 0 && durationMs > 0) {
+		const double maxSampleRate = 75e6;
+		double requestedSampleRate = points / (durationMs * 1e-3);
+		if (requestedSampleRate > maxSampleRate) {
+			double minDurationMs = (points / maxSampleRate) * 1e3;
+			if (ch1SampleRateLabel) {
+				ch1SampleRateLabel->setText("Min duration: " + QString::number(minDurationMs, 'f', 3) + " ms");
+			}
+			thrower("Pulse duration is too short. Use the displayed minimum duration.");
+		}
+		auto sampleRate = static_cast<unsigned>(std::llround(requestedSampleRate));
+		siglent->setArbSampleRateCh1(sampleRate);
+		// siglent->programBurstMode(1, true); // Always re-enable burst mode after setting sample rate
+		if (!selectedWaveName.empty()) {
+			siglent->selectWaveformOnChannel1(selectedWaveName);
+		}
+		if (ch1SampleRateLabel) {
+			ch1SampleRateLabel->setText(qstr(str(sampleRate)));
+		}
+		if (win) {
+			win->reportStatus("Updated CH1 sample rate to " + qstr(str(sampleRate)) + " Sa/s from pulse duration.\r\n");
+		}
+	}
+	std::vector<parameterType> constants;
+	if (win && win->auxWin) {
+		constants = win->auxWin->getAllParams();
+		// For "Program Now": treat scan variables as constants evaluated at their scan start value (variation 0).
+		// This mirrors getUsableConstants() but includes scan variables so expressions like "hi" resolve correctly.
+		for (auto& param : constants) {
+			if (!param.constant && !param.ranges.empty()) {
+				param.constant = true;
+				param.constantValue = param.ranges[0].initialValue;
+			}
+		}
+		ScanRangeInfo constantRange;
+		constantRange.defaultInit();
+		ParameterSystem::generateKey(constants, false, constantRange);
+	}
+	deviceOutputInfo tempSettings = getOutputInfo();
+	tempSettings.siglentFm.control = true;
+	pCore->setRunSettings(tempSettings);
+	pCore->calculateVariations(constants, nullptr);
+	pCore->programVariation(0, constants, nullptr);
+	if (win) {
+		win->reportStatus("Applied carrier on CH2 modulated by CH1.\r\n");
+	}
 }
 
 
@@ -213,16 +554,15 @@ ArbGenCore& ArbGenSystem::getCore (){
 
 
 void ArbGenSystem::checkSave( std::string configPath, RunInfo info ){
-	if ( currentGuiInfo.channel[currentChannel-1].option == ArbGenChannelMode::which::Script ){
-		arbGenScript.checkSave( configPath, info );
-	}
+	(void)configPath;
+	(void)info;
 }
 
 
 void ArbGenSystem::verifyScriptable ( ){
-	if ( currentGuiInfo.channel[ currentChannel-1 ].option != ArbGenChannelMode::which::Script ){
-		thrower ( "Agilent is not in scripting mode!" );
-	}
+	// Keep this as a compatibility no-op: legacy menu actions call verifyScriptable()
+	// before script operations, but the Siglent FM workflow does not expose scripting mode.
+	return;
 }
 
 void ArbGenSystem::setDefault (unsigned chan){
@@ -230,255 +570,44 @@ void ArbGenSystem::setDefault (unsigned chan){
 }
 
 
-void ArbGenSystem::readGuiSettings(int chan ){
-	if (chan != 1 && chan != 2){
-		thrower ( "Bad argument for agilent channel in ArbGenSystem::handleInput(...)!" );
-	}
-	// convert to zero-indexed
-	auto chani = chan - 1;
-	currentGuiInfo.synced = syncedButton->isChecked( );
-	currentGuiInfo.channel[chani].polarityInvert = polarityButton->isChecked();
-	std::string textStr(arbGenScript.getScriptText() );
-	ConfigStream stream;
-	stream << textStr;
-	stream.seekg( 0 );
-	switch (currentGuiInfo.channel[chani].option){
-		case ArbGenChannelMode::which::No_Control:
-		case ArbGenChannelMode::which::Output_Off:
-			break;
-		case ArbGenChannelMode::which::DC:
-			stream >> currentGuiInfo.channel[chani].dc.dcLevel;
-			currentGuiInfo.channel[chani].dc.useCal = calibratedButton->isChecked ( );
-			break;
-		case ArbGenChannelMode::which::Sine:
-			stream >> currentGuiInfo.channel[chani].sine.frequency;
-			stream >> currentGuiInfo.channel[chani].sine.amplitude;
-			stream >> currentGuiInfo.channel[chani].sine.phase;
-			currentGuiInfo.channel[chani].sine.burstMode = burstButton->isChecked();
-			currentGuiInfo.channel[chani].sine.useCal = calibratedButton->isChecked ( );
-			break;
-		case ArbGenChannelMode::which::Square:
-			stream >> currentGuiInfo.channel[chani].square.frequency;
-			stream >> currentGuiInfo.channel[chani].square.amplitude;
-			stream >> currentGuiInfo.channel[chani].square.offset;
-			stream >> currentGuiInfo.channel[chani].square.dutyCycle;
-			stream >> currentGuiInfo.channel[chani].square.phase;
-			currentGuiInfo.channel[chani].square.burstMode = burstButton->isChecked();
-			currentGuiInfo.channel[chani].square.useCal = calibratedButton->isChecked ( );
-			break;
-		case ArbGenChannelMode::which::Preloaded:
-			stream >> currentGuiInfo.channel[chani].preloadedArb.address;
-			currentGuiInfo.channel[chani].preloadedArb.useCal = calibratedButton->isChecked ( );
-			currentGuiInfo.channel[chani].preloadedArb.burstMode = burstButton->isChecked ();
-			break;
-		case ArbGenChannelMode::which::Script:
-			currentGuiInfo.channel[chani].scriptedArb.fileAddress = arbGenScript.getScriptPathAndName();
-			currentGuiInfo.channel[chani].scriptedArb.useCal = calibratedButton->isChecked ( );
-			break;
-		default:
-			thrower ( "unknown ArbGen option" );
-	}
-}
 
 
-// overload for handling whichever channel is currently selected.
-void ArbGenSystem::readGuiSettings(  ){
-	// true -> 0 + 1 = 1
-	// false -> 1 + 1 = 2
-	readGuiSettings( (!channel1Button->isChecked ()) + 1 );
-}
 
 
-void ArbGenSystem::updateSettingsDisplay( std::string configPath, RunInfo currentRunInfo ){
-	updateSettingsDisplay( (!channel1Button->isChecked ()) + 1, configPath, currentRunInfo );
-}
 
 
-void ArbGenSystem::updateButtonDisplay( int chan ){
-	std::string channelText;
-	channelText = chan == 1 ? "Channel 1 - " : "Channel 2 - ";
-	channelText += ArbGenChannelMode::toStr ( currentGuiInfo.channel[ chan - 1 ].option );
-	if ( chan == 1 ){
-		channel1Button->setText ( cstr(channelText) );
-	}
-	else{
-		channel2Button->setText ( cstr( channelText ) );
-	}
-}
 
 
-void ArbGenSystem::updateSettingsDisplay(int chan, std::string configPath, RunInfo currentRunInfo){
-	updateButtonDisplay( chan ); 
-	// convert to zero-indexed.
-	chan -= 1;
-	polarityButton->setChecked(currentGuiInfo.channel[chan].polarityInvert);
-	if (arbType == ArbGenType::Agilent) {
-		polarityButton->setDisabled(true);
-	}
-	switch ( currentGuiInfo.channel[chan].option ){
-		case ArbGenChannelMode::which::No_Control:
-			arbGenScript.reset ( );
-			arbGenScript.setScriptText("");
-			arbGenScript.setEnabled ( false, false );
-			settingCombo->setCurrentIndex( 0 );
-			for (auto& but : { calibratedButton ,burstButton ,syncedButton, polarityButton }) {
-				but->setChecked(false);
-				but->setDisabled(true);
-			}
-			break;
-		case ArbGenChannelMode::which::Output_Off:
-			arbGenScript.reset ( );
-			arbGenScript.setScriptText("");
-			arbGenScript.setEnabled ( false, false );
-			settingCombo->setCurrentIndex ( 1 );
-			for (auto& but : { calibratedButton ,burstButton ,syncedButton, polarityButton }) {
-				but->setChecked(false);
-				but->setDisabled(true);
-			}
-			break;
-		case ArbGenChannelMode::which::DC:
-			arbGenScript.reset ( );
-			arbGenScript.setScriptText(currentGuiInfo.channel[chan].dc.dcLevel.expressionStr);
-			settingCombo->setCurrentIndex ( 2 );
-			calibratedButton->setChecked( currentGuiInfo.channel[chan].dc.useCal );
-			burstButton->setChecked(false);
-			burstButton->setDisabled(true);
-			arbGenScript.setEnabled ( true, false );
-			for (auto& but : { calibratedButton ,syncedButton }) {
-				but->setDisabled(false);
-			}
-			break;
-		case ArbGenChannelMode::which::Sine:
-			arbGenScript.reset ( );
-			arbGenScript.setScriptText(
-				currentGuiInfo.channel[chan].sine.frequency.expressionStr + " "
-				+ currentGuiInfo.channel[chan].sine.amplitude.expressionStr + " "
-				+ currentGuiInfo.channel[chan].sine.phase.expressionStr);
-			settingCombo->setCurrentIndex ( 3 );
-			calibratedButton->setChecked( currentGuiInfo.channel[chan].sine.useCal );
-			burstButton->setChecked(currentGuiInfo.channel[chan].sine.burstMode);
-			burstButton->setEnabled(true);
-			arbGenScript.setEnabled ( true, false );
-			for (auto& but : { calibratedButton ,burstButton ,syncedButton }) {
-				but->setDisabled(false);
-			}
-			break;
-		case ArbGenChannelMode::which::Square:
-			arbGenScript.reset ( );
-			arbGenScript.setScriptText( currentGuiInfo.channel[chan].square.frequency.expressionStr + " "
-										 + currentGuiInfo.channel[chan].square.amplitude.expressionStr + " " 
-										 + currentGuiInfo.channel[chan].square.offset.expressionStr + " "
-										 + currentGuiInfo.channel[chan].square.dutyCycle.expressionStr + " "
-										 + currentGuiInfo.channel[chan].square.phase.expressionStr + " ");
-			calibratedButton->setChecked( currentGuiInfo.channel[chan].square.useCal );
-			burstButton->setChecked(currentGuiInfo.channel[chan].square.burstMode);
-			burstButton->setEnabled(true);
-			arbGenScript.setEnabled ( true, false );
-			settingCombo->setCurrentIndex (4);
-			for (auto& but : { calibratedButton ,burstButton ,syncedButton }) {
-				but->setDisabled(false);
-			}
-			break;
-		case ArbGenChannelMode::which::Preloaded:
-			arbGenScript.reset ( );
-			arbGenScript.setScriptText(currentGuiInfo.channel[chan].preloadedArb.address.expressionStr);
-			calibratedButton->setChecked( currentGuiInfo.channel[chan].preloadedArb.useCal );
-			burstButton->setChecked (currentGuiInfo.channel[chan].preloadedArb.burstMode);
-			arbGenScript.setEnabled ( true, false );
-			settingCombo->setCurrentIndex (5);
-			for (auto& but : { calibratedButton ,burstButton ,syncedButton }) {
-				but->setDisabled(false);
-			}
-			break;
-		case ArbGenChannelMode::which::Script:
-			// clear it in case the file fails to open.
-			arbGenScript.setScriptText( "" );
-			arbGenScript.openParentScript( currentGuiInfo.channel[chan].scriptedArb.fileAddress.expressionStr, configPath,
-											currentRunInfo );
-			calibratedButton->setChecked( currentGuiInfo.channel[chan].scriptedArb.useCal );
-			arbGenScript.setEnabled ( true, false );
-			settingCombo->setCurrentIndex (6);
-			for (auto& but : { calibratedButton ,burstButton ,syncedButton }) {
-				but->setDisabled(false);
-			}
-			break;
-		default:
-			thrower ( "unrecognized agilent setting: " + ArbGenChannelMode::toStr(currentGuiInfo.channel[chan].option));
-	}
-	currentChannel = chan+1;
-}
 
 
-void ArbGenSystem::handleChannelPress( int chan, std::string configPath, RunInfo currentRunInfo ){
-	// convert from channel 1/2 to 0/1 to access the right array entr
-	readGuiSettings( currentChannel );
-	updateSettingsDisplay( chan, configPath, currentRunInfo );
-	currentChannel = channel1Button->isChecked( ) ? 1 : 2;
-}
 
 
-void ArbGenSystem::handleModeCombo(){
-	if (!optionsFormat) {
-		return;
-	}
-	int selection = settingCombo->currentIndex();
-	int selectedChannel = int( !channel1Button->isChecked() );
-	switch (selection) {
-		case 0:
-			optionsFormat->setText( "---" );
-			currentGuiInfo.channel[selectedChannel].option = ArbGenChannelMode::which::No_Control;
-			arbGenScript.setEnabled ( false, false );
-			break;
-		case 1:
-			optionsFormat->setText ( "---" );
-			currentGuiInfo.channel[selectedChannel].option = ArbGenChannelMode::which::Output_Off;
-			arbGenScript.setEnabled ( false, false );
-			break;
-		case 2:
-			optionsFormat->setText ( "[DC Level]" );
-			currentGuiInfo.channel[selectedChannel].option = ArbGenChannelMode::which::DC;
-			arbGenScript.setEnabled ( true, false );
-			break;
-		case 3:
-			optionsFormat->setText ( "[Frequency(kHz)] [Amplitude(Vpp)] [Phase(Deg)]" );
-			currentGuiInfo.channel[selectedChannel].option = ArbGenChannelMode::which::Sine;
-			arbGenScript.setEnabled ( true, false );
-			break;
-		case 4:
-			optionsFormat->setText ( "[Freq(kHz)] [Amp(Vpp)] [Offset(V)] [DutyCycle(%)] [Phase(Deg)]" );
-			currentGuiInfo.channel[selectedChannel].option = ArbGenChannelMode::which::Square;
-			arbGenScript.setEnabled ( true, false );
-			break;
-		case 5:
-			optionsFormat->setText ( "[File Address]" );
-			currentGuiInfo.channel[selectedChannel].option = ArbGenChannelMode::which::Preloaded;
-			arbGenScript.setEnabled ( true, false );
-			break;
-		case 6:
-			optionsFormat->setText ( "Hover over \"?\"" );
-			currentGuiInfo.channel[selectedChannel].option = ArbGenChannelMode::which::Script;
-			arbGenScript.setEnabled ( true, false );
-			break;
-	}
-}
+
+
+
 
 
 deviceOutputInfo ArbGenSystem::getOutputInfo(){
-	return currentGuiInfo;
+	deviceOutputInfo info = currentGuiInfo;
+	syncSiglentFmSettingsFromGui(info);
+	return info;
 }
 
 /*
 This function outputs a string that contains all of the information that is set by the user for a given configuration. 
 */
-void ArbGenSystem::handleSavingConfig(ConfigStream& saveFile, std::string configPath, RunInfo info){	
-	// make sure data is up to date.
-	readGuiSettings (currentChannel);
-	// start outputting.
-	saveFile << pCore->configDelim+"\n";
-	saveFile << "/*Synced Option:*/ " << str (currentGuiInfo.synced);
+void ArbGenSystem::handleSavingConfig(ConfigStream& saveFile, std::string configPath, RunInfo info,
+	bool includeSectionDelimiters){	
+	deviceOutputInfo outputInfo = getOutputInfo();
+	(void)configPath;
+	(void)info;
+	if (includeSectionDelimiters) {
+		saveFile << pCore->configDelim + "\n";
+	}
+	saveFile << "/*Synced Option:*/ " << str (outputInfo.synced);
 	std::vector<std::string> channelStrings = { "\nCHANNEL_1", "\nCHANNEL_2" };
 	for (auto chanInc : range (2)){
-		auto& channel = currentGuiInfo.channel[chanInc];
+		auto& channel = outputInfo.channel[chanInc];
 		saveFile << channelStrings[chanInc];
 		saveFile << "\n/*Channel Mode:*/\t\t\t\t" << ArbGenChannelMode::toStr (channel.option);
 		saveFile << "\n/*Polarity Invert:*/\t\t\t" << channel.polarityInvert;
@@ -499,24 +628,128 @@ void ArbGenSystem::handleSavingConfig(ConfigStream& saveFile, std::string config
 		saveFile << "\n/*Preloaded Arb Address:*/\t\t" << channel.preloadedArb.address;
 		saveFile << "\n/*Preloaded Arb Calibrated:*/\t" << channel.preloadedArb.useCal;
 		saveFile << "\n/*Preloaded Arb Burst:*/\t" << channel.preloadedArb.burstMode;
-		saveFile << "\n/*Scripted Arb Address:*/\t\t" << channel.scriptedArb.fileAddress;
-		saveFile << "\n/*Scripted Arb Calibrated:*/\t" << channel.scriptedArb.useCal;
 	}
-	saveFile << "\nEND_" + pCore->configDelim + "\n";
+	saveFile << "\n/*Siglent FM Control:*/\t\t" << outputInfo.siglentFm.control;
+	saveFile << "\n/*Siglent FM External Clock:*/\t" << outputInfo.siglentFm.useExternalClock;
+	saveFile << "\n/*Siglent FM CH1 Amplitude:*/\t" << outputInfo.siglentFm.ch1AmplitudeVpp;
+	saveFile << "\n/*Siglent FM CH1 Phase:*/\t\t" << outputInfo.siglentFm.ch1StartPhaseDeg;
+	saveFile << "\n/*Siglent FM CH1 Burst Cycles:*/\t" << outputInfo.siglentFm.ch1BurstCycles;
+	saveFile << "\n/*Siglent FM CH2 Frequency:*/\t" << outputInfo.siglentFm.ch2FrequencyMHz;
+	saveFile << "\n/*Siglent FM CH2 Amplitude:*/\t" << outputInfo.siglentFm.ch2AmplitudeVpp;
+	saveFile << "\n/*Siglent FM CH2 Phase:*/\t\t" << outputInfo.siglentFm.ch2PhaseDeg;
+	saveFile << "\n/*Siglent FM Deviation:*/\t\t" << outputInfo.siglentFm.ch2FrequencyDeviationMHz;
+	saveFile << "\n/*Siglent FM CH1 Pulse Duration:*/\t" << outputInfo.siglentFm.ch1PulseDurationMs;
+	if (includeSectionDelimiters) {
+		saveFile << "\nEND_" + pCore->configDelim + "\n";
+	}
+	else {
+		saveFile << "\n";
+	}
 }
 
 void ArbGenSystem::setOutputSettings (deviceOutputInfo info){
 	currentGuiInfo = info;
-	updateButtonDisplay (1);
-	updateButtonDisplay (2);
+	loadSiglentFmSettingsToGui(currentGuiInfo);
 }
 
 
 void ArbGenSystem::handleOpenConfig( ConfigStream& file ){
 	setOutputSettings (pCore->getSettingsFromConfig (file));
+	loadSiglentFmSettingsToGui(currentGuiInfo);
 }
 
 
 bool ArbGenSystem::scriptingModeIsSelected (){
-	return currentGuiInfo.channel[currentChannel - 1].option == ArbGenChannelMode::which::Script;
+	return false; // Scripting not supported in FM-only workflow
+}
+
+void ArbGenSystem::syncSiglentFmSettingsFromGui(deviceOutputInfo& info) const
+{
+	if (siglentFmCtrlButton) {
+		info.siglentFm.control = siglentFmCtrlButton->isChecked();
+	}
+	if (clockExternalButton) {
+		info.siglentFm.useExternalClock = clockExternalButton->isChecked();
+	}
+	if (ch1PulseDurationMsEdit) {
+		info.siglentFm.ch1PulseDurationMs.expressionStr = str(ch1PulseDurationMsEdit->text());
+	}
+	if (ch1AmplitudeEdit) {
+		info.siglentFm.ch1AmplitudeVpp.expressionStr = str(ch1AmplitudeEdit->text());
+	}
+	if (ch1StartPhaseEdit) {
+		info.siglentFm.ch1StartPhaseDeg.expressionStr = str(ch1StartPhaseEdit->text());
+	}
+	if (ch1BurstCyclesEdit) {
+		info.siglentFm.ch1BurstCycles.expressionStr = str(ch1BurstCyclesEdit->text());
+	}
+	if (ch2FrequencyMHzEdit) {
+		info.siglentFm.ch2FrequencyMHz.expressionStr = str(ch2FrequencyMHzEdit->text());
+	}
+	if (ch2AmplitudeEdit) {
+		info.siglentFm.ch2AmplitudeVpp.expressionStr = str(ch2AmplitudeEdit->text());
+	}
+	if (ch2PhaseEdit) {
+		info.siglentFm.ch2PhaseDeg.expressionStr = str(ch2PhaseEdit->text());
+	}
+	if (ch2FrequencyDeviationMHzEdit) {
+		info.siglentFm.ch2FrequencyDeviationMHz.expressionStr = str(ch2FrequencyDeviationMHzEdit->text());
+	}
+}
+
+void ArbGenSystem::loadSiglentFmSettingsToGui(const deviceOutputInfo& info)
+{
+	if (siglentFmCtrlButton) {
+		siglentFmCtrlButton->setChecked(info.siglentFm.control);
+	}
+	if (clockExternalButton) {
+		clockExternalButton->setChecked(info.siglentFm.useExternalClock);
+	}
+	if (ch1PulseDurationMsEdit) {
+		ch1PulseDurationMsEdit->setText(qstr(info.siglentFm.ch1PulseDurationMs.expressionStr));
+	}
+	if (ch1AmplitudeEdit) {
+		ch1AmplitudeEdit->setText(qstr(info.siglentFm.ch1AmplitudeVpp.expressionStr));
+	}
+	if (ch1StartPhaseEdit) {
+		ch1StartPhaseEdit->setText(qstr(info.siglentFm.ch1StartPhaseDeg.expressionStr));
+	}
+	if (ch1BurstCyclesEdit) {
+		ch1BurstCyclesEdit->setText(qstr(info.siglentFm.ch1BurstCycles.expressionStr));
+	}
+	if (ch2FrequencyMHzEdit) {
+		ch2FrequencyMHzEdit->setText(qstr(info.siglentFm.ch2FrequencyMHz.expressionStr));
+	}
+	if (ch2AmplitudeEdit) {
+		ch2AmplitudeEdit->setText(qstr(info.siglentFm.ch2AmplitudeVpp.expressionStr));
+	}
+	if (ch2PhaseEdit) {
+		ch2PhaseEdit->setText(qstr(info.siglentFm.ch2PhaseDeg.expressionStr));
+	}
+	if (ch2FrequencyDeviationMHzEdit) {
+		ch2FrequencyDeviationMHzEdit->setText(qstr(info.siglentFm.ch2FrequencyDeviationMHz.expressionStr));
+	}
+}
+
+void ArbGenSystem::initializeSiglentFmOnStartup(IChimeraQtWindow* win) {
+	if (!siglentFmCtrlButton || !siglentFmCtrlButton->isChecked()) {
+		// FM control not enabled, skip initialization.
+		return;
+	}
+	if (!win) {
+		return;
+	}
+	try {
+		// Upload binary waveform to CH1 with duration from GUI.
+		handleUploadCsvPressed(win);
+		// Small delay to allow upload to complete.
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		// Program FM settings.
+		handleProgramSettingsPressed(win);
+	}
+	catch (ChimeraError& err) {
+		if (win) {
+			win->reportErr("Siglent FM startup initialization failed: " + err.qtrace());
+		}
+	}
 }

@@ -1,10 +1,10 @@
 #include "stdafx.h"
 #include "ArbGenCore.h"
 #include "DigitalOutput/DoCore.h"
-#include "Scripts/ScriptStream.h"
 #include <ExperimentThread/ExpThreadWorker.h>
 #include <ConfigurationSystems/ConfigSystem.h>
 #include <DataLogging/DataLogger.h>
+#include <algorithm>
 //#include <AnalogInput/CalibrationManager.h>
 
 ArbGenCore::ArbGenCore(const arbGenSettings& settings) :
@@ -65,40 +65,13 @@ std::string ArbGenCore::getDeviceInfo() {
 	return deviceInfo;
 }
 
-void ArbGenCore::analyzeArbGenScript(scriptedArbInfo& infoObj, std::vector<parameterType>& variables,
-	std::string& warnings) {
-	ScriptStream stream;
-	ExpThreadWorker::loadArbGenScript(infoObj.fileAddress.expressionStr, stream);
-	int currentSegmentNumber = 0;
-	infoObj.wave.resetNumberOfTriggers();
-	// Procedurally readbtn lines into segment objects.
-	while (!stream.eof()) {
-		int leaveTest;
-		try {
-			leaveTest = infoObj.wave.analyzeAgilentScriptCommand(currentSegmentNumber, stream, variables, warnings);
-		}
-		catch (ChimeraError&) {
-			throwNested("Error seen while analyzing ArbGen script command for ArbGen " + this->configDelim);
-		}
-		if (leaveTest < 0) {
-			thrower("IntensityWaveform.analyzeAgilentScriptCommand threw an error! Error occurred in segment #"
-				+ str(currentSegmentNumber) + ".");
-		}
-		if (leaveTest == 1) {
-			// readbtn function is telling this function to stop reading the file because it's at its end.
-			break;
-		}
-		currentSegmentNumber++;
-	}
-}
-
 std::string ArbGenCore::getDeviceIdentity() {
 	std::string msg;
 	try {
 		msg = visaFlume.identityQuery();
 	}
 	catch (ChimeraError& err) {
-		msg == err.trace();
+		msg = err.trace();
 	}
 	if (msg == "") {
 		msg = "Disconnected...\n";
@@ -109,6 +82,10 @@ std::string ArbGenCore::getDeviceIdentity() {
 void ArbGenCore::setArbGen(unsigned var, std::vector<parameterType>& params, deviceOutputInfo runSettings,
 	ExpThreadWorker* expWorker) {
 	if (!connected()) {
+		return;
+	}
+	if (runSettings.siglentFm.control) {
+		programSpecializedVariation(var, params, runSettings, expWorker);
 		return;
 	}
 	//auto notify = expWorker != nullptr // if in expworker, emit notification, else no way to notify currently. 
@@ -143,10 +120,6 @@ void ArbGenCore::setArbGen(unsigned var, std::vector<parameterType>& params, dev
 				notify({ stdNote + " Preloaded Wave.\n", 1 }, expWorker);
 				setExistingWaveform(chan + 1, channel.preloadedArb);
 				break;
-			case ArbGenChannelMode::which::Script:
-				notify({ stdNote + " Script \"" + qstr(channel.scriptedArb.fileAddress) + "\"\n", 1 }, expWorker);
-				handleScriptVariation(var, channel.scriptedArb, chan + 1, params);
-				setScriptOutput(var, channel.scriptedArb, chan + 1);
 				break;
 			default:
 				thrower("Unrecognized channel " + str(chan) + " setting?!?!?!: "
@@ -158,6 +131,7 @@ void ArbGenCore::setArbGen(unsigned var, std::vector<parameterType>& params, dev
 				+ str(chan + 1) + ": " + err.whatBare());
 		}
 	}
+	programSpecializedVariation(var, params, runSettings, expWorker);
 }
 
 //void ArbGenCore::setSync()
@@ -238,8 +212,27 @@ void ArbGenCore::reconnectFlume()
 
 void ArbGenCore::convertInputToFinalSettings(unsigned chan, deviceOutputInfo& info, std::vector<parameterType>& params) {
 	unsigned totalVariations = (params.size() == 0) ? 1 : params.front().keyValues.size();
-	channelInfo& channel = info.channel[chan];
 	try {
+		if (chan == 0 && info.siglentFm.control) {
+			info.siglentFm.ch1AmplitudeVpp.assertValid(params, GLOBAL_PARAMETER_SCOPE);
+			info.siglentFm.ch1StartPhaseDeg.assertValid(params, GLOBAL_PARAMETER_SCOPE);
+			info.siglentFm.ch1BurstCycles.assertValid(params, GLOBAL_PARAMETER_SCOPE);
+			info.siglentFm.ch2FrequencyMHz.assertValid(params, GLOBAL_PARAMETER_SCOPE);
+			info.siglentFm.ch2AmplitudeVpp.assertValid(params, GLOBAL_PARAMETER_SCOPE);
+			info.siglentFm.ch2PhaseDeg.assertValid(params, GLOBAL_PARAMETER_SCOPE);
+			info.siglentFm.ch2FrequencyDeviationMHz.assertValid(params, GLOBAL_PARAMETER_SCOPE);
+
+			info.siglentFm.ch1AmplitudeVpp.internalEvaluate(params, totalVariations);
+			info.siglentFm.ch1StartPhaseDeg.internalEvaluate(params, totalVariations);
+			info.siglentFm.ch1BurstCycles.internalEvaluate(params, totalVariations);
+			info.siglentFm.ch2FrequencyMHz.internalEvaluate(params, totalVariations);
+			info.siglentFm.ch2AmplitudeVpp.internalEvaluate(params, totalVariations);
+			info.siglentFm.ch2PhaseDeg.internalEvaluate(params, totalVariations);
+			info.siglentFm.ch2FrequencyDeviationMHz.internalEvaluate(params, totalVariations);
+			return;
+		}
+
+		channelInfo& channel = info.channel[chan];
 		switch (channel.option)
 		{
 		case ArbGenChannelMode::which::No_Control:
@@ -262,12 +255,12 @@ void ArbGenCore::convertInputToFinalSettings(unsigned chan, deviceOutputInfo& in
 			break;
 		case ArbGenChannelMode::which::Preloaded:
 			break;
-		case ArbGenChannelMode::which::Script:
-			channel.scriptedArb.wave.calculateAllSegmentVariations(totalVariations, params);
-			break;
 		default:
 			thrower("Unrecognized ArbGen Setting: " + ArbGenChannelMode::toStr(channel.option));
 		}
+	}
+	catch (ChimeraError&) {
+		throwNested("Failed to evaluate ArbGen expressions while converting input to final settings.");
 	}
 	catch (std::out_of_range&) {
 		throwNested("unrecognized variable!");
@@ -320,6 +313,22 @@ void ArbGenCore::programSetupCommands() {
 deviceOutputInfo ArbGenCore::getSettingsFromConfig(ConfigStream& file) {
 	auto readFunc = ConfigSystem::getGetlineFunc(file.ver);
 	deviceOutputInfo tempSettings;
+	auto lowerToken = [](std::string value) {
+		std::transform(value.begin(), value.end(), value.begin(), [](unsigned char character) {
+			return static_cast<char>(std::tolower(character));
+		});
+		return value;
+	};
+
+	// Unified SIGLENT_AWG files may include an AWG_n label before the payload.
+	// Skip it when present so the next token is the expected synced bool.
+	std::streampos posBeforeSynced = file.tellg();
+	std::string maybeAwgLabel;
+	file >> maybeAwgLabel;
+	if (lowerToken(maybeAwgLabel).rfind("awg_", 0) != 0) {
+		file.clear();
+		file.seekg(posBeforeSynced);
+	}
 	file >> tempSettings.synced;
 	std::array<std::string, 2> channelNames = { "CHANNEL_1", "CHANNEL_2" };
 	unsigned chanInc = 0;
@@ -371,11 +380,70 @@ deviceOutputInfo ArbGenCore::getSettingsFromConfig(ConfigStream& file) {
 		file >> channel.preloadedArb.burstMode;
 		file.get();
 		//}
-		readFunc(file, channel.scriptedArb.fileAddress.expressionStr);
-		//if (file.ver > Version ("2.3")){
-		file >> channel.scriptedArb.useCal;
-		//}
 		chanInc++;
+	}
+
+	auto trimToken = [](std::string& value) {
+		auto first = value.find_first_not_of(" \t\r");
+		if (first == std::string::npos) {
+			value.clear();
+			return;
+		}
+		auto last = value.find_last_not_of(" \t\r");
+		value = value.substr(first, last - first + 1);
+	};
+
+	auto readExpressionLine = [&](Expression& expression) {
+		readFunc(file, expression.expressionStr);
+		trimToken(expression.expressionStr);
+		if (expression.expressionStr == ConfigStream::emptyStringTxt) {
+			expression.expressionStr.clear();
+		}
+	};
+
+	std::streampos pos = file.tellg();
+	std::string nextToken;
+	file >> nextToken;
+	std::string lowered = lowerToken(nextToken);
+	if (lowered == "0" || lowered == "1" || lowered == "true" || lowered == "false") {
+		tempSettings.siglentFm.control = (lowered == "1" || lowered == "true");
+		file >> tempSettings.siglentFm.useExternalClock;
+		file.get();
+		readExpressionLine(tempSettings.siglentFm.ch1AmplitudeVpp);
+		readExpressionLine(tempSettings.siglentFm.ch1StartPhaseDeg);
+		readExpressionLine(tempSettings.siglentFm.ch1BurstCycles);
+		readExpressionLine(tempSettings.siglentFm.ch2FrequencyMHz);
+		readExpressionLine(tempSettings.siglentFm.ch2AmplitudeVpp);
+		readExpressionLine(tempSettings.siglentFm.ch2PhaseDeg);
+		readExpressionLine(tempSettings.siglentFm.ch2FrequencyDeviationMHz);
+		// Try to read pulse duration (new field, may not be in old configs).
+		std::streampos posBeforeDuration = file.tellg();
+		try {
+			std::string durationLine;
+			readFunc(file, durationLine);
+			std::string trimmed = durationLine;
+			auto it = trimmed.find_first_not_of(" \t\r");
+			if (it != std::string::npos) {
+				trimmed = trimmed.substr(it);
+			}
+			if (trimmed != ConfigStream::emptyStringTxt && !trimmed.empty() && trimmed[0] != '/') {
+				// Looks like a valid duration line, use it.
+				tempSettings.siglentFm.ch1PulseDurationMs.expressionStr = trimmed;
+			} else {
+				// Not a duration line, rewind.
+				file.clear();
+				file.seekg(posBeforeDuration);
+			}
+		}
+		catch (...) {
+			// If reading fails, just use default and rewind.
+			file.clear();
+			file.seekg(posBeforeDuration);
+		}
+	}
+	else {
+		file.clear();
+		file.seekg(pos);
 	}
 	return tempSettings;
 }
@@ -413,18 +481,6 @@ void ArbGenCore::logSettings(DataLogger& log, ExpThreadWorker* threadworker) {
 			log.writeDataSet(channel.square.phase.expressionStr, "Phase", squareGroup);
 			H5::Group preloadedArbGroup(channelGroup.createGroup("Preloaded-Arb-Settings"));
 			log.writeDataSet(channel.preloadedArb.address.expressionStr, "Address", preloadedArbGroup);
-			H5::Group scriptedArbSettings(channelGroup.createGroup("Scripted-Arb-Settings"));
-			log.writeDataSet(channel.scriptedArb.fileAddress.expressionStr, "Script-File-Address", scriptedArbSettings);
-			// TODO: load script file itself
-			ScriptStream stream;
-			try {
-				ExpThreadWorker::loadArbGenScript(channel.scriptedArb.fileAddress.expressionStr, stream);
-				log.writeDataSet(stream.str(), "ArbGen-Script-Script", scriptedArbSettings);
-			}
-			catch (ChimeraError&) {
-				// failed to open, that's probably fine, 
-				log.writeDataSet("Script Failed to load.", "ArbGen-Script-Script", scriptedArbSettings);
-			}
 			channelCount++;
 		}
 	}
@@ -435,20 +491,75 @@ void ArbGenCore::logSettings(DataLogger& log, ExpThreadWorker* threadworker) {
 }
 
 void ArbGenCore::loadExpSettings(ConfigStream& script) {
-	ConfigSystem::stdGetFromConfig(script, *this, expRunSettings);
+	auto lowerToken = [](std::string value) {
+		std::transform(value.begin(), value.end(), value.begin(), [](unsigned char character) {
+			return static_cast<char>(std::tolower(character));
+		});
+		return value;
+	};
+
+	auto awgIndexFromDelim = [&](const std::string& delim) {
+		auto lowerDelim = lowerToken(delim);
+		if (lowerDelim == "siglent_awg_2") {
+			return 2;
+		}
+		return 1;
+	};
+
+	std::streampos startPos = script.tellg();
+	bool loadedFromUnified = false;
+	try {
+		ConfigSystem::initializeAtDelim(script, "SIGLENT_AWG", Version("1.0"));
+		std::streampos posAfterDelim = script.tellg();
+		std::string firstToken;
+		script >> firstToken;
+		script.clear();
+		script.seekg(posAfterDelim);
+
+		if (lowerToken(firstToken).rfind("awg_", 0) == 0) {
+			auto targetAwg = awgIndexFromDelim(configDelim);
+			for (int awg = 1; awg <= 2; ++awg) {
+				ConfigSystem::checkDelimiterLine(script, "AWG_" + str(awg));
+				auto parsed = getSettingsFromConfig(script);
+				if (awg == targetAwg) {
+					expRunSettings = parsed;
+					loadedFromUnified = true;
+				}
+			}
+			ConfigSystem::checkDelimiterLine(script, "END_SIGLENT_AWG");
+		}
+	}
+	catch (ChimeraError&) {
+		// Fallback below handles legacy/split format.
+	}
+
+	if (!loadedFromUnified) {
+		script.clear();
+		script.seekg(startPos);
+		// Legacy format: one section per AWG delimiter.
+		ConfigSystem::stdGetFromConfig(script, *this, expRunSettings);
+	}
+
 	experimentActive = (expRunSettings.channel[0].option != ArbGenChannelMode::which::No_Control
-		|| expRunSettings.channel[1].option != ArbGenChannelMode::which::No_Control);
+		|| expRunSettings.channel[1].option != ArbGenChannelMode::which::No_Control
+		|| expRunSettings.siglentFm.control);
 }
 
 void ArbGenCore::calculateVariations(std::vector<parameterType>& params, ExpThreadWorker* threadWorker) {
-	std::string commwarnings;
-	for (auto channelInc : range(2)) {
-		if (expRunSettings.channel[channelInc].scriptedArb.fileAddress.expressionStr != "") {
-			analyzeArbGenScript(expRunSettings.channel[channelInc].scriptedArb, params, commwarnings);
-		}
+	if (!experimentActive && !expRunSettings.siglentFm.control) {
+		return;
 	}
-	convertInputToFinalSettings(0, expRunSettings, params);
-	convertInputToFinalSettings(1, expRunSettings, params);
+	try {
+		if (expRunSettings.siglentFm.control) {
+			convertInputToFinalSettings(0, expRunSettings, params);
+			return;
+		}
+		convertInputToFinalSettings(0, expRunSettings, params);
+		convertInputToFinalSettings(1, expRunSettings, params);
+	}
+	catch (ChimeraError&) {
+		throwNested("Failed to evaluate ArbGen expression varations!");
+	}
 }
 
 void ArbGenCore::setRunSettings(deviceOutputInfo newSettings) {
@@ -461,24 +572,9 @@ void ArbGenCore::programVariation(unsigned variation, std::vector<parameterType>
 }
 
 void ArbGenCore::checkTriggers(unsigned variationInc, DoCore& ttls, ExpThreadWorker* threadWorker) {
-	std::array<bool, 2> agMismatchVec = { false, false };
-	for (auto chan : range(2)) {
-		auto& agChan = expRunSettings.channel[chan];
-		if (agChan.option != ArbGenChannelMode::which::Script || agMismatchVec[chan]) {
-			continue;
-		}
-		unsigned actualTrigs = experimentActive ? ttls.countTriggers(getTriggerLine(), variationInc) : 0;
-		unsigned arbGenExpectedTrigs = agChan.scriptedArb.wave.getNumTrigs();
-		std::string infoString = "Actual/Expected " + getDelim() + " Triggers: "
-			+ str(actualTrigs) + "/" + str(arbGenExpectedTrigs) + ".";
-		if (actualTrigs != arbGenExpectedTrigs) {
-			emit threadWorker->warn(qstr(
-				"WARNING: ArbGen " + getDelim() + " is not getting triggered by the ttl system the same "
-				"number of times a trigger command appears in the ArbGen channel " + str(chan + 1) + " script. "
-				+ infoString + " First seen in variation #" + str(variationInc) + ".\r\n"));
-			agMismatchVec[chan] = true;
-		}
-	}
+	(void)variationInc;
+	(void)ttls;
+	(void)threadWorker;
 }
 
 void ArbGenCore::setAgCalibration(calResult newCal, unsigned chan) {

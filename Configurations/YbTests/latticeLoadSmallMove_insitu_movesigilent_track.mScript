@@ -50,16 +50,16 @@ dacramp: greenmot greenmotpower greenmotpowerlow 1
 t += 1
 
 %dac: greenmot greenmotpowerlow
-t += 20 %thermalize mot see 260225
+t += latloadtime %thermalize mot see 260225
 %t += 80
 
 %release mot
 
 off: greenmot
 %t += motreleasetime
-
-
-
+%
+%
+%
 pulseon: latmove1 1
 pulseon: latmove2 1
 
@@ -73,34 +73,33 @@ pulseon: latmove2 1
 %off: blueimg
 %
 %dac: blueimg 0
-
-t += (283-greenimgtime/2)
 on: scopetrigger
+t += (283-greenimgtime/2)
+
 
 %on: greenshutter 
 
 %on: greenshutter
-dac: greenimg greenimgpower
-t += 5
-
-on: greenimg
-t += greenimgtime
-off: greenimg
-dac: greenimg 0
+%dac: greenimg greenimgpower
+%t += 5
+%
+%on: greenimg
+%t += greenimgtime
+%off: greenimg
+%dac: greenimg 0
 %off: greenshutter 
-off: greenshutter
 
-off: scopetrigger
+
+
 t += (283+greenimgtime/2)
-t += 100
+off: scopetrigger
+%t += 100
 %recapture mot
 %
 %off: lattice
 dac: greenmot greenmotpower %greenmotpower
-t += 3
 on: greenmot
-off: greenimg
-dac: greenimg 0
+
 %
 %off: greennarrow
 

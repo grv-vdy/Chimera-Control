@@ -30,7 +30,7 @@ void WieserlabsDDSSystem::initialize(std::string headerText, IChimeraQtWindow* w
 	layout->setContentsMargins(0, 0, 0, 0);
 
 	header = new QLabel(QString(headerText.c_str()), this);
-	header->setStyleSheet("QLabel { font-size: 12pt; font-weight: bold; }");
+	header->setStyleSheet("QLabel { font-size: 12pt; font-weight: normal; }");
 	layout->addWidget(header);
 
 	// Mode combo
@@ -40,7 +40,7 @@ void WieserlabsDDSSystem::initialize(std::string headerText, IChimeraQtWindow* w
 	modeCombo->setCurrentIndex(0);
 	layout->addWidget(modeCombo);
 
-	ctrlButton = new CQCheckBox("Control", win);
+	ctrlButton = new CQCheckBox("Ctrl?", win);
 	ctrlButton->setChecked(false);
 	layout->addWidget(ctrlButton);
 

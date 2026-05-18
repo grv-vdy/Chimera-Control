@@ -2,6 +2,8 @@
 #include "QtScriptWindow.h"
 #include <qdesktopwidget.h>
 #include <qlayout.h>
+#include <qcombobox.h>
+#include <qstackedwidget.h>
 #include <PrimaryWindows/QtScriptWindow.h>
 #include <PrimaryWindows/QtAndorWindow.h>
 #include <PrimaryWindows/QtAuxiliaryWindow.h>
@@ -14,7 +16,8 @@
 
 QtScriptWindow::QtScriptWindow(QWidget* parent) : IChimeraQtWindow(parent)
 	, masterScript(this)
-	, arbGens{ {ArbGenSystem(UWAVE_SIGLENT_SETTINGS, ArbGenType::Siglent, this) } }
+	, arbGens{ {ArbGenSystem(UWAVE_SIGLENT_SETTINGS, ArbGenType::Siglent, this),
+	            ArbGenSystem(UWAVE_SIGLENT_SETTINGS_2, ArbGenType::Siglent, this) } }
 	, gigaMoog(this)
 	, wieserlabsDds(WIESERLABS_DDS_SETTINGS, this)
 {
@@ -41,7 +44,23 @@ void QtScriptWindow::initializeWidgets (){
 	//profileDisplay.initialize (this);
 	QVBoxLayout* layout1 = new QVBoxLayout(this);
 	layout1->setContentsMargins(0, 0, 0, 0);
-	layout1->addWidget(&arbGens[0], 1);
+	arbSelector = new QComboBox(this);
+	arbStack = new QStackedWidget(this);
+	for (auto name : ArbGenEnum::allAgs) {
+		auto idx = static_cast<int>(name);
+		arbSelector->addItem(qstr(arbGens[idx].initSettings.deviceName));
+		arbStack->addWidget(&arbGens[idx]);
+	}
+	if (numArbGen <= 1) {
+		arbSelector->setVisible(false);
+	}
+	connect(arbSelector, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int index) {
+		if (arbStack && index >= 0 && index < arbStack->count()) {
+			arbStack->setCurrentIndex(index);
+		}
+		});
+	layout1->addWidget(arbSelector, 0);
+	layout1->addWidget(arbStack, 1);
 	layout1->addWidget(&wieserlabsDds, 1);
 	layout->addLayout(layout1, 1);
 	layout->addWidget(&gigaMoog, 1);
@@ -70,12 +89,6 @@ void QtScriptWindow::updateVarNames() {
 	masterScript.highlighter->setLocalParams (masterScript.getLocalParams ());
 	masterScript.highlighter->rehighlight();
 
-	for (auto name : ArbGenEnum::allAgs) {
-		arbGens[(int)name].arbGenScript.highlighter->setOtherParams(params);
-		arbGens[(int)name].arbGenScript.highlighter->setLocalParams(arbGens[(int)name].arbGenScript.getLocalParams());
-		arbGens[(int)name].arbGenScript.highlighter->rehighlight();
-	}
-
 	wieserlabsDds.wieserlabsDdsScript->highlighter->setOtherParams(params);
 	wieserlabsDds.wieserlabsDdsScript->highlighter->setLocalParams(wieserlabsDds.wieserlabsDdsScript->getLocalParams());
 	wieserlabsDds.wieserlabsDdsScript->highlighter->rehighlight();
@@ -92,14 +105,6 @@ void QtScriptWindow::updateDoAoDdsNames () {
 	masterScript.highlighter->setTtlNames(doNames);
 	masterScript.highlighter->setDacNames(aoNames);
 	masterScript.highlighter->setCalNames(calNames);
-	masterScript.highlighter->rehighlight();
-
-	for (auto name : ArbGenEnum::allAgs) {
-		arbGens[(int)name].arbGenScript.highlighter->setTtlNames(doNames);
-		arbGens[(int)name].arbGenScript.highlighter->setDacNames(aoNames);
-		arbGens[(int)name].arbGenScript.highlighter->setCalNames(calNames);
-		arbGens[(int)name].arbGenScript.highlighter->rehighlight();
-	}
 
 	wieserlabsDds.wieserlabsDdsScript->highlighter->setTtlNames(doNames);
 	wieserlabsDds.wieserlabsDdsScript->highlighter->setDacNames(aoNames);
@@ -121,9 +126,6 @@ void QtScriptWindow::handleMasterFunctionChange (){
 void QtScriptWindow::checkScriptSaves (){
 	masterScript.checkSave (getProfile ().configLocation, mainWin->getRunInfo());
 	gigaMoog.gmoogScript.checkSave(getProfile().configLocation, mainWin->getRunInfo());
-	for (auto name : ArbGenEnum::allAgs) {
-		arbGens[(int)name].checkSave(getProfile().configLocation, mainWin->getRunInfo());
-	}
 	wieserlabsDds.checkSave(getProfile().configLocation, mainWin->getRunInfo());
 }
 
@@ -216,74 +218,32 @@ void QtScriptWindow::setIntensityDefault()
 */
 
 void QtScriptWindow::updateArbGen(ArbGenEnum::name name) {
-	try {
-		updateConfigurationSavedStatus(false);
-		arbGens[(int)name].checkSave(getProfile().configLocation, mainWin->getRunInfo());
-		arbGens[(int)name].readGuiSettings();
-	}
-	catch (ChimeraError&) {
-		throwNested("Failed to update arbGens.");
-	}
+	(void)name;
 }
 
 
 void QtScriptWindow::newArbGenScript(ArbGenEnum::name name) 
 {
-	try {
-		arbGens[(int)name].verifyScriptable();
-		mainWin->updateConfigurationSavedStatus(false);
-		arbGens[(int)name].checkSave(mainWin->getProfileSettings().configLocation, mainWin->getRunInfo());
-		arbGens[(int)name].arbGenScript.newScript();
-		arbGens[(int)name].arbGenScript.updateScriptNameText(mainWin->getProfileSettings().configLocation);
-	}
-	catch (ChimeraError& err) {
-		reportErr(err.qtrace());
-	}
+	(void)name;
+	reportErr("ArbGen scripting is no longer supported.");
 }
 
 void QtScriptWindow::openArbGenScript(ArbGenEnum::name name, IChimeraQtWindow* parent)
 {
-	try {
-		arbGens[(int)name].verifyScriptable();
-		updateConfigurationSavedStatus(false);
-		arbGens[(int)name].checkSave(getProfile().configLocation, mainWin->getRunInfo());
-		std::string openFileName = openWithExplorer(parent, Script::ARBGEN_SCRIPT_EXTENSION, CONFIGURATION_PATH);
-		arbGens[(int)name].arbGenScript.openParentScript(openFileName, getProfile().configLocation, 
-			mainWin->getRunInfo());
-		arbGens[(int)name].arbGenScript.updateScriptNameText(getProfile().configLocation);
-	}
-	catch (ChimeraError& err) {
-		reportErr(err.qtrace());
-	}
+	(void)name;
+	(void)parent;
+	reportErr("ArbGen scripting is no longer supported.");
 }
 
 void QtScriptWindow::saveArbGenScript(ArbGenEnum::name name) {
-	try {
-		arbGens[(int)name].verifyScriptable();
-		arbGens[(int)name].arbGenScript.saveScript(getProfile().configLocation, mainWin->getRunInfo());
-		arbGens[(int)name].arbGenScript.updateScriptNameText(getProfile().configLocation);
-	}
-	catch (ChimeraError& err) {
-		reportErr(err.qtrace());
-	}
+	(void)name;
+	reportErr("ArbGen scripting is no longer supported.");
 }
 
 void QtScriptWindow::saveArbGenScriptAs(ArbGenEnum::name name, IChimeraQtWindow* parent) {
-	try {
-		arbGens[(int)name].verifyScriptable();
-		updateConfigurationSavedStatus(false);
-		std::string extensionNoPeriod = arbGens[(int)name].arbGenScript.getExtension();
-		if (extensionNoPeriod.size() == 0) {
-			return;
-		}
-		extensionNoPeriod = extensionNoPeriod.substr(1, extensionNoPeriod.size());
-		std::string newScriptAddress = saveWithExplorer(parent, extensionNoPeriod, getProfileSettings());
-		arbGens[(int)name].arbGenScript.saveScriptAs(newScriptAddress, mainWin->getRunInfo());
-		arbGens[(int)name].arbGenScript.updateScriptNameText(getProfile().configLocation);
-	}
-	catch (ChimeraError& err) {
-		reportErr(err.qtrace());
-	}
+	(void)name;
+	(void)parent;
+	reportErr("ArbGen scripting is no longer supported.");
 }
 
 
@@ -332,14 +292,63 @@ void QtScriptWindow::windowOpenConfig (ConfigStream& configFile){
 				openGMoogScript(openWithExplorer(nullptr, "gScript", CONFIGURATION_PATH));
 			}
 		}
-		for (auto name : ArbGenEnum::allAgs) {
-			deviceOutputInfo info;
-			ConfigSystem::stdGetFromConfig(configFile, arbGens[(int)name].getCore(), info, Version("1.0"));
-			arbGens[(int)name].setOutputSettings(info);
-			arbGens[(int)name].updateSettingsDisplay(getProfileSettings().configLocation, mainWin->getRunInfo());
+		try {
+			// New format: one SIGLENT_AWG section with AWG_1, AWG_2, ... entries.
+			ConfigSystem::initializeAtDelim(configFile, "SIGLENT_AWG", Version("1.0"));
+			std::streampos posAfterDelim = configFile.tellg();
+			std::string firstToken;
+			configFile >> firstToken;
+			configFile.clear();
+			configFile.seekg(posAfterDelim);
+
+			auto lowerToken = [](std::string value) {
+				std::transform(value.begin(), value.end(), value.begin(), [](unsigned char character) {
+					return static_cast<char>(std::tolower(character));
+				});
+				return value;
+			};
+
+			bool parsedUnified = false;
+			if (lowerToken(firstToken).rfind("awg_", 0) == 0) {
+				parsedUnified = true;
+				for (auto name : ArbGenEnum::allAgs) {
+					ConfigSystem::checkDelimiterLine(configFile, "AWG_" + str((int)name + 1));
+					auto info = arbGens[(int)name].getCore().getSettingsFromConfig(configFile);
+					arbGens[(int)name].setOutputSettings(info);
+				}
+				ConfigSystem::checkDelimiterLine(configFile, "END_SIGLENT_AWG");
+			}
+
+			if (!parsedUnified) {
+				// Legacy format compatibility.
+				auto info0 = arbGens[(int)ArbGenEnum::name::Siglent0].getCore().getSettingsFromConfig(configFile);
+				arbGens[(int)ArbGenEnum::name::Siglent0].setOutputSettings(info0);
+				ConfigSystem::checkDelimiterLine(configFile, "END_SIGLENT_AWG");
+
+				try {
+					ConfigSystem::initializeAtDelim(configFile, "SIGLENT_AWG", Version("1.0"));
+					auto info1 = arbGens[(int)ArbGenEnum::name::Siglent1].getCore().getSettingsFromConfig(configFile);
+					arbGens[(int)ArbGenEnum::name::Siglent1].setOutputSettings(info1);
+					ConfigSystem::checkDelimiterLine(configFile, "END_SIGLENT_AWG");
+				}
+				catch (ChimeraError&) {
+					try {
+						ConfigSystem::initializeAtDelim(configFile, "SIGLENT_AWG_2", Version("1.0"));
+						auto info1 = arbGens[(int)ArbGenEnum::name::Siglent1].getCore().getSettingsFromConfig(configFile);
+						arbGens[(int)ArbGenEnum::name::Siglent1].setOutputSettings(info1);
+						ConfigSystem::checkDelimiterLine(configFile, "END_SIGLENT_AWG_2");
+					}
+					catch (ChimeraError& err) {
+						qDebug() << "QtScriptWindow: skipping missing ArbGen config block for"
+							<< qstr(arbGens[(int)ArbGenEnum::name::Siglent1].initSettings.deviceName) << ":" << qstr(err.qtrace());
+					}
+				}
+			}
+		}
+		catch (ChimeraError& err) {
+			qDebug() << "QtScriptWindow: skipping ArbGen config load:" << qstr(err.qtrace());
 		}
 
-		qDebug() << "QtScriptWindow::windowOpenConfig - About to load DDS config";
 		deviceOutputInfo ddsInfo;
 		try {
 			qDebug() << "QtScriptWindow: Loading DDS config...";
@@ -380,6 +389,11 @@ void QtScriptWindow::windowOpenConfig (ConfigStream& configFile){
 	catch (ChimeraError& err)	{
 		reportErr ("Scripting Window failed to read parameters from the configuration file.\n\n" + err.qtrace ());
 	}
+
+	// Auto-program all Siglent AWGs after config load
+    for (auto name : ArbGenEnum::allAgs) {
+        arbGens[(int)name].initializeSiglentFmOnStartup(this);
+    }
 }
 
 void QtScriptWindow::newMasterScript (){
@@ -594,9 +608,13 @@ void QtScriptWindow::windowSaveConfig (ConfigStream& saveFile){
 	//saveFile << "/*GigaMoog Script Address:*/ " << addresses.gmoog << "\n";
 	saveFile << "END_SCRIPTS\n";
 	gigaMoog.handleSaveConfig(saveFile);
+	saveFile << "SIGLENT_AWG\n";
 	for (auto name : ArbGenEnum::allAgs) {
-		arbGens[(int)name].handleSavingConfig(saveFile, getProfileSettings().configLocation, mainWin->getRunInfo());
+		saveFile << "AWG_" + str((int)name + 1) + "\n";
+		arbGens[(int)name].handleSavingConfig(saveFile, getProfileSettings().configLocation,
+			mainWin->getRunInfo(), false);
 	}
+	saveFile << "END_SIGLENT_AWG\n";
 	wieserlabsDds.handleSavingConfig(saveFile, getProfileSettings().configLocation, mainWin->getRunInfo());
 }
 

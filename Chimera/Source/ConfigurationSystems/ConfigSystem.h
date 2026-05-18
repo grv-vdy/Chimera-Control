@@ -7,6 +7,8 @@
 #include "Scripts/ScriptStream.h"
 #include <vector>
 #include <string>
+#include <algorithm>
+#include <limits>
 #include "Version.h"
 #include "GeneralObjects/IDeviceCore.h"
 #include "PrimaryWindows/IChimeraQtWindow.h"

@@ -63,6 +63,7 @@ off: greenmot
 pulseon: latmove1 1
 pulseon: latmove2 1
 
+
 %on: greenimg
 %t += 29
 %dac: blueimg 1.5
@@ -74,33 +75,32 @@ pulseon: latmove2 1
 %
 %dac: blueimg 0
 
-t += ((599.3/2)-greenimgtime/2)
+t += ((599.3/2)-delay)
 on: scopetrigger
 
 %on: greenshutter 
-
-
+%
 dac: greenimg greenimgpower
-on: mako1
-on: greenshutter
-t += 5
 on: greenimg
-t += greenimgtime
+t += (2*delay)
 off: greenimg
 dac: greenimg 0
-off: mako1
 %off: greenshutter 
-off: greenshutter
-
 off: scopetrigger
-t += ((599.3/2)+greenimgtime/2)
-t += 100
+
+
+t += ((599.3/2)+delay)
+
 %recapture mot
 %
 %off: lattice
+on: greenmot
+off: greenimg
+dac: greenimg 0
 %
 %off: greennarrow
-
+dac: greenmot greenmotpower %greenmotpower
+off: lattice
 
 %t += 10
 %
@@ -110,23 +110,22 @@ t += 100
 %
 t += 10
 
-off: lattice
+
+on: mako1
+t += 100
+off: mako1
+
+off: greenmot
 
 t += 100
 
-on: lattice
-
+on: greenmot
 t += 2
-dac: greenimg greenimgpower
 on: mako1
-t += 5
-on: greenimg
-t += greenimgtime
-off: greenimg
-dac: greenimg 0
+t += 100
 off: mako1
 t += 10
-
+off: greenmot
 t += 10
 
 

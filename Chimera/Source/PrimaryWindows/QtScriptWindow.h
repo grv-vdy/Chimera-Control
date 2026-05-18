@@ -1,6 +1,8 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QComboBox>
+#include <QStackedWidget>
 #include <QTimer>
 #include "ConfigurationSystems/ProfileIndicator.h"
 #include "Scripts/Script.h"
@@ -101,6 +103,8 @@ class QtScriptWindow : public IChimeraQtWindow{
         //ProfileIndicator profileDisplay;
 
 		std::array<ArbGenSystem, numArbGen> arbGens;
+		QComboBox* arbSelector = nullptr;
+		QStackedWidget* arbStack = nullptr;
 		GigaMoogSystem gigaMoog;
 		WieserlabsDDSSystem wieserlabsDds;
 

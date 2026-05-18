@@ -75,7 +75,7 @@ on: greenimg
 %
 %dac: blueimg 0
 
-t += (283-2.5)
+t += (300)
 
 
 %on: greenshutter 
@@ -88,7 +88,7 @@ t += 1
 
 
 off: scopetrigger
-t += (283+2.5)
+t += (300)
 
 %recapture mot
 %

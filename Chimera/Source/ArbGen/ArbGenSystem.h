@@ -13,6 +13,10 @@
 #include <vector>
 #include <array>
 #include <qlabel.h>
+#include <qcombobox.h>
+#include <qlineedit.h>
+#include <qpushbutton.h>
+#include <qfuturewatcher.h>
 #include <CustomQtControls/AutoNotifyCtrls.h>
 
 class IChimeraQtWindow;
@@ -29,21 +33,17 @@ class ArbGenSystem : public IChimeraSystem
 		ArbGenSystem( const arbGenSettings& settings, ArbGenType type, IChimeraQtWindow* parent );
 		~ArbGenSystem();
 		void initialize(std::string headerText, IChimeraQtWindow* win);
-		void updateButtonDisplay( int chan );
 		void checkSave( std::string configPath, RunInfo info );
-		void handleChannelPress( int chan, std::string configPath, RunInfo currentRunInfo );
-		void handleModeCombo();
 
-		void readGuiSettings();
-		void readGuiSettings (int chan);
+
 		bool scriptingModeIsSelected( );
 		bool getSavedStatus ();
 		void updateSavedStatus (bool isSaved);
-		void handleSavingConfig( ConfigStream& saveFile, std::string configPath, RunInfo info );
+		void handleSavingConfig( ConfigStream& saveFile, std::string configPath, RunInfo info,
+			bool includeSectionDelimiters = true );
 		std::string getDeviceIdentity();
 		void handleOpenConfig(ConfigStream& file);
-		void updateSettingsDisplay( int chan, std::string configPath, RunInfo currentRunInfo );
-		void updateSettingsDisplay( std::string configPath, RunInfo currentRunInfo );
+
 		deviceOutputInfo getOutputInfo();
 /*		void handleScriptVariation( unsigned variation, scriptedArbInfo& scriptInfo, unsigned channel, 
 									std::vector<parameterType>& variables );*/
@@ -57,6 +57,8 @@ class ArbGenSystem : public IChimeraSystem
 		void verifyScriptable ( );
 		ArbGenCore& getCore ();
 		void setDefault (unsigned chan);
+		void refreshGeneratedWaveforms();
+		void initializeSiglentFmOnStartup(IChimeraQtWindow* win);
 
 	public:
 		Script arbGenScript;
@@ -64,28 +66,38 @@ class ArbGenSystem : public IChimeraSystem
 	private:
 		const ArbGenType arbType;
 		ArbGenCore* pCore;
-		//ArbGenCore& core;
-		minMaxDoublet chan2Range;
-
-		// since currently all visaFlume communication is done to communicate with agilent machines, my visaFlume wrappers exist
-		// in this class.
-		int currentChannel=1;
 		std::vector<minMaxDoublet> ranges;
 		deviceOutputInfo currentGuiInfo;
 		// GUI ELEMENTS
 		
 		QLabel* header;
 		QLabel* deviceInfoDisplay;
-		QButtonGroup* channelButtonsGroup;
-		CQRadioButton* channel1Button;
-		CQRadioButton* channel2Button;
-		CQCheckBox* syncedButton;
-		CQCheckBox* calibratedButton;
-		CQCheckBox* burstButton;
 		CQCheckBox* polarityButton;
-		CQComboBox* settingCombo;
-		QLabel* optionsFormat;
-		CQPushButton* programNow;
+
+		// Dedicated Siglent FM controls.
+		CQPushButton* uploadCsvNow;
+		CQComboBox* generatedWaveformCombo;
+		QLineEdit* ch1PulseDurationMsEdit;
+		QLabel* ch1SampleRateLabel;
+		CQCheckBox* siglentFmCtrlButton;
+		CQCheckBox* clockExternalButton;
+		QLineEdit* ch1AmplitudeEdit;
+		QLineEdit* ch1StartPhaseEdit;
+		QLineEdit* ch1BurstCyclesEdit;
+		QLineEdit* ch2FrequencyMHzEdit;
+		QLineEdit* ch2AmplitudeEdit;
+		QLineEdit* ch2PhaseEdit;
+		QLineEdit* ch2FrequencyDeviationMHzEdit;
+		QFutureWatcher<unsigned>* csvUploadWatcher = nullptr;
+		bool csvUploadInProgress = false;
+
+		int getSelectedCsvPointCount() const;
+		double getPulseDurationMs(IChimeraQtWindow* win = nullptr) const;
+		void updateCalculatedSampleRateDisplay();
+		void handleUploadCsvPressed(IChimeraQtWindow* win);
+		void handleProgramSettingsPressed(IChimeraQtWindow* win);
+		void syncSiglentFmSettingsFromGui(deviceOutputInfo& info) const;
+		void loadSiglentFmSettingsToGui(const deviceOutputInfo& info);
 };
 
 

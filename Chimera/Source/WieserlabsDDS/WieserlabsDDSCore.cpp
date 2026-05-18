@@ -77,6 +77,10 @@ bool WieserlabsDDSCore::connected()
 
 void WieserlabsDDSCore::reconnect()
 {
+	if (initSettings.safemode) {
+		isConnected = false;
+		return;
+	}
 	disconnectFromDevice();
 	connectToDevice();
 }
@@ -384,6 +388,9 @@ void WieserlabsDDSCore::calculateVariations(std::vector<parameterType>& params, 
 
 void WieserlabsDDSCore::checkTriggers(unsigned variationInc, DoCore& ttls, ExpThreadWorker* threadWorker)
 {
+	if (initSettings.safemode) {
+		return;
+	}
 	const auto triggerCount = ttls.countTriggers(initSettings.triggerLineCh0, variationInc);
 	if (triggerCount == 0) {
 		return;
@@ -433,6 +440,9 @@ void WieserlabsDDSCore::setWieserlabsDDS(unsigned variation, std::vector<paramet
 
 void WieserlabsDDSCore::programVariation(unsigned variation, std::vector<parameterType>& params, ExpThreadWorker* threadworker)
 {
+	if (initSettings.safemode) {
+		return;
+	}
 	static unsigned programCallCount = 0;
 	programCallCount++;
 	qDebug() << "=== programVariation CALL #" << programCallCount << "===";
@@ -481,6 +491,10 @@ void WieserlabsDDSCore::programVariation(unsigned variation, std::vector<paramet
 
 void WieserlabsDDSCore::connectToDevice()
 {
+	if (initSettings.safemode) {
+		isConnected = false;
+		return;
+	}
 	try {
 		ddsClient = std::make_unique<WieserlabsClient>(initSettings.ipAddress, initSettings.ipPort);
 		if (ddsClient->connect()) {
@@ -552,6 +566,9 @@ void WieserlabsDDSCore::programSingleTone(unsigned channel, double freq, double 
 
 void WieserlabsDDSCore::executeScriptedCommands(const ScriptedWieserlabsDDSWaveform& waveform, ExpThreadWorker* expWorker)
 {
+	if (initSettings.safemode) {
+		return;
+	}
 	// Reconnect before every scripted batch to discard any unread response left
 	// in the TCP receive buffer from the previous rep. Without this, unread responses
 	// accumulate each rep until the TCP receive buffer fills (~6-7 reps), the DDS

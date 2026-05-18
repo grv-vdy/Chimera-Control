@@ -56,6 +56,17 @@ public:
 	void handleScriptVariation(unsigned variation, scriptedArbInfo& scriptInfo, unsigned channel,
 		std::vector<parameterType>& params) override;
 
+	// Direct GUI helpers for the dual-AWG FM workflow.
+	unsigned uploadBinWaveformToChannel1(const std::string& binFilePath, double durationMs,
+		const std::string& waveformName = "USERBIN");
+	void selectWaveformOnChannel1(const std::string& waveformName);
+	void setArbSampleRateCh1(unsigned sampleRateSaS);
+	void programFmModulationProfile(double ch1AmplitudeVpp, double ch1StartPhaseDeg,
+		double ch2FrequencyMHz, double ch2AmplitudeVpp, double ch2PhaseDeg, double frequencyDeviationMHz,
+		bool useExternalClock, unsigned ch1BurstCycles);
+	void programSpecializedVariation(unsigned variation, std::vector<parameterType>& params,
+		deviceOutputInfo& runSettings, ExpThreadWorker* expWorker) override;
+
 	std::string compileAndReturnDataSendString(scriptedArbInfo& scriptInfo, int segNum, int varNum, int totalSegNum, unsigned chan) override;
 	void compileSequenceString(scriptedArbInfo& scriptInfo, int totalSegNum, int sequenceNum, unsigned channel, unsigned varNum) override;
 

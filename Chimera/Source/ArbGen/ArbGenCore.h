@@ -35,8 +35,6 @@ public:
 	void programSetupCommands();
 	std::string getDeviceInfo();
 
-	void analyzeArbGenScript(scriptedArbInfo& infoObj, std::vector<parameterType>& vars, std::string& warnings);
-
 	deviceOutputInfo getSettingsFromConfig(ConfigStream& file);
 	void loadExpSettings(ConfigStream& script);
 	void calculateVariations(std::vector<parameterType>& params, ExpThreadWorker* threadworker);
@@ -47,6 +45,8 @@ public:
 	void setRunSettings(deviceOutputInfo newSettings);
 	void setArbGen(unsigned variation, std::vector<parameterType>& params, deviceOutputInfo runSettings, ExpThreadWorker* expWorker);
 	void programVariation(unsigned variation, std::vector<parameterType>& params, ExpThreadWorker* threadworker);
+	virtual void programSpecializedVariation(unsigned variation, std::vector<parameterType>& params,
+		deviceOutputInfo& runSettings, ExpThreadWorker* expWorker) {};
 
 
 	virtual void setSync(const deviceOutputInfo& runSettings, ExpThreadWorker* expWorker) = 0;//solely used by setArbGen

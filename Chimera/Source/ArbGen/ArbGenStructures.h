@@ -58,6 +58,20 @@ struct preloadedArbInfo : public generalArbGenOutputInfo {
 };
 
 
+struct siglentFmInfo {
+	bool control = false;
+	bool useExternalClock = true;
+	Expression ch1PulseDurationMs = "1.0";
+	Expression ch1AmplitudeVpp = "1.0";
+	Expression ch1StartPhaseDeg = "0";
+	Expression ch1BurstCycles = "1";
+	Expression ch2FrequencyMHz = "100.0";
+	Expression ch2AmplitudeVpp = "2.0";
+	Expression ch2PhaseDeg = "0";
+	Expression ch2FrequencyDeviationMHz = "0.05";
+};
+
+
 struct channelInfo{
 	ArbGenChannelMode::which option = ArbGenChannelMode::which::No_Control;
 	bool polarityInvert;
@@ -73,6 +87,7 @@ struct deviceOutputInfo{
 	// first ([0]) is channel 1, second ([1]) is channel 2.
 	std::array<channelInfo, 2> channel;
 	bool synced = false;
+	siglentFmInfo siglentFm;
 	bool wieserlabsControl = false;
 	std::vector<wieserlabsDdsChannel> snapshot;
 };

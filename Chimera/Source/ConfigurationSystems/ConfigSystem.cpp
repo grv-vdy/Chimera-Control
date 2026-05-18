@@ -135,15 +135,20 @@ void ConfigSystem::jumpToDelimiter ( ConfigStream& configStream, std::string del
 	// Search for delimiter in the raw file content (case-insensitive)
 	std::string hay = configStream.str();
 	std::string needle = delimiter;
+	std::streamoff searchStart = configStream.tellg();
+	if (searchStart < 0 || static_cast<size_t>(searchStart) >= hay.size()) {
+		searchStart = 0;
+	}
 	
 	// Case-insensitive search
-	auto caseInsensitiveFind = [](const std::string& haystack, const std::string& needle) {
-		auto it = std::search(haystack.begin(), haystack.end(), needle.begin(), needle.end(),
+	auto caseInsensitiveFind = [](const std::string& haystack, const std::string& needle, size_t startPos) {
+		auto beginIt = haystack.begin() + startPos;
+		auto it = std::search(beginIt, haystack.end(), needle.begin(), needle.end(),
 			[](char a, char b) { return std::tolower(a) == std::tolower(b); });
 		return it == haystack.end() ? std::string::npos : std::distance(haystack.begin(), it);
 	};
 	
-	auto startPos = caseInsensitiveFind(hay, needle);
+	auto startPos = caseInsensitiveFind(hay, needle, static_cast<size_t>(searchStart));
 	if (std::string::npos == startPos) {
 		// reached end of file.
 		thrower("Failed to jump to a delimiter! Delimiter was: " + delimiter + ".");
