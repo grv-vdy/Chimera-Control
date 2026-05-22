@@ -13,6 +13,7 @@ dac: blue3dmot blue3dmotpower
 dac: greenmot greenmotpower
 dac: pushbeam bluepushpower
 dac: blueimg 0
+dac: greenimg 0
 
 
 pulseon: dds0 0.1
@@ -38,7 +39,7 @@ off: pushbeam
 t += 3
 dacramp: greenmot greenmotpower greenmotpowerlow 1
 t += 1
-t += 20 
+t += latloadtime
 off: greenmot
 %% MOVE
 pulseon: latmove1 1
@@ -49,26 +50,30 @@ t += blueshellblink
 dac: blue3dmot blue3dmotlow
 t += 3
 on: blue3dmot
-
 on: pushbeam
 on: blue3dmot
 on: greenmot
 dac: greenmot greenmotpower
-t += ((602/2)-greenimgtime/2-blueshellblink)
+t += (((599.05-30)/2)-3-blueshellblink)
 
-dac: blue3dmot blue3dmotpower
-on: d11
-dac: greenimg greenimgpower
+
 on: mako1
-on: greenshutter
-t += 5
+
+dac: greenimg greenimgpower
+t += 3
+on: d11
 on: greenimg
 t += greenimgtime
 off: greenimg
 dac: greenimg 0
+
 off: mako1
 off: d11
-t += ((602/2)+greenimgtime/2)
+
+
+t += 1
+dac: blue3dmot blue3dmotpower
+t += (((599.05-30)/2)+greenimgtime/2)
 
 
 t += 1

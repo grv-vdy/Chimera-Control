@@ -6,6 +6,8 @@ off: blue3dmot
 t += 100
 dac: blue2dmot blue2dmotpower
 off: greenshutter
+off: blueimg
+off: greenimg
 
 dac: bias1 (bias1+biasx+biasy)
 dac: bias2 (bias2-biasx+biasy)
@@ -42,7 +44,7 @@ dacramp: greenmot greenmotpower greenmotpowerlow 1
 t += 1
 
 %dac: greenmot greenmotpowerlow
-t += 20 %thermalize mot see 260225
+t += latloadtime %thermalize mot see 260225
 %t += 80
 
 %release mot
@@ -50,6 +52,7 @@ t += 20 %thermalize mot see 260225
 off: greenmot
 on: scopetrigger
 t += motreleasetime
+t += 0.001
 off: scopetrigger
 %recapture mot
 %
@@ -82,9 +85,9 @@ dac: blueimg 0
 on: greenmot
 t += 2
 on: mako1
-t += 100
+t += 2
 off: mako1
-t += 10
+t += 100
 off: greenmot
 t += 10
 

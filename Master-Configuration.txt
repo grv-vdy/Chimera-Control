@@ -5,7 +5,7 @@ blueimg
 1
 mako1
 1
-greennarrow
+broken
 1
 greenimg
 1
@@ -31,9 +31,9 @@ blue3dmot
 1
 pushbeam
 1
-tweezerhold
+greenimager
 1
-dipolepushreptrg
+blueshutter
 1
 d1lgmtrg
 1
@@ -135,11 +135,11 @@ blueimg
 0 - 2
 0
 dac0_1
-opamp
+none
 -9.9 - 10
 0
 dac0_2
-dipolepushamp
+greenimager
 0 - 7.3
 0
 dac0_3
