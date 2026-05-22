@@ -82,6 +82,7 @@ class ArbGenSystem : public IChimeraSystem
 		CQCheckBox* siglentFmCtrlButton;
 		CQCheckBox* clockExternalButton;
 		QLineEdit* ch1AmplitudeEdit;
+		QLineEdit* ch1OffsetEdit;
 		QLineEdit* ch1StartPhaseEdit;
 		QLineEdit* ch1BurstCyclesEdit;
 		QLineEdit* ch2FrequencyMHzEdit;

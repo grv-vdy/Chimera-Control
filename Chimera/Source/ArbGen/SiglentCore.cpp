@@ -9,6 +9,8 @@
 #include <limits>
 #include <sstream>
 #include <iostream>
+#include <chrono>
+#include <thread>
 #include <vector>
 #include <string>
 
@@ -20,6 +22,100 @@ SiglentCore::SiglentCore(const arbGenSettings& settings) :
 
 SiglentCore::~SiglentCore() {
 	visaFlume.close();
+}
+
+void SiglentCore::resetAwgLikePyvisa()
+{
+	visaFlume.write("*RST");
+	long opc = 0;
+	visaFlume.query("*OPC?\n", opc);
+}
+
+void SiglentCore::setClockSourceLikePyvisa(bool useExternalClock)
+{
+	visaFlume.write(useExternalClock ? "ROSC EXT" : "ROSC INT");
+	long opc = 0;
+	visaFlume.query("*OPC?\n", opc);
+}
+
+void SiglentCore::waitForOperationCompleteLikePyvisa()
+{
+	long opc = 0;
+	visaFlume.query("*OPC?\n", opc);
+	if (opc != 1) {
+		thrower("Siglent did not report operation complete (OPC=" + str(opc) + ").");
+	}
+}
+
+void SiglentCore::setupCh2LikePyvisa(double frequencyMHz, double amplitudeVpp, double phaseDeg, double frequencyDeviationMHz)
+{
+	std::string idn;
+	visaFlume.query("*IDN?\n", idn, "%t");
+	visaFlume.write("C2:OUTP ON");
+	long opc = 0;
+	visaFlume.query("*OPC?\n", opc);
+	visaFlume.write("C2:BSWV WVTP,SINE,FRQ," + str(frequencyMHz * 1e6)
+		+ ",AMP," + str(amplitudeVpp) + ",OFST,0.0,PHSE," + str(phaseDeg));
+	visaFlume.query("*OPC?\n", opc);
+	std::string ch2Bswv;
+	visaFlume.query("C2:BSWV?\n", ch2Bswv, "%t");
+	visaFlume.query("*OPC?\n", opc);
+	visaFlume.write("C2:MDWV STATE,ON");
+	visaFlume.query("*OPC?\n", opc);
+	visaFlume.write("C2:MDWV FM,SRC,CH1,DEVI," + str(frequencyDeviationMHz * 1e6));
+	visaFlume.query("*OPC?\n", opc);
+}
+
+void SiglentCore::programCh1TrueArbLikePyvisa(double amplitudeVpp, double offsetV, double startPhaseDeg,
+	unsigned sampleRateSaS, unsigned cycles, const std::string& waveformName)
+{
+	if (sampleRateSaS == 0) {
+		thrower("CH1 sample rate must be > 0.");
+	}
+	if (cycles == 0) {
+		thrower("CH1 burst cycles must be >= 1.");
+	}
+	std::string safeWaveName = waveformName.empty() ? "wave" : waveformName;
+
+	visaFlume.write("*CLS");
+	long opc = 0;
+	visaFlume.query("*OPC?\n", opc);
+
+	visaFlume.write("C1:SRATE MODE,TARB,VALUE," + str(sampleRateSaS));
+	visaFlume.query("*OPC?\n", opc);
+	visaFlume.write("C1:BSWV WVTP,ARB");
+	visaFlume.query("*OPC?\n", opc);
+
+	visaFlume.write("C1:BSWV AMP," + str(amplitudeVpp) + ",OFST," + str(offsetV) + ",PHSE," + str(startPhaseDeg));
+	visaFlume.query("*OPC?\n", opc);
+	visaFlume.write("C1:BTWV STATE,ON");
+	visaFlume.query("*OPC?\n", opc);
+	visaFlume.write("C1:BTWV TRSR,EXT");
+	visaFlume.query("*OPC?\n", opc);
+	visaFlume.write("C1:BTWV GATE_NCYC,NCYC");
+	visaFlume.query("*OPC?\n", opc);
+	visaFlume.write("C1:BTWV TIME," + str(cycles));
+	visaFlume.query("*OPC?\n", opc);
+	visaFlume.write("C1:ARWV NAME,\"" + safeWaveName + "\"");
+	visaFlume.query("*OPC?\n", opc);
+	visaFlume.write("C1:OUTP ON");
+	visaFlume.query("*OPC?\n", opc);
+
+}
+
+void SiglentCore::selectWaveform()
+{
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	visaFlume.write("VKEY VALUE,5,STATE,1");
+	std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	visaFlume.write("VKEY VALUE,8,STATE,1");
+	std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	visaFlume.write("VKEY VALUE,28,STATE,1");
+	std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	visaFlume.write("VKEY VALUE,175,STATE,1");
+	std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	visaFlume.write("VKEY VALUE,176,STATE,1");
+	std::this_thread::sleep_for(std::chrono::milliseconds(1));
 }
 
 
@@ -381,7 +477,8 @@ void SiglentCore::compileSequenceString(scriptedArbInfo& scriptInfo, int totalSe
 	//	+ str(tempSegmentInfoString.size()) + tempSegmentInfoString;
 }
 
-unsigned SiglentCore::uploadBinWaveformToChannel1(const std::string& binFilePath, double durationMs, const std::string& waveformName)
+unsigned SiglentCore::uploadBinWaveformToChannel1(const std::string& binFilePath, double durationMs,
+	const std::string& waveformName, double amplitudeVpp, double offsetV, double phaseDeg)
 {
     if (durationMs <= 0) {
         thrower("Binary upload failed: duration must be > 0 ms.");
@@ -431,25 +528,19 @@ unsigned SiglentCore::uploadBinWaveformToChannel1(const std::string& binFilePath
         thrower("Binary upload failed: calculated sample rate is zero.");
     }
     
-    const unsigned MAX_SAMPLE_RATE = 75000000u; // 75 MSa/s
+	const unsigned MAX_SAMPLE_RATE = 300000000u; // 300 MSa/s
     if (calculatedRate > MAX_SAMPLE_RATE) {
         double minDurationMs = (numPoints / static_cast<double>(MAX_SAMPLE_RATE)) * 1e3;
-        thrower("Calculated sample rate (" + std::to_string(calculatedRate) + " Sa/s) exceeds 75 MSa/s.\n"
+		thrower("Calculated sample rate (" + std::to_string(calculatedRate) + " Sa/s) exceeds 300 MSa/s.\n"
             "Minimum pulse duration for this waveform is " + std::to_string(minDurationMs) + " ms.");
     }
 
-	// Program the waveform sample rate before selecting the uploaded arb.
-	this->visaFlume.write("C1:SRATE MODE,TARB,VALUE," + str(calculatedRate));
+	(void)durationMs;
+	(void)waveformName;
 
-    // 3. Build Header and Send Command
-    std::string safeName = waveformName.empty() ? "USERBIN" : waveformName;
-    if (safeName.size() > 16) {
-        safeName = safeName.substr(0, 16);
-    }
-
-    // Siglent WVDT command format: C1:WVDT WVNM,<name>,TYPE,6,LENGTH,<bytes>B,WAVEDATA,<binary_data>
-    // Send header first
-    std::string commandHeader = "C1:WVDT WVNM," + safeName + ",TYPE,6,LENGTH," + std::to_string(fileSize) + "B,WAVEDATA,";
+	// Always use a fixed uploaded waveform name.
+	std::string commandHeader = "C1:WVDT WVNM,wave,FRQ,1000,AMP," + str(amplitudeVpp)
+		+ ",OFST," + str(offsetV) + ",PHASE," + str(phaseDeg) + ",WAVEDATA,";
     
     // Build complete command with binary payload
     std::string command;
@@ -457,8 +548,11 @@ unsigned SiglentCore::uploadBinWaveformToChannel1(const std::string& binFilePath
     command.append(commandHeader);
     command.append(payload);
     
-    // Send via VISA - note: this sends the binary data directly as part of the string
+	// Send via VISA - this sends the binary payload directly as part of the command.
     this->visaFlume.write(command);
+
+	std::string errMsg;
+	visaFlume.query("SYST:ERR?\n", errMsg, "%t");
     
     return calculatedRate;
 }
@@ -496,10 +590,10 @@ void SiglentCore::programFmModulationProfile(double ch1AmplitudeVpp, double ch1S
 	}
 
 	if (useExternalClock) {
-		visaFlume.write("CLKSRC EXT");
+		visaFlume.write("ROSC EXT");
 	}
 	else {
-		visaFlume.write("CLKSRC INT");
+		visaFlume.write("ROSC INT");
 	}
 
 	visaFlume.write("C2:BSWV WVTP,SINE,FRQ," + std::to_string(ch2FrequencyMHz * 1e6) + 

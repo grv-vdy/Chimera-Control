@@ -651,7 +651,10 @@ void QCustomPlotCtrl::resetChart() {
 	plot->yAxis->setSubTickPen(generalPen);
 	plot->xAxis->setTickLabelColor(neutralColor);
 	plot->yAxis->setTickLabelColor(neutralColor);
-	plot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignTop | Qt::AlignLeft);
+	auto* insetLayout = plot->axisRect()->insetLayout();
+	if (insetLayout && insetLayout->elementCount() > 0) {
+		insetLayout->setInsetAlignment(0, Qt::AlignTop | Qt::AlignLeft);
+	}
 	if (this->style == plotStyle::DensityPlot || this->style == plotStyle::DensityPlotWithHisto) {
 		auto legendColor = QColor(defs["@StaticBackground"]);
 		legendColor.setAlpha(150);
