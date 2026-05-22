@@ -69,10 +69,14 @@ QtMainWindow::QtMainWindow () :
 		auto screen = qApp->screens ()[monitorNum[winCount++] % numMonitors];
 		window->setWindowState ((windowState () & ~Qt::WindowMinimized) | Qt::WindowActive);
 		window->activateWindow ();
-		//window->setGeometry(0, 0, 1200, 800);
-		window->showMaximized (); 
 		window->move (screen->availableGeometry ().topLeft());
-		//window->resize (screen->availableGeometry ().width (), screen->availableGeometry().height());
+		if (window == andorWin) {
+			// Avoid maximize-time geometry warnings on displays where Andor's min track size exceeds work area.
+			window->show();
+		}
+		else {
+			window->showMaximized();
+		}
 	}
 	andorWin->activateWindow(); // bring to front
 	auxWin->activateWindow();

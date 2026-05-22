@@ -17,17 +17,17 @@ void RIO::initialize(const char* resource) {
         NiFpga_OpenAttribute_NoRun,
         &session);
     if (status != NiFpga_Status_Success) {
-        throw std::runtime_error("Failed to open FPGA session");
+        //throw std::runtime_error("Failed to open FPGA session");
     }
     NiFpga_Abort(session);
     NiFpga_Run(session, 0);
     status = NiFpga_StartFifo(session, NiFpga_chimerasequencer_HostToTargetFifoU64_FIFO_Time);
     if (status != NiFpga_Status_Success) {
-        throw std::runtime_error("Failed to open FIFO");
+        //throw std::runtime_error("Failed to open FIFO");
     }
     status = NiFpga_StartFifo(session, NiFpga_chimerasequencer_HostToTargetFifoU64_FIFO_Data);
     if (status != NiFpga_Status_Success) {
-        throw std::runtime_error("Failed to open FIFO");
+        //throw std::runtime_error("Failed to open FIFO");
     }
     /*clearFifo();*/
     NiFpga_WriteBool(session, NiFpga_chimerasequencer_ControlBool_start_copy_to_ram, 0);
@@ -60,13 +60,13 @@ int RIO::writeTTL(const std::vector<uint64_t>& times, const std::vector<uint64_t
         data.data(), (size_t)data.size(), 1000, &empty);
 
     if (status_time != NiFpga_Status_Success || status_data != NiFpga_Status_Success) {
-        throw std::runtime_error("Failed to write to FIFO");
+        //throw std::runtime_error("Failed to write to FIFO");
     }
 
     NiFpga_Status status;
     status = NiFpga_WriteBool(session, NiFpga_chimerasequencer_ControlBool_start_copy_to_ram, 1);
     if (status != NiFpga_Status_Success) {
-        throw std::runtime_error("Failed to Start Copy to RAM");
+        //throw std::runtime_error("Failed to Start Copy to RAM");
     }
 
     return 0;
@@ -82,7 +82,7 @@ void RIO::trigger() {
     NiFpga_WriteBool(session, NiFpga_chimerasequencer_ControlBool_start_copy_to_ram, 0);
     status = NiFpga_WriteBool(session, NiFpga_chimerasequencer_ControlBool_trigger_i, 1);
 	if (status != NiFpga_Status_Success) {
-        throw std::runtime_error("Failed to trigger FPGA");
+        //throw std::runtime_error("Failed to trigger FPGA");
     }
     
 }
@@ -91,7 +91,7 @@ void RIO::untrigger() {
    NiFpga_Status status;
     status = NiFpga_WriteBool(session, NiFpga_chimerasequencer_ControlBool_trigger_i, 0);
 	if (status != NiFpga_Status_Success) {
-        throw std::runtime_error("Failed to trigger FPGA");
+        //throw std::runtime_error("Failed to trigger FPGA");
     }
 }
 
@@ -99,7 +99,7 @@ void RIO::set_reprogram(int reprogram) {
    NiFpga_Status status;
     status = NiFpga_WriteBool(session, NiFpga_chimerasequencer_ControlBool_skip_program, reprogram);
 	if (status != NiFpga_Status_Success) {
-        throw std::runtime_error("Failed to trigger FPGA");
+        //throw std::runtime_error("Failed to trigger FPGA");
     }
 }
 
@@ -109,12 +109,12 @@ void RIO::reset() {
     NiFpga_Status status;
     status = NiFpga_WriteBool(session, NiFpga_chimerasequencer_ControlBool_reset, 1);
 	if (status != NiFpga_Status_Success) {
-        throw std::runtime_error("Failed to reset FPGA");
+        //throw std::runtime_error("Failed to reset FPGA");
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(5)); // wait 5ms for reset to complete
     status = NiFpga_WriteBool(session, NiFpga_chimerasequencer_ControlBool_reset, 0);
 	if (status != NiFpga_Status_Success) {
-        throw std::runtime_error("Failed to reset FPGA");
+        //throw std::runtime_error("Failed to reset FPGA");
     }
 
     clearFifo();
@@ -122,13 +122,42 @@ void RIO::reset() {
 
 void RIO::waitForMemLoaded() {
     NiFpga_Bool loaded = 0;
-    NiFpga_Status status;
+    NiFpga_Status status = NiFpga_Status_Success;
 
-    //for debugging use index count
-    int16_t  index_count = 0;
+    int16_t index_count = 0;
+
+    auto start = std::chrono::steady_clock::now();
+    const auto timeout = std::chrono::seconds(5);
+
     while (!loaded) {
-        status = NiFpga_ReadBool(session, NiFpga_chimerasequencer_IndicatorBool_mem_loaded, &loaded);
-        NiFpga_ReadI16(session, NiFpga_chimerasequencer_IndicatorI16_index_count, &index_count);
+        status = NiFpga_ReadBool(
+            session,
+            NiFpga_chimerasequencer_IndicatorBool_mem_loaded,
+            &loaded
+        );
+
+        if (NiFpga_IsNotError(status) == 0) {
+            thrower("RIO::waitForMemLoaded failed while reading mem_loaded. NiFpga status: " + str(status));
+        }
+
+        status = NiFpga_ReadI16(
+            session,
+            NiFpga_chimerasequencer_IndicatorI16_index_count,
+            &index_count
+        );
+
+        if (NiFpga_IsNotError(status) == 0) {
+            thrower("RIO::waitForMemLoaded failed while reading index_count. NiFpga status: " + str(status));
+        }
+
+        if (std::chrono::steady_clock::now() - start > timeout) {
+            thrower(
+                "RIO::waitForMemLoaded timed out waiting for FPGA mem_loaded. "
+                "Last index_count = " + str(index_count) +
+                ", mem_loaded = " + str((int)loaded)
+            );
+        }
+
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }

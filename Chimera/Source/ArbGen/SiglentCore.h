@@ -58,7 +58,16 @@ public:
 
 	// Direct GUI helpers for the dual-AWG FM workflow.
 	unsigned uploadBinWaveformToChannel1(const std::string& binFilePath, double durationMs,
-		const std::string& waveformName = "USERBIN");
+		const std::string& waveformName = "USERBIN", double amplitudeVpp = 2.0,
+		double offsetV = 0.0, double phaseDeg = 0.0);
+	void resetAwgLikePyvisa();
+	void setClockSourceLikePyvisa(bool useExternalClock);
+	void waitForOperationCompleteLikePyvisa();
+	void setupCh2LikePyvisa(double frequencyMHz = 115.0, double amplitudeVpp = 0.92,
+		double phaseDeg = 0.0, double frequencyDeviationMHz = 5.0);
+	void programCh1TrueArbLikePyvisa(double amplitudeVpp, double offsetV, double startPhaseDeg,
+		unsigned sampleRateSaS, unsigned cycles, const std::string& waveformName = "wave");
+	void selectWaveform();
 	void selectWaveformOnChannel1(const std::string& waveformName);
 	void setArbSampleRateCh1(unsigned sampleRateSaS);
 	void programFmModulationProfile(double ch1AmplitudeVpp, double ch1StartPhaseDeg,

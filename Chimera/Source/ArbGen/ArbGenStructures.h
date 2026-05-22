@@ -63,6 +63,7 @@ struct siglentFmInfo {
 	bool useExternalClock = true;
 	Expression ch1PulseDurationMs = "1.0";
 	Expression ch1AmplitudeVpp = "1.0";
+	Expression ch1OffsetV = "0.0";
 	Expression ch1StartPhaseDeg = "0";
 	Expression ch1BurstCycles = "1";
 	Expression ch2FrequencyMHz = "100.0";

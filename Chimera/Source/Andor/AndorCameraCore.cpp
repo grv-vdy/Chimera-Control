@@ -98,44 +98,6 @@ AndorCameraCore::AndorCameraCore( bool safemode_opt ) : safemode( safemode_opt )
 	flume.setEnumString(L"IOSelector", L"Aux Out 2");
 	flume.setEnumString(L"AuxOutSourceTwo", L"ExternalShutterControl");
 	flume.setEnumString(L"FanSpeed", L"Off");
-
-
-
-	H5::H5File fp(PLOT_FILES_SAVE_LOCATION + "\\test_data" + "\\test_20230213.hdf5", H5F_ACC_RDONLY);
-	H5::DataSet dset = fp.openDataSet("/default");
-	H5::DataSpace dspace = dset.getSpace();
-	hsize_t dims[3];
-	hsize_t rank = dspace.getSimpleExtentDims(dims, NULL);
-	// Define the memory dataspace
-	hsize_t dimsm[2] = { dims[1] , dims[2] };
-	H5::DataSpace memspace(2, dimsm);
-	// Initialize hyperslabs
-	hsize_t dataCount[3] = { 1, dims[1], dims[2] };
-	hsize_t dataOffset[3] = { 0, 0, 0 };
-	const hsize_t memCount[2] = { dims[1], dims[2] };
-	const hsize_t memOffset[2] = { 0, 0 };
-	memspace.selectHyperslab(H5S_SELECT_SET, memCount, memOffset);
-	dspace.selectHyperslab(H5S_SELECT_SET, dataCount, dataOffset);
-	std::vector<long> tmp(dims[1]*dims[2]);
-	try {
-		dset.read(tmp.data(), H5::PredType::NATIVE_LONG, memspace, dspace);
-
-	}
-	catch (H5::Exception& err) {
-		FILE* pFile;
-		// note the "w", so this file is constantly overwritten.
-		fopen_s(&pFile, "TempH5Log.txt", "w");
-		if (pFile != 0) {
-			err.printErrorStack(pFile);
-			fclose(pFile);
-		}
-		std::ifstream readFile("TempH5Log.txt");
-		if (!readFile) {
-			thrower("Failed to get full HDF5 Error! Read file failed to open?!?");
-		}
-		std::stringstream buffer;
-		buffer << readFile.rdbuf();
-	}
 }
 
 AndorCameraCore::~AndorCameraCore()
@@ -482,22 +444,27 @@ std::vector<Matrix<long>> AndorCameraCore::acquireImageData (){
 			//		repImages[experimentPictureNumber] (rowI, colI) = tempImage (tempImage.getRows()-colI-1, rowI);
 			//	}
 			//}
-			H5::H5File fp(PLOT_FILES_SAVE_LOCATION + "\\test_data" + "\\test_20230213.hdf5", H5F_ACC_RDONLY);
-			H5::DataSet dset = fp.openDataSet("/default");
-			H5::DataSpace dspace = dset.getSpace();
-			hsize_t dims[3];
-			hsize_t rank = dspace.getSimpleExtentDims(dims, NULL);
-			// Define the memory dataspace
-			hsize_t dimsm[2] = { dims[1] , dims[2] };
-			H5::DataSpace memspace(2, dimsm);
-			// Initialize hyperslabs
-			hsize_t dataCount[3] = { 1, dims[1], dims[2] };
-			hsize_t dataOffset[3] = { currentPictureNumber % dims[0], 0, 0 };
-			const hsize_t memCount[2] = { dims[1], dims[2] };
-			const hsize_t memOffset[2] = { 0, 0 };
-			memspace.selectHyperslab(H5S_SELECT_SET, memCount, memOffset);
-			dspace.selectHyperslab(H5S_SELECT_SET, dataCount, dataOffset);
-			dset.read(repImages[experimentPictureNumber].data.data(), H5::PredType::NATIVE_LONG, memspace, dspace);
+			try {
+				H5::H5File fp(PLOT_FILES_SAVE_LOCATION + "\\test_data" + "\\test_20230213.hdf5", H5F_ACC_RDONLY);
+				H5::DataSet dset = fp.openDataSet("/default");
+				H5::DataSpace dspace = dset.getSpace();
+				hsize_t dims[3];
+				dspace.getSimpleExtentDims(dims, NULL);
+				hsize_t dimsm[2] = { dims[1] , dims[2] };
+				H5::DataSpace memspace(2, dimsm);
+				hsize_t dataCount[3] = { 1, dims[1], dims[2] };
+				hsize_t dataOffset[3] = { currentPictureNumber % dims[0], 0, 0 };
+				const hsize_t memCount[2] = { dims[1], dims[2] };
+				const hsize_t memOffset[2] = { 0, 0 };
+				memspace.selectHyperslab(H5S_SELECT_SET, memCount, memOffset);
+				dspace.selectHyperslab(H5S_SELECT_SET, dataCount, dataOffset);
+				dset.read(repImages[experimentPictureNumber].data.data(), H5::PredType::NATIVE_LONG, memspace, dspace);
+			}
+			catch (H5::Exception&) {
+				// In safemode/test mode, missing debug HDF5 data should not crash acquisition.
+				std::fill(repImages[experimentPictureNumber].data.begin(),
+					repImages[experimentPictureNumber].data.end(), 0l);
+			}
 		}
 		return repImages;
 	}

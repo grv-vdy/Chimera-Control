@@ -104,15 +104,7 @@ void ArbGenSystem::initialize(std::string headerText, IChimeraQtWindow* win)
 	polarityButton = new CQCheckBox("Polarity Invert?", win);
 	polarityButton->setChecked(false);
 
-	uploadCsvNow = new CQPushButton("Upload Binary", win);
-	connect(uploadCsvNow, &QPushButton::released, this, [this, win]() {
-		try {
-			handleUploadCsvPressed(win);
-		}
-		catch (ChimeraError& err) {
-			win->reportErr("CSV upload failed: " + err.qtrace());
-		}
-		});
+	uploadCsvNow = new CQPushButton("Upload and Program", win);
 
 	QGroupBox* siglentGroup = new QGroupBox("Siglent FM Workflow", win);
 	QGridLayout* siglentLayout = new QGridLayout(siglentGroup);
@@ -124,6 +116,33 @@ void ArbGenSystem::initialize(std::string headerText, IChimeraQtWindow* win)
 	clockExternalButton = new CQCheckBox("External Clock", win);
 	clockExternalButton->setChecked(true);
 	siglentLayout->addWidget(clockExternalButton, 0, 1, 1, 1);
+	connect(clockExternalButton, &QCheckBox::toggled, this, [this, win](bool checked) {
+		try {
+			auto* siglent = dynamic_cast<SiglentCore*>(pCore);
+			if (!siglent) {
+				return;
+			}
+			siglent->setClockSourceLikePyvisa(checked);
+			if (win) {
+				win->reportStatus(QString("Siglent clock source set to ") + (checked ? "EXTERNAL" : "INTERNAL") + "\r\n");
+			}
+		}
+		catch (ChimeraError& err) {
+			if (win) {
+				win->reportErr("Failed to set clock source: " + err.qtrace());
+			}
+		}
+		catch (std::exception& err) {
+			if (win) {
+				win->reportErr("Failed to set clock source (std::exception): " + qstr(err.what()));
+			}
+		}
+		catch (...) {
+			if (win) {
+				win->reportErr("Failed to set clock source: unknown exception.");
+			}
+		}
+	});
 
 	CQPushButton* reconnectButton = new CQPushButton("Reconnect", win);
 	connect(reconnectButton, &QPushButton::released, this, [this, win]() {
@@ -160,7 +179,59 @@ void ArbGenSystem::initialize(std::string headerText, IChimeraQtWindow* win)
 	csvLayout->addWidget(refreshBinButton, 0);
 	siglentLayout->addLayout(csvLayout, 2, 1);
 
-	siglentLayout->addWidget(uploadCsvNow, 3, 0, 1, 2);
+	CQPushButton* programSettingsButton = new CQPushButton("Program", win);
+	QHBoxLayout* actionButtonsLayout = new QHBoxLayout();
+	actionButtonsLayout->addWidget(uploadCsvNow, 1);
+	actionButtonsLayout->addWidget(programSettingsButton, 1);
+	siglentLayout->addLayout(actionButtonsLayout, 3, 0, 1, 2);
+
+	connect(uploadCsvNow, &QPushButton::released, this, [this, win]() {
+		QString previousSampleRateLabel = ch1SampleRateLabel ? ch1SampleRateLabel->text() : QString("(Calculated on Send)");
+		uploadCsvNow->setEnabled(false);
+		uploadCsvNow->setText("Uploading...");
+		if (ch1SampleRateLabel) {
+			ch1SampleRateLabel->setText("Uploading...");
+		}
+		QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+		try {
+			handleUploadCsvPressed(win);
+			if (win) {
+				win->reportStatus("Upload and program workflow complete.\r\n");
+			}
+		}
+		catch (ChimeraError& err) {
+			if (ch1SampleRateLabel) {
+				ch1SampleRateLabel->setText(previousSampleRateLabel);
+			}
+			if (win) {
+				QString msg = "Upload and program failed: " + err.qtrace();
+				win->reportErr(msg);
+				win->reportStatus(msg + "\r\n");
+			}
+		}
+		catch (std::exception& err) {
+			if (ch1SampleRateLabel) {
+				ch1SampleRateLabel->setText(previousSampleRateLabel);
+			}
+			if (win) {
+				QString msg = "Upload and program failed (std::exception): " + qstr(err.what());
+				win->reportErr(msg);
+				win->reportStatus(msg + "\r\n");
+			}
+		}
+		catch (...) {
+			if (ch1SampleRateLabel) {
+				ch1SampleRateLabel->setText(previousSampleRateLabel);
+			}
+			if (win) {
+				QString msg = "Upload and program failed: unknown exception.";
+				win->reportErr(msg);
+				win->reportStatus(msg + "\r\n");
+			}
+		}
+		uploadCsvNow->setText("Upload and Program");
+		uploadCsvNow->setEnabled(true);
+		});
 
 	siglentLayout->addWidget(new QLabel("Pulse Duration (ms)", win), 4, 0);
 	ch1PulseDurationMsEdit = new QLineEdit("1.0", win);
@@ -201,20 +272,23 @@ void ArbGenSystem::initialize(std::string headerText, IChimeraQtWindow* win)
 	ch1AmplitudeEdit = new QLineEdit("1.0", win);
 	ch1AmplitudeEdit->setPlaceholderText("e.g. 1.0 or fm_ch1_amp_var");
 	ch1Layout->addWidget(ch1AmplitudeEdit, 0, 1);
-	ch1Layout->addWidget(new QLabel("Start Phase (deg)", win), 1, 0);
+	ch1Layout->addWidget(new QLabel("Offset (V)", win), 1, 0);
+	ch1OffsetEdit = new QLineEdit("0.0", win);
+	ch1OffsetEdit->setPlaceholderText("e.g. 0.0 or fm_ch1_offset_var");
+	ch1Layout->addWidget(ch1OffsetEdit, 1, 1);
+	ch1Layout->addWidget(new QLabel("Start Phase (deg)", win), 2, 0);
 	ch1StartPhaseEdit = new QLineEdit("0", win);
 	ch1StartPhaseEdit->setPlaceholderText("e.g. 0 or fm_ch1_phase_var");
-	ch1Layout->addWidget(ch1StartPhaseEdit, 1, 1);
-	ch1Layout->addWidget(new QLabel("Burst Cycles (NCYC)", win), 2, 0);
+	ch1Layout->addWidget(ch1StartPhaseEdit, 2, 1);
+	ch1Layout->addWidget(new QLabel("Burst Cycles (NCYC)", win), 3, 0);
 	ch1BurstCyclesEdit = new QLineEdit("1", win);
 	ch1BurstCyclesEdit->setPlaceholderText("e.g. 1 or burst_cycles_var");
-	ch1Layout->addWidget(ch1BurstCyclesEdit, 2, 1);
+	ch1Layout->addWidget(ch1BurstCyclesEdit, 3, 1);
 
 	channelColumns->addWidget(ch2Group, 1);
 	channelColumns->addWidget(ch1Group, 1);
 	siglentLayout->addLayout(channelColumns, 6, 0, 1, 2);
 
-	CQPushButton* programSettingsButton = new CQPushButton("Program AWG", win);
 	connect(programSettingsButton, &QPushButton::released, this, [this, win, programSettingsButton]() {
 		programSettingsButton->setEnabled(false);
 		programSettingsButton->setText("Programming...");
@@ -222,18 +296,33 @@ void ArbGenSystem::initialize(std::string headerText, IChimeraQtWindow* win)
 		try {
 			handleProgramSettingsPressed(win);
 			if (win) {
-				win->reportStatus("Programmed Siglent FM settings.\r\n");
+				win->reportStatus("Program workflow complete.\r\n");
 			}
 		}
 		catch (ChimeraError& err) {
 			if (win) {
-				win->reportErr("Programming Siglent FM settings failed: " + err.qtrace());
+				QString msg = "Program workflow failed: " + err.qtrace();
+				win->reportErr(msg);
+				win->reportStatus(msg + "\r\n");
 			}
 		}
-		programSettingsButton->setText("Program AWG");
+		catch (std::exception& err) {
+			if (win) {
+				QString msg = "Program workflow failed (std::exception): " + qstr(err.what());
+				win->reportErr(msg);
+				win->reportStatus(msg + "\r\n");
+			}
+		}
+		catch (...) {
+			if (win) {
+				QString msg = "Program workflow failed: unknown exception.";
+				win->reportErr(msg);
+				win->reportStatus(msg + "\r\n");
+			}
+		}
+		programSettingsButton->setText("Program");
 		programSettingsButton->setEnabled(true);
 		});
-	siglentLayout->addWidget(programSettingsButton, 7, 0, 1, 2);
 
 	layout->addWidget(siglentGroup, 0);
 
@@ -335,7 +424,7 @@ void ArbGenSystem::updateCalculatedSampleRateDisplay() {
 		ch1SampleRateLabel->setText("-");
 		return;
 	}
-	const double maxSampleRate = 75e6;
+	const double maxSampleRate = 300e6;
 	double minDurationMs = (points / maxSampleRate) * 1e3;
 	double durationMs = 0;
 	try {
@@ -359,13 +448,6 @@ void ArbGenSystem::updateCalculatedSampleRateDisplay() {
 }
 
 void ArbGenSystem::handleUploadCsvPressed(IChimeraQtWindow* win) {
-	if (csvUploadInProgress) {
-		if (win) {
-			win->reportStatus("Binary waveform upload already in progress.\r\n");
-		}
-		return;
-	}
-
 	auto* siglent = dynamic_cast<SiglentCore*>(pCore);
 	if (!siglent) {
 		thrower("CSV upload is only implemented for Siglent AWGs.");
@@ -377,24 +459,27 @@ void ArbGenSystem::handleUploadCsvPressed(IChimeraQtWindow* win) {
 	if (durationMs <= 0) {
 		int points = getSelectedCsvPointCount();
 		if (points > 0 && ch1SampleRateLabel) {
-			double minDurationMs = (points / 75e6) * 1e3;
+			double minDurationMs = (points / 300e6) * 1e3;
 			ch1SampleRateLabel->setText("Min duration: " + QString::number(minDurationMs, 'f', 3) + " ms");
 		}
 		thrower("Pulse duration is invalid. Use the displayed minimum duration.");
 	}
+	unsigned guiSampleRateSaS = 0;
 	{
 		int points = getSelectedCsvPointCount();
-		if (points > 0) {
-			const double maxSampleRate = 75e6;
-			double requestedSampleRate = points / (durationMs * 1e-3);
-			if (requestedSampleRate > maxSampleRate) {
-				double minDurationMs = (points / maxSampleRate) * 1e3;
-				if (ch1SampleRateLabel) {
-					ch1SampleRateLabel->setText("Min duration: " + QString::number(minDurationMs, 'f', 3) + " ms");
-				}
-				thrower("Pulse duration is too short. Use the displayed minimum duration.");
-			}
+		if (points <= 0) {
+			thrower("Could not determine selected waveform point count for CH1 sample-rate calculation.");
 		}
+		const double maxSampleRate = 300e6;
+		double requestedSampleRate = points / (durationMs * 1e-3);
+		if (requestedSampleRate > maxSampleRate) {
+			double minDurationMs = (points / maxSampleRate) * 1e3;
+			if (ch1SampleRateLabel) {
+				ch1SampleRateLabel->setText("Min duration: " + QString::number(minDurationMs, 'f', 3) + " ms");
+			}
+			thrower("Pulse duration is too short. Use the displayed minimum duration.");
+		}
+		guiSampleRateSaS = static_cast<unsigned>(std::llround(requestedSampleRate));
 	}
 	QString csvPath = generatedWaveformCombo->currentData().toString();
 	const std::string csvPathStd = csvPath.toStdString();
@@ -415,118 +500,13 @@ void ArbGenSystem::handleUploadCsvPressed(IChimeraQtWindow* win) {
 			c = '_';
 		}
 	}
-	if (uploadCsvNow) {
-		uploadCsvNow->setEnabled(false);
-	}
-	if (generatedWaveformCombo) {
-		generatedWaveformCombo->setEnabled(false);
-	}
-	csvUploadInProgress = true;
-	if (ch1SampleRateLabel) {
-		ch1SampleRateLabel->setText("Uploading...");
-	}
 	if (win) {
-		win->reportStatus("Uploading binary waveform '" + qstr(waveName) + "' to Siglent CH1...\r\n");
+		win->reportStatus("Running upload and program workflow...\r\n");
 	}
 
-	if (csvUploadWatcher) {
-		csvUploadWatcher->deleteLater();
-		csvUploadWatcher = nullptr;
-	}
-	csvUploadWatcher = new QFutureWatcher<unsigned>(this);
-	connect(csvUploadWatcher, &QFutureWatcher<unsigned>::finished, this, [this, win, waveName]() {
-		try {
-			auto sampleRate = csvUploadWatcher->result();
-						// Select the uploaded waveform on CH1 and enable output
-						auto* siglent = dynamic_cast<SiglentCore*>(pCore);
-						if (siglent) {
-							siglent->selectWaveformOnChannel1(waveName);
-						}
-			if (ch1SampleRateLabel) {
-				ch1SampleRateLabel->setText(qstr(str(sampleRate)));
-			}
-			if (win) {
-				win->reportStatus("Successfully uploaded waveform '" + qstr(waveName) + "' (Sample Rate: " + qstr(str(sampleRate)) + " Sa/s).\r\n");
-			}
-		}
-		catch (ChimeraError& err) {
-			updateCalculatedSampleRateDisplay();
-			if (win) {
-				win->reportErr("Binary waveform upload failed: " + err.qtrace());
-			}
-		}
-		catch (std::exception& err) {
-			updateCalculatedSampleRateDisplay();
-			if (win) {
-				win->reportErr("Binary waveform upload failed: " + qstr(err.what()) + "\r\n");
-			}
-		}
-
-		csvUploadInProgress = false;
-		if (uploadCsvNow) {
-			uploadCsvNow->setEnabled(true);
-		}
-		if (generatedWaveformCombo) {
-			generatedWaveformCombo->setEnabled(true);
-		}
-		csvUploadWatcher->deleteLater();
-		csvUploadWatcher = nullptr;
-		});
-
-	auto future = QtConcurrent::run([siglent, csvPathStd, durationMs, waveName]() {
-		return siglent->uploadBinWaveformToChannel1(csvPathStd, durationMs, waveName);
-		});
-	csvUploadWatcher->setFuture(future);
-}
-
-void ArbGenSystem::handleProgramSettingsPressed(IChimeraQtWindow* win) {
-	auto* siglent = dynamic_cast<SiglentCore*>(pCore);
-	if (!siglent) {
-		thrower("Direct FM settings programming is only implemented for Siglent AWGs.");
-	}
-	std::string selectedWaveName;
-	if (generatedWaveformCombo && generatedWaveformCombo->currentIndex() >= 0) {
-		selectedWaveName = generatedWaveformCombo->currentText().toStdString();
-		if (selectedWaveName.size() > 4 && selectedWaveName.substr(selectedWaveName.size() - 4) == ".bin") {
-			selectedWaveName = selectedWaveName.substr(0, selectedWaveName.size() - 4);
-		}
-		for (char& c : selectedWaveName) {
-			if (!std::isalnum(static_cast<unsigned char>(c))) {
-				c = '_';
-			}
-		}
-	}
-	// If a binary waveform and pulse duration are provided, retime CH1 without re-uploading bytes.
-	int points = getSelectedCsvPointCount();
-	double durationMs = getPulseDurationMs(win);
-	if (points > 0 && durationMs > 0) {
-		const double maxSampleRate = 75e6;
-		double requestedSampleRate = points / (durationMs * 1e-3);
-		if (requestedSampleRate > maxSampleRate) {
-			double minDurationMs = (points / maxSampleRate) * 1e3;
-			if (ch1SampleRateLabel) {
-				ch1SampleRateLabel->setText("Min duration: " + QString::number(minDurationMs, 'f', 3) + " ms");
-			}
-			thrower("Pulse duration is too short. Use the displayed minimum duration.");
-		}
-		auto sampleRate = static_cast<unsigned>(std::llround(requestedSampleRate));
-		siglent->setArbSampleRateCh1(sampleRate);
-		// siglent->programBurstMode(1, true); // Always re-enable burst mode after setting sample rate
-		if (!selectedWaveName.empty()) {
-			siglent->selectWaveformOnChannel1(selectedWaveName);
-		}
-		if (ch1SampleRateLabel) {
-			ch1SampleRateLabel->setText(qstr(str(sampleRate)));
-		}
-		if (win) {
-			win->reportStatus("Updated CH1 sample rate to " + qstr(str(sampleRate)) + " Sa/s from pulse duration.\r\n");
-		}
-	}
 	std::vector<parameterType> constants;
 	if (win && win->auxWin) {
 		constants = win->auxWin->getAllParams();
-		// For "Program Now": treat scan variables as constants evaluated at their scan start value (variation 0).
-		// This mirrors getUsableConstants() but includes scan variables so expressions like "hi" resolve correctly.
 		for (auto& param : constants) {
 			if (!param.constant && !param.ranges.empty()) {
 				param.constant = true;
@@ -539,11 +519,99 @@ void ArbGenSystem::handleProgramSettingsPressed(IChimeraQtWindow* win) {
 	}
 	deviceOutputInfo tempSettings = getOutputInfo();
 	tempSettings.siglentFm.control = true;
-	pCore->setRunSettings(tempSettings);
-	pCore->calculateVariations(constants, nullptr);
-	pCore->programVariation(0, constants, nullptr);
+	pCore->convertInputToFinalSettings(0, tempSettings, constants);
+	auto cyclesVal = tempSettings.siglentFm.ch1BurstCycles.getValue(0);
+	auto roundedCycles = std::llround(cyclesVal);
+	if (roundedCycles <= 0 || std::fabs(cyclesVal - roundedCycles) > 1e-6) {
+		thrower("CH1 burst cycles must evaluate to a positive integer. Value: " + str(cyclesVal));
+	}
+
+	// Exact order requested: reset, program CH2, program CH1, then upload CH1.
+	siglent->resetAwgLikePyvisa();
+	siglent->setupCh2LikePyvisa(
+		tempSettings.siglentFm.ch2FrequencyMHz.getValue(0),
+		tempSettings.siglentFm.ch2AmplitudeVpp.getValue(0),
+		tempSettings.siglentFm.ch2PhaseDeg.getValue(0),
+		tempSettings.siglentFm.ch2FrequencyDeviationMHz.getValue(0));
+	siglent->programCh1TrueArbLikePyvisa(tempSettings.siglentFm.ch1AmplitudeVpp.getValue(0),
+		tempSettings.siglentFm.ch1OffsetV.getValue(0),
+		tempSettings.siglentFm.ch1StartPhaseDeg.getValue(0),
+		guiSampleRateSaS, static_cast<unsigned>(roundedCycles), "wave");
+	auto sampleRate = siglent->uploadBinWaveformToChannel1(csvPathStd, durationMs, waveName,
+		tempSettings.siglentFm.ch1AmplitudeVpp.getValue(0),
+		tempSettings.siglentFm.ch1OffsetV.getValue(0),
+		tempSettings.siglentFm.ch1StartPhaseDeg.getValue(0));
+	siglent->waitForOperationCompleteLikePyvisa();
+
+
+	if (ch1SampleRateLabel) {
+		ch1SampleRateLabel->setText(qstr(str(sampleRate)));
+	}
+}
+
+void ArbGenSystem::handleProgramSettingsPressed(IChimeraQtWindow* win) {
+	auto* siglent = dynamic_cast<SiglentCore*>(pCore);
+	if (!siglent) {
+		thrower("Direct FM settings programming is only implemented for Siglent AWGs.");
+	}
 	if (win) {
-		win->reportStatus("Applied carrier on CH2 modulated by CH1.\r\n");
+		win->reportStatus("Running program workflow...\r\n");
+	}
+
+	// Exact order requested: reset, program CH1, program CH2, testing keys.
+	siglent->resetAwgLikePyvisa();
+
+	std::vector<parameterType> constants;
+	if (win && win->auxWin) {
+		constants = win->auxWin->getAllParams();
+		for (auto& param : constants) {
+			if (!param.constant && !param.ranges.empty()) {
+				param.constant = true;
+				param.constantValue = param.ranges[0].initialValue;
+			}
+		}
+		ScanRangeInfo constantRange;
+		constantRange.defaultInit();
+		ParameterSystem::generateKey(constants, false, constantRange);
+	}
+	deviceOutputInfo tempSettings = getOutputInfo();
+	tempSettings.siglentFm.control = true;
+	pCore->convertInputToFinalSettings(0, tempSettings, constants);
+	double durationMs = getPulseDurationMs(win);
+	if (durationMs <= 0) {
+		thrower("Pulse duration is invalid. Use a positive duration to define CH1 sample rate.");
+	}
+	int points = getSelectedCsvPointCount();
+	if (points <= 0) {
+		thrower("Could not determine selected waveform point count for CH1 sample-rate calculation.");
+	}
+	const double maxSampleRate = 300e6;
+	double requestedSampleRate = points / (durationMs * 1e-3);
+	if (requestedSampleRate > maxSampleRate) {
+		double minDurationMs = (points / maxSampleRate) * 1e3;
+		thrower("Pulse duration is too short for the selected waveform. Minimum duration is " + str(minDurationMs) + " ms.");
+	}
+	unsigned guiSampleRateSaS = static_cast<unsigned>(std::llround(requestedSampleRate));
+	auto cyclesVal = tempSettings.siglentFm.ch1BurstCycles.getValue(0);
+	auto roundedCycles = std::llround(cyclesVal);
+	if (roundedCycles <= 0 || std::fabs(cyclesVal - roundedCycles) > 1e-6) {
+		thrower("CH1 burst cycles must evaluate to a positive integer. Value: " + str(cyclesVal));
+	}
+	siglent->setupCh2LikePyvisa(
+		tempSettings.siglentFm.ch2FrequencyMHz.getValue(0),
+		tempSettings.siglentFm.ch2AmplitudeVpp.getValue(0),
+		tempSettings.siglentFm.ch2PhaseDeg.getValue(0),
+		tempSettings.siglentFm.ch2FrequencyDeviationMHz.getValue(0));
+	siglent->programCh1TrueArbLikePyvisa(tempSettings.siglentFm.ch1AmplitudeVpp.getValue(0),
+		tempSettings.siglentFm.ch1OffsetV.getValue(0),
+		tempSettings.siglentFm.ch1StartPhaseDeg.getValue(0),
+		guiSampleRateSaS, static_cast<unsigned>(roundedCycles), "wave");
+	
+	siglent->selectWaveform();
+	siglent->waitForOperationCompleteLikePyvisa();
+
+	if (win) {
+		win->reportStatus("Program workflow complete.\r\n");
 	}
 }
 
@@ -639,6 +707,7 @@ void ArbGenSystem::handleSavingConfig(ConfigStream& saveFile, std::string config
 	saveFile << "\n/*Siglent FM CH2 Phase:*/\t\t" << outputInfo.siglentFm.ch2PhaseDeg;
 	saveFile << "\n/*Siglent FM Deviation:*/\t\t" << outputInfo.siglentFm.ch2FrequencyDeviationMHz;
 	saveFile << "\n/*Siglent FM CH1 Pulse Duration:*/\t" << outputInfo.siglentFm.ch1PulseDurationMs;
+	saveFile << "\n/*Siglent FM CH1 Offset:*/\t\t" << outputInfo.siglentFm.ch1OffsetV;
 	if (includeSectionDelimiters) {
 		saveFile << "\nEND_" + pCore->configDelim + "\n";
 	}
@@ -677,6 +746,9 @@ void ArbGenSystem::syncSiglentFmSettingsFromGui(deviceOutputInfo& info) const
 	if (ch1AmplitudeEdit) {
 		info.siglentFm.ch1AmplitudeVpp.expressionStr = str(ch1AmplitudeEdit->text());
 	}
+	if (ch1OffsetEdit) {
+		info.siglentFm.ch1OffsetV.expressionStr = str(ch1OffsetEdit->text());
+	}
 	if (ch1StartPhaseEdit) {
 		info.siglentFm.ch1StartPhaseDeg.expressionStr = str(ch1StartPhaseEdit->text());
 	}
@@ -711,6 +783,9 @@ void ArbGenSystem::loadSiglentFmSettingsToGui(const deviceOutputInfo& info)
 	if (ch1AmplitudeEdit) {
 		ch1AmplitudeEdit->setText(qstr(info.siglentFm.ch1AmplitudeVpp.expressionStr));
 	}
+	if (ch1OffsetEdit) {
+		ch1OffsetEdit->setText(qstr(info.siglentFm.ch1OffsetV.expressionStr));
+	}
 	if (ch1StartPhaseEdit) {
 		ch1StartPhaseEdit->setText(qstr(info.siglentFm.ch1StartPhaseDeg.expressionStr));
 	}
@@ -732,24 +807,6 @@ void ArbGenSystem::loadSiglentFmSettingsToGui(const deviceOutputInfo& info)
 }
 
 void ArbGenSystem::initializeSiglentFmOnStartup(IChimeraQtWindow* win) {
-	if (!siglentFmCtrlButton || !siglentFmCtrlButton->isChecked()) {
-		// FM control not enabled, skip initialization.
-		return;
-	}
-	if (!win) {
-		return;
-	}
-	try {
-		// Upload binary waveform to CH1 with duration from GUI.
-		handleUploadCsvPressed(win);
-		// Small delay to allow upload to complete.
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		// Program FM settings.
-		handleProgramSettingsPressed(win);
-	}
-	catch (ChimeraError& err) {
-		if (win) {
-			win->reportErr("Siglent FM startup initialization failed: " + err.qtrace());
-		}
-	}
+	(void)win;
+	// Requested behavior: do not auto-reset or auto-program on startup.
 }

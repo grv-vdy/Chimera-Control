@@ -59,8 +59,8 @@ void QtAndorWindow::initializeWidgets (){
 	for (auto pltInc : range (6)){
 		mainAnalysisPlots.push_back (new QCustomPlotCtrl(1, plotStyle::BinomialDataPlot, { 0,0,0,0 }, false, false));
 		mainAnalysisPlots.back()->init(this, "INACTIVE");
-		mainAnalysisPlots.back()->plot->setMinimumSize(350, 130);
-		mainAnalysisPlots.back()->plot->setMaximumSize(450, 140);
+		mainAnalysisPlots.back()->plot->setMinimumSize(350, 90);
+		mainAnalysisPlots.back()->plot->setMaximumSize(450, 120);
 		layout2->addWidget(mainAnalysisPlots.back()->plot);
 	}
 	layout2->addStretch(1);

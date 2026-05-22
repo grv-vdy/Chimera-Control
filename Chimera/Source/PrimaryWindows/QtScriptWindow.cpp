@@ -66,16 +66,7 @@ void QtScriptWindow::initializeWidgets (){
 	layout->addWidget(&gigaMoog, 1);
 	layout->addWidget(&masterScript, 1);
 	
-	try {
-		for (auto name : ArbGenEnum::allAgs) {
-			arbGens[(int)name].setDefault(1);
-			arbGens[(int)name].setDefault(2);
-		}
-		//intensityAgilent.setDefault(1);
-	}
-	catch (ChimeraError& err) {
-		errBox("ERROR: Failed to initialize ArbGens: " + err.trace());
-	}
+	// Requested behavior: on startup only connect; do not force ArbGen channels to DC defaults.
 
 
 	updateDoAoDdsNames ();
@@ -323,24 +314,80 @@ void QtScriptWindow::windowOpenConfig (ConfigStream& configFile){
 				// Legacy format compatibility.
 				auto info0 = arbGens[(int)ArbGenEnum::name::Siglent0].getCore().getSettingsFromConfig(configFile);
 				arbGens[(int)ArbGenEnum::name::Siglent0].setOutputSettings(info0);
-				ConfigSystem::checkDelimiterLine(configFile, "END_SIGLENT_AWG");
 
+				// Legacy variant A: single SIGLENT_AWG block with one AWG payload.
+				// Legacy variant B: single SIGLENT_AWG block with two consecutive AWG payloads.
+				std::streampos posBeforeEndCheck = configFile.tellg();
+				bool parsedEndOfBlock = false;
 				try {
-					ConfigSystem::initializeAtDelim(configFile, "SIGLENT_AWG", Version("1.0"));
-					auto info1 = arbGens[(int)ArbGenEnum::name::Siglent1].getCore().getSettingsFromConfig(configFile);
-					arbGens[(int)ArbGenEnum::name::Siglent1].setOutputSettings(info1);
 					ConfigSystem::checkDelimiterLine(configFile, "END_SIGLENT_AWG");
+					parsedEndOfBlock = true;
 				}
 				catch (ChimeraError&) {
+					configFile.clear();
+					configFile.seekg(posBeforeEndCheck);
+				}
+
+				if (!parsedEndOfBlock) {
 					try {
-						ConfigSystem::initializeAtDelim(configFile, "SIGLENT_AWG_2", Version("1.0"));
+						auto info1InSameBlock = arbGens[(int)ArbGenEnum::name::Siglent1].getCore().getSettingsFromConfig(configFile);
+						arbGens[(int)ArbGenEnum::name::Siglent1].setOutputSettings(info1InSameBlock);
+						ConfigSystem::checkDelimiterLine(configFile, "END_SIGLENT_AWG");
+						parsedEndOfBlock = true;
+					}
+					catch (ChimeraError&) {
+						configFile.clear();
+						configFile.seekg(posBeforeEndCheck);
+					}
+				}
+
+				if (parsedEndOfBlock) {
+					// Parsed fully from the current SIGLENT_AWG block.
+				}
+				else {
+
+					try {
+						ConfigSystem::initializeAtDelim(configFile, "SIGLENT_AWG", Version("1.0"));
 						auto info1 = arbGens[(int)ArbGenEnum::name::Siglent1].getCore().getSettingsFromConfig(configFile);
 						arbGens[(int)ArbGenEnum::name::Siglent1].setOutputSettings(info1);
-						ConfigSystem::checkDelimiterLine(configFile, "END_SIGLENT_AWG_2");
+						ConfigSystem::checkDelimiterLine(configFile, "END_SIGLENT_AWG");
 					}
-					catch (ChimeraError& err) {
-						qDebug() << "QtScriptWindow: skipping missing ArbGen config block for"
-							<< qstr(arbGens[(int)ArbGenEnum::name::Siglent1].initSettings.deviceName) << ":" << qstr(err.qtrace());
+					catch (ChimeraError&) {
+						try {
+							ConfigSystem::initializeAtDelim(configFile, "SIGLENT_AWG_2", Version("1.0"));
+							auto info1 = arbGens[(int)ArbGenEnum::name::Siglent1].getCore().getSettingsFromConfig(configFile);
+							arbGens[(int)ArbGenEnum::name::Siglent1].setOutputSettings(info1);
+							std::streampos posBeforeEndAwg2 = configFile.tellg();
+							try {
+								ConfigSystem::checkDelimiterLine(configFile, "END_SIGLENT_AWG_2");
+							}
+							catch (ChimeraError&) {
+								// Legacy variant: a second payload may appear before END_SIGLENT_AWG_2.
+								configFile.clear();
+								configFile.seekg(posBeforeEndAwg2);
+
+								std::string nextTokenAwg2;
+								configFile >> nextTokenAwg2;
+								configFile.clear();
+								configFile.seekg(posBeforeEndAwg2);
+								std::string loweredAwg2 = lowerToken(nextTokenAwg2);
+								bool looksLikeAnotherPayload =
+									(loweredAwg2 == "0" || loweredAwg2 == "1" || loweredAwg2 == "true" || loweredAwg2 == "false"
+										|| loweredAwg2.rfind("awg_", 0) == 0);
+
+								if (looksLikeAnotherPayload) {
+									auto info1Extra = arbGens[(int)ArbGenEnum::name::Siglent1].getCore().getSettingsFromConfig(configFile);
+									arbGens[(int)ArbGenEnum::name::Siglent1].setOutputSettings(info1Extra);
+									ConfigSystem::checkDelimiterLine(configFile, "END_SIGLENT_AWG_2");
+								}
+								// If it doesn't look like payload start (e.g. next section token),
+								// treat missing END_SIGLENT_AWG_2 as legacy/non-fatal and continue.
+							}
+						}
+						catch (ChimeraError& err) {
+							qDebug() << "QtScriptWindow: skipping missing ArbGen config block for"
+								<< qstr(arbGens[(int)ArbGenEnum::name::Siglent1].initSettings.deviceName) << ":" << qstr(err.qtrace());
+						}
 					}
 				}
 			}
@@ -390,10 +437,7 @@ void QtScriptWindow::windowOpenConfig (ConfigStream& configFile){
 		reportErr ("Scripting Window failed to read parameters from the configuration file.\n\n" + err.qtrace ());
 	}
 
-	// Auto-program all Siglent AWGs after config load
-    for (auto name : ArbGenEnum::allAgs) {
-        arbGens[(int)name].initializeSiglentFmOnStartup(this);
-    }
+	// Requested behavior: do not auto-program Siglent AWGs after config load.
 }
 
 void QtScriptWindow::newMasterScript (){
@@ -594,9 +638,6 @@ void QtScriptWindow::saveAllScript()
 {
 	saveMasterScript();
 	saveGMoogScript();
-	for (auto name : ArbGenEnum::allAgs) {
-		saveArbGenScript(name);
-	}
 	saveWieserlabsDDSScript();
 }
 
@@ -625,9 +666,6 @@ void QtScriptWindow::checkMasterSave (){
 }
 
 void QtScriptWindow::considerScriptLocations() {
-	for (auto name : ArbGenEnum::allAgs) {
-		arbGens[(int)name].arbGenScript.considerCurrentLocation(getProfile().configLocation, mainWin->getRunInfo());
-	}
 	masterScript.considerCurrentLocation(getProfile().configLocation, mainWin->getRunInfo());
 	gigaMoog.gmoogScript.considerCurrentLocation(getProfile().configLocation, mainWin->getRunInfo());
 }

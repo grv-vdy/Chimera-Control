@@ -215,6 +215,7 @@ void ArbGenCore::convertInputToFinalSettings(unsigned chan, deviceOutputInfo& in
 	try {
 		if (chan == 0 && info.siglentFm.control) {
 			info.siglentFm.ch1AmplitudeVpp.assertValid(params, GLOBAL_PARAMETER_SCOPE);
+			info.siglentFm.ch1OffsetV.assertValid(params, GLOBAL_PARAMETER_SCOPE);
 			info.siglentFm.ch1StartPhaseDeg.assertValid(params, GLOBAL_PARAMETER_SCOPE);
 			info.siglentFm.ch1BurstCycles.assertValid(params, GLOBAL_PARAMETER_SCOPE);
 			info.siglentFm.ch2FrequencyMHz.assertValid(params, GLOBAL_PARAMETER_SCOPE);
@@ -223,6 +224,7 @@ void ArbGenCore::convertInputToFinalSettings(unsigned chan, deviceOutputInfo& in
 			info.siglentFm.ch2FrequencyDeviationMHz.assertValid(params, GLOBAL_PARAMETER_SCOPE);
 
 			info.siglentFm.ch1AmplitudeVpp.internalEvaluate(params, totalVariations);
+			info.siglentFm.ch1OffsetV.internalEvaluate(params, totalVariations);
 			info.siglentFm.ch1StartPhaseDeg.internalEvaluate(params, totalVariations);
 			info.siglentFm.ch1BurstCycles.internalEvaluate(params, totalVariations);
 			info.siglentFm.ch2FrequencyMHz.internalEvaluate(params, totalVariations);
@@ -439,6 +441,29 @@ deviceOutputInfo ArbGenCore::getSettingsFromConfig(ConfigStream& file) {
 			// If reading fails, just use default and rewind.
 			file.clear();
 			file.seekg(posBeforeDuration);
+		}
+
+		// Optional CH1 offset line (new field, absent in older configs).
+		std::streampos posBeforeOffset = file.tellg();
+		try {
+			std::string offsetLine;
+			readFunc(file, offsetLine);
+			std::string trimmed = offsetLine;
+			auto it = trimmed.find_first_not_of(" \t\r");
+			if (it != std::string::npos) {
+				trimmed = trimmed.substr(it);
+			}
+			if (trimmed != ConfigStream::emptyStringTxt && !trimmed.empty() && trimmed[0] != '/') {
+				tempSettings.siglentFm.ch1OffsetV.expressionStr = trimmed;
+			}
+			else {
+				file.clear();
+				file.seekg(posBeforeOffset);
+			}
+		}
+		catch (...) {
+			file.clear();
+			file.seekg(posBeforeOffset);
 		}
 	}
 	else {
