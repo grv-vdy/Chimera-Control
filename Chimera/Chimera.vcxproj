@@ -149,12 +149,9 @@
     <ClCompile Include="Source\Rearrangement\RearrangeGenerator.cpp" />
     <ClCompile Include="Source\Rearrangement\rearrangeLUT.cpp" />
     <ClCompile Include="Source\GigaMOOG\DynamicMoveManager.cpp" />
-    <ClCompile Include="Source\Andor\AndorCameraThreadImageGrabber.cpp" />
     <ClCompile Include="Source\ExperimentMonitoringAndStatus\InfluxTypes.cpp" />
     <ClCompile Include="Source\AnalogInput\AiOutput.cpp" />
     <ClCompile Include="Source\ExcessDialogs\AiSettingsDialog.cpp" />
-    <ClCompile Include="Source\Andor\AndorBinningMode.cpp" />
-    <ClCompile Include="Source\Andor\AndorGainMode.cpp" />
     <ClCompile Include="Source\CMOSCamera\FrameAverager.cpp" />
     <ClCompile Include="Source\ExperimentMonitoringAndStatus\StatusOptionsWindow.cpp" />
     <ClCompile Include="Source\ExperimentMonitoringAndStatus\TemperatureMonitor.cpp" />
@@ -235,14 +232,11 @@
     <QtMoc Include="Source\PicoScrew\PicoScrewSystem.h" />
     <QtMoc Include="Source\PicoScrew\PicoScrewCore.h" />
     <ClInclude Include="Source\PicoScrew\PicoScrewFlume.h" />
-    <QtMoc Include="Source\Andor\AndorCameraThreadImageGrabber.h" />
     <ClInclude Include="Source\Rearrangement\RearrangeGenerator.h" />
     <ClInclude Include="Source\Rearrangement\rearrangeLUT.h" />
     <ClInclude Include="Source\GigaMOOG\DynamicMoveManager.h" />
     <ClInclude Include="Source\ExperimentMonitoringAndStatus\InfluxTypes.h" />
     <ClInclude Include="Source\AnalogInput\AiOutput.h" />
-    <ClInclude Include="Source\Andor\AndorBinningMode.h" />
-    <ClInclude Include="Source\Andor\AndorGainMode.h" />
     <ClInclude Include="Source\ExperimentMonitoringAndStatus\StatusControlOptions.h" />
     <QtMoc Include="Source\ExperimentMonitoringAndStatus\StatusOptionsWindow.h" />
     <ClInclude Include="Source\ExperimentThread\ExpRuntimeData.h" />
@@ -282,16 +276,6 @@
     <ClCompile Include="Source\AnalogOutput\AnalogOutput.cpp" />
     <ClCompile Include="Source\AnalogOutput\AoCore.cpp" />
     <ClCompile Include="Source\AnalogOutput\AoSystem.cpp" />
-    <ClCompile Include="Source\Andor\AndorCameraCore.cpp" />
-    <ClCompile Include="Source\Andor\AndorCameraSettingsControl.cpp" />
-    <ClCompile Include="Source\Andor\AndorCameraThreadWorker.cpp" />
-    <ClCompile Include="Source\Andor\AndorFlume.cpp" />
-    <ClCompile Include="Source\Andor\AndorRunMode.cpp" />
-    <ClCompile Include="Source\Andor\AndorRunSettings.cpp" />
-    <ClCompile Include="Source\Andor\AndorTriggerModes.cpp" />
-    <ClCompile Include="Source\Andor\CameraCalibration.cpp" />
-    <ClCompile Include="Source\Andor\CameraImageDimensions.cpp" />
-    <ClCompile Include="Source\Andor\PictureSettingsControl.cpp" />
     <ClCompile Include="Source\ArbGen\AgilentCore.cpp" />
     <ClCompile Include="Source\ArbGen\ArbGenChannelMode.cpp" />
     <ClCompile Include="Source\ArbGen\ArbGenCore.cpp" />
@@ -367,7 +351,6 @@
     <ClCompile Include="Source\Plotting\PlottingInfo.cpp" />
     <ClCompile Include="Source\Plotting\QCustomPlotCtrl.cpp" />
     <ClCompile Include="Source\PrimaryWindows\IChimeraQtWindow.cpp" />
-    <ClCompile Include="Source\PrimaryWindows\QtAndorWindow.cpp" />
     <ClCompile Include="Source\PrimaryWindows\QtAuxiliaryWindow.cpp" />
     <ClCompile Include="Source\PrimaryWindows\QtMainWindow.cpp" />
     <ClCompile Include="Source\PrimaryWindows\QtScriptWindow.cpp" />
@@ -405,18 +388,6 @@
     <ClInclude Include="Source\AnalogOutput\AoCore.h" />
     <ClInclude Include="Source\AnalogOutput\AoStructures.h" />
     <QtMoc Include="Source\AnalogOutput\AoSystem.h" />
-    <ClInclude Include="Source\Andor\AndorCameraCore.h" />
-    <QtMoc Include="Source\Andor\AndorCameraSettingsControl.h" />
-    <ClInclude Include="Source\Andor\AndorFlume.h" />
-    <ClInclude Include="Source\Andor\andorPicSettingsGroup.h" />
-    <ClInclude Include="Source\Andor\AndorRunMode.h" />
-    <ClInclude Include="Source\Andor\AndorRunSettings.h" />
-    <ClInclude Include="Source\Andor\AndorTemperatureStatus.h" />
-    <ClInclude Include="Source\Andor\AndorTriggerModes.h" />
-    <QtMoc Include="Source\Andor\CameraCalibration.h" />
-    <QtMoc Include="Source\Andor\CameraImageDimensions.h" />
-    <ClInclude Include="Source\Andor\cameraThreadInput.h" />
-    <QtMoc Include="Source\Andor\PictureSettingsControl.h" />
     <ClInclude Include="Source\ArbGen\AgilentCore.h" />
     <ClInclude Include="Source\ArbGen\ArbGenChannelMode.h" />
     <ClInclude Include="Source\ArbGen\ArbGenCore.h" />
@@ -524,7 +495,6 @@
     <QtMoc Include="Source\PrimaryWindows\QtScriptWindow.h" />
     <QtMoc Include="Source\PrimaryWindows\QtMainWindow.h" />
     <QtMoc Include="Source\PrimaryWindows\QtAuxiliaryWindow.h" />
-    <QtMoc Include="Source\PrimaryWindows\QtAndorWindow.h" />
     <QtMoc Include="Source\PrimaryWindows\IChimeraQtWindow.h" />
     <QtMoc Include="Source\Plotting\QCustomPlotCtrl.h" />
     <QtMoc Include="Source\Plotting\PlotCtrl.h" />
@@ -545,7 +515,6 @@
     <QtMoc Include="Source\ConfigurationSystems\ProfileIndicator.h" />
     <QtMoc Include="Source\ConfigurationSystems\NoteSystem.h" />
     <QtMoc Include="Source\ConfigurationSystems\ConfigSystem.h" />
-    <QtMoc Include="Source\Andor\AndorCameraThreadWorker.h" />
     <QtMoc Include="Source\AnalogInput\CalibrationThreadWorker.h" />
   </ItemGroup>
   <ItemGroup>

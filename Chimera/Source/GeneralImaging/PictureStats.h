@@ -3,8 +3,6 @@
 
 #include "Control.h"
 #include "GeneralObjects/coordinate.h"
-#include "Andor/AndorRunMode.h"
-#include "Andor/AndorTriggerModes.h"
 #include <GeneralObjects/Matrix.h>
 #include <vector>
 #include <string>
@@ -58,7 +56,7 @@ class PictureStats : public QWidget
 		static constexpr auto RAW_COUNTS = "Raw Counts";
 		static constexpr auto CAMERA_PHOTONS = "Camera Photons";
 		static constexpr auto ATOM_PHOTONS = "Atom Photons";
-		PictureStats::PictureStats(){
+		PictureStats(){
 			displayDataType = RAW_COUNTS;
 		}
 		void initialize( IChimeraQtWindow* parent );

@@ -5,7 +5,6 @@
 #include "Control.h"
 #include <filesystem>
 #include <algorithm>
-#include "PrimaryWindows/QtAndorWindow.h"
 #include "ConfigurationSystems/ConfigSystem.h"
 #include "RealTimeDataAnalysis/QtPlotDesignerDlg.h"
 #include "RealTimeDataAnalysis/realTimePlotterInput.h"
@@ -205,13 +204,6 @@ void DataAnalysisControl::initialize( IChimeraQtWindow* parent ){
 	displayGridBtn = new CQCheckBox("Disp. Grid?", parent);
 	parent->connect(displayGridBtn, &QCheckBox::released, [this, parent]() {
 		updateSettings();
-		if (displayGridBtn->isChecked()) {
-			int sel = gridSelector->currentIndex();
-			parent->andorWin->displayAnalysisGrid(currentSettings.grids[sel]);
-		}
-		else {
-			parent->andorWin->removeAnalysisGrid();
-		}
 		});
 
 	layout2->addWidget(gridSelectorLabel, 0);
@@ -271,7 +263,7 @@ void DataAnalysisControl::initialize( IChimeraQtWindow* parent ){
 	doBumpAnalysis = new CQPushButton ("Analyze Now", parent);
 
 	parent->connect (doBumpAnalysis, &QPushButton::released, [parent]() {
-		parent->andorWin->handleBumpAnalysis (parent->mainWin->getProfileSettings());
+		parent->reportStatus("Bump analysis is unavailable without the Andor window.\r\n");
 		});
 	bumpEditParam = new CQLineEdit (parent);
 	layout5->addWidget(autoThresholdAnalysisButton, 0);
@@ -566,10 +558,6 @@ void DataAnalysisControl::loadGridParams( atomGrid& grid ){
 			b->setEnabled(true);
 			b->setStyleSheet("QLineEdit { background: rgb(255, 255, 255); }");
 		}
-	}
-	if (displayGridBtn->isChecked()) {
-		parentWin->andorWin->removeAnalysisGrid();
-		parentWin->andorWin->displayAnalysisGrid(grid);
 	}
 }
 

@@ -51,36 +51,6 @@
     <ClCompile Include="Source\AnalogOutput\AoSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Andor\AndorCameraCore.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Andor\AndorCameraSettingsControl.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Andor\AndorCameraThreadWorker.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Andor\AndorFlume.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Andor\AndorRunMode.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Andor\AndorRunSettings.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Andor\AndorTriggerModes.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Andor\CameraCalibration.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Andor\CameraImageDimensions.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Andor\PictureSettingsControl.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Source\ArbGen\AgilentCore.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -264,9 +234,6 @@
     <ClCompile Include="Source\PrimaryWindows\IChimeraQtWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\PrimaryWindows\QtAndorWindow.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Source\PrimaryWindows\QtAuxiliaryWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -426,12 +393,6 @@
     <ClCompile Include="Source\ExperimentMonitoringAndStatus\StatusOptionsWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Andor\AndorGainMode.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Andor\AndorBinningMode.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Source\ExcessDialogs\AiSettingsDialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -466,9 +427,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\Python\cnpy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Andor\AndorCameraThreadImageGrabber.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\GigaMOOG\DynamicMoveManager.cpp">
@@ -525,9 +483,6 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="Source\AnalogInput\CalibrationThreadWorker.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
-    <QtMoc Include="Source\Andor\AndorCameraThreadWorker.h">
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="Source\ConfigurationSystems\ConfigSystem.h">
@@ -588,9 +543,6 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="Source\PrimaryWindows\IChimeraQtWindow.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
-    <QtMoc Include="Source\PrimaryWindows\QtAndorWindow.h">
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="Source\PrimaryWindows\QtAuxiliaryWindow.h">
@@ -671,22 +623,10 @@
     <QtMoc Include="Source\ExperimentMonitoringAndStatus\AlertSystem.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <QtMoc Include="Source\Andor\AndorCameraSettingsControl.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
-    <QtMoc Include="Source\Andor\PictureSettingsControl.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
     <QtMoc Include="Source\GeneralImaging\PictureStats.h">
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="Source\ExperimentMonitoringAndStatus\ExperimentTimer.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
-    <QtMoc Include="Source\Andor\CameraImageDimensions.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
-    <QtMoc Include="Source\Andor\CameraCalibration.h">
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="Source\GeneralImaging\PictureManager.h">
@@ -702,9 +642,6 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="Source\ExcessDialogs\AiSettingsDialog.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
-    <QtMoc Include="Source\Andor\AndorCameraThreadImageGrabber.h">
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="Source\ExternalController\TCPServerSystem.h">
@@ -755,30 +692,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\AnalogOutput\AoStructures.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Andor\AndorCameraCore.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Andor\AndorFlume.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Andor\andorPicSettingsGroup.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Andor\AndorRunMode.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Andor\AndorRunSettings.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Andor\AndorTemperatureStatus.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Andor\AndorTriggerModes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Andor\cameraThreadInput.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\ArbGen\AgilentCore.h">
@@ -1082,12 +995,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\ExperimentMonitoringAndStatus\StatusControlOptions.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Andor\AndorGainMode.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Andor\AndorBinningMode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\AnalogInput\AiOutput.h">

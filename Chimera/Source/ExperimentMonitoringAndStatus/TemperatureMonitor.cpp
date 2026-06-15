@@ -9,7 +9,7 @@
 #include <DataLogging/DataLogger.h>
 #include <ParameterSystem/Expression.h>
 #include <PrimaryWindows/IChimeraQtWindow.h>
-#include <PrimaryWindows/QtAndorWindow.h>
+#include <PrimaryWindows/QtMainWindow.h>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
@@ -143,7 +143,7 @@ void TemperatureMonitorCore::loadExpSettings(ConfigStream& stream)
 void TemperatureMonitorCore::normalFinish()
 {
 	auto win = static_cast<IChimeraQtWindow*>(parent());
-	DataLogger& logger = win->andorWin->getLogger();
+	DataLogger& logger = win->mainWin->getLogger();
 	for (auto& broker : dataBroker) {
 		broker.experimentEnd();
 		auto timedata = broker.getDataExp();

@@ -8,14 +8,12 @@
 #include <atomic>
 #include <vector>
 #include <mutex>
-#include <Andor/AndorRunSettings.h>
 
 class IChimeraQtWindow;
 class AnalysisThreadWorker;
 
 struct realTimePlotterInput{
 	realTimePlotterInput ( ) { }
-	//AndorCameraSettings cameraSettings;
 	IChimeraQtWindow* plotParentWindow;
 
 	std::vector<tinyPlotInfo> plotInfo;

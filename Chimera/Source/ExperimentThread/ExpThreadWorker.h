@@ -32,7 +32,6 @@ class ExpThreadWorker : public QObject
 			ScriptStream& currentMasterScript, bool expectsLoadSkip,
 			std::string& warnings, timeType& operationTime,
 			timeType& loadSkipTime, repeatManager& repeatManager);
-		void waitForAndorFinish ();
 		// this function needs the mastewindow in order to gather the relevant parameters for the experiment.
 		void startExperimentThread (ExperimentThreadInput* input, IChimeraQtWindow* parent);
 		bool runningStatus ();
@@ -110,7 +109,6 @@ class ExpThreadWorker : public QObject
         void notification (QString msg, unsigned debugLvl=0);
         void warn (QString msg, unsigned debugLvl=1);
         void repUpdate (unsigned int);
-        void prepareAndor (AndorRunSettings*, analysisSettings);
         void prepareMako (MakoSettings* settings, CameraInfo camInfo);
 		void prepareAnalysis();
         void plot_Xvals_determined (std::vector<double>);

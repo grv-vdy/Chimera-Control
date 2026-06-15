@@ -5,7 +5,6 @@
 #include "ExcessDialogs/saveWithExplorer.h"
 #include "ExperimentThread/ExperimentThreadInput.h"
 #include "PrimaryWindows/QtMainWindow.h"
-#include "PrimaryWindows/QtAndorWindow.h"
 #include "PrimaryWindows/QtAuxiliaryWindow.h"
 #include "PrimaryWindows/QtScriptWindow.h"
 #include "PrimaryWindows/IChimeraQtWindow.h"
@@ -20,7 +19,6 @@ namespace commonFunctions{
 	// redirects everything to all of the other functions below, for the most part.
 	void handleCommonMessage( int msgID, IChimeraQtWindow* win ){
 		auto* mainWin = win->mainWin; 
-		auto* andorWin = win->andorWin;
 		auto* scriptWin = win->scriptWin;
 		auto* auxWin = win->auxWin;
 		auto* makoWin1 = win->makoWin1;
@@ -40,16 +38,15 @@ namespace commonFunctions{
 						}
 						break;
 					}
-					andorWin->setTimerText ("Starting...");
 					// automatically save; this is important to handle changes like the auto servo and auto carrier
 					commonFunctions::handleCommonMessage (ID_FILE_SAVEALL, win);
-					prepareMasterThread (msgID, win, input, true, true, true, true);
+					prepareMasterThread (msgID, win, input, true, false, true, true);
 					input.masterInput->expType = ExperimentType::Normal;
 					if (!mainWin->autoF5_AfterFinish) {
 						commonFunctions::getPermissionToStart (win, true, input);
 					}
 					mainWin->autoF5_AfterFinish = false;
-					logStandard (input, andorWin->getLogger ());
+					logStandard (input, input.masterInput->logger);
 					startExperimentThread (mainWin, input);
 				}
 				catch (ChimeraError & err) {
@@ -59,65 +56,31 @@ namespace commonFunctions{
 					}
 					mainWin->reportErr ("EXITED WITH ERROR!\n " + err.qtrace ());
 					mainWin->reportStatus ("EXITED WITH ERROR!\r\nInitialized Default Waveform\r\n");
-					andorWin->setTimerText ("ERROR!");
-					andorWin->assertOff ();
 					break;
 				}
 				break;
 			}
 			case ID_ACCELERATOR_ESC: {
 				std::string status;
-				bool andorAborted = false, masterAborted = false, baslerAborted = false;
-				andorWin->wakeRearranger ();
+				bool masterAborted = false, baslerAborted = false;
 				try {
 					if (mainWin->expIsRunning ()) {
 						status = "MASTER";
 						commonFunctions::abortMaster (win);
 						masterAborted = true;
 					}
-					//while (mainWin->expIsRunning()) { // wait for all device in expThread to finish
-					//	Sleep(100);
-					//	mainWin->reportStatus("Waiting for ExpThread to finish aborting ... ", 1);
-					//};
-					andorWin->assertOff ();
-					andorWin->assertDataFileClosed ();
 				}
 				catch (ChimeraError & err) {
 					mainWin->reportErr ("Abort Master thread exited with Error! Error Message: "
 						+ err.qtrace ());
 					mainWin->reportStatus ("Abort Master thread exited with Error!\r\n");
-					andorWin->setTimerText ("ERROR!");
-				}
-				try {
-					if (andorWin->andor.isRunning ()) {
-						status = "ANDOR";
-						commonFunctions::abortCamera (win);
-						andorAborted = true;
-					}
-					else {
-						auto answer = QMessageBox::question(andorWin, qstr("Delete Data?"), qstr("Acquisition Aborted. Delete Data "
-							"file (data_" + str(andorWin->getLogger().getDataFileNumber()) + ".h5) for this run?"));
-						if (answer == QMessageBox::Yes) {
-							try {
-								andorWin->getLogger().deleteFile();
-							}
-							catch (ChimeraError& err) {
-								andorWin->reportErr(qstr(err.trace()));
-							}
-						}
-					}
-				}
-				catch (ChimeraError & err) {
-					mainWin->reportErr ("Andor Camera threw error while aborting! Error: " + err.qtrace ());
-					mainWin->reportStatus ("Abort camera threw error\r\n");
-					andorWin->setTimerText ("ERROR!");
 				}
 				//
-				if ( !andorAborted && !masterAborted && !baslerAborted) {
+				if (!masterAborted && !baslerAborted) {
 					for (auto& dev : mainWin->getDevices ().list) {
 						mainWin->handleColorboxUpdate ("Black", qstr (dev.get ().getDelim ()));
 					}
-					mainWin->reportErr ("Andor camera, Master, and Basler camera were not running. "
+					mainWin->reportErr ("Master and Basler camera were not running. "
 						"Can't Abort.\r\n");
 				}
 				break;
@@ -128,7 +91,7 @@ namespace commonFunctions{
 				try {
 					scriptWin->saveAllScript();
 					mainWin->profile.saveConfiguration (win);
-					mainWin->masterConfig.save (mainWin, auxWin, andorWin);
+					mainWin->masterConfig.save (mainWin, auxWin);
 				}
 				catch (ChimeraError & err) {
 					mainWin->reportErr (err.qtrace ());
@@ -145,20 +108,7 @@ namespace commonFunctions{
 				break;
 			}
 			case ID_RUNMENU_ABORTCAMERA: {
-				try {
-					if (andorWin->andor.isRunning ()) {
-						commonFunctions::abortCamera (win);
-					}
-					else {
-						mainWin->reportErr ("Camera was not running. Can't Abort.\r\n");
-					}
-					andorWin->assertOff ();
-				}
-				catch (ChimeraError & except) {
-					mainWin->reportErr ("EXITED WITH ERROR!\n" + except.qtrace ());
-					mainWin->reportStatus ("EXITED WITH ERROR!\r\nInitialized Default Waveform\r\n");
-					andorWin->setTimerText ("ERROR!");
-				}
+				mainWin->reportStatus ("Camera-specific abort is disabled in the current build.\r\n");
 				break;
 			}
 			case ID_ACCELERATOR_F1: {
@@ -194,8 +144,7 @@ namespace commonFunctions{
 				input.masterInput->quiet = true;
 				try {
 					auxWin->fillMasterThreadInput (input.masterInput);
-					andorWin->fillMasterThreadInput (input.masterInput);
-					auto calNum = andorWin->getDataCalNum ();
+					auto calNum = -1;
 					if (calNum == -1) {
 						return;
 					}
@@ -205,7 +154,7 @@ namespace commonFunctions{
 					mainWin->reportStatus (qstr (calInfo.infoStr));
 					input.masterInput->profile = calInfo.prof;
 					input.masterInput->expType = ExperimentType::AutoCal;
-					logStandard (input, andorWin->getLogger (), calInfo.fileName, false);
+					logStandard (input, input.masterInput->logger, calInfo.fileName, false);
 					startExperimentThread (mainWin, input);
 				}
 				catch (ChimeraError & err) {
@@ -227,8 +176,8 @@ namespace commonFunctions{
 			case ID_MASTERSCRIPT_OPENSCRIPT: { scriptWin->openMasterScript (win); break; }
 			case ID_MASTERSCRIPT_NEWFUNCTION: { scriptWin->newMasterFunction ();	break; }
 			case ID_MASTERSCRIPT_SAVEFUNCTION: { scriptWin->saveMasterFunction (); break; }
-			case ID_MASTERCONFIG_SAVEMASTERCONFIGURATION: { mainWin->masterConfig.save (mainWin, auxWin, andorWin); break; }
-			case ID_MASTERCONFIGURATION_RELOAD_MASTER_CONFIG: { mainWin->masterConfig.load (mainWin, auxWin, andorWin); break; }
+			case ID_MASTERCONFIG_SAVEMASTERCONFIGURATION: { mainWin->masterConfig.save (mainWin, auxWin); break; }
+			case ID_MASTERCONFIGURATION_RELOAD_MASTER_CONFIG: { mainWin->masterConfig.load (mainWin, auxWin); break; }
 
 
 			default:
@@ -247,7 +196,6 @@ namespace commonFunctions{
 			input.masterInput = new ExperimentThreadInput ( win );
 			input.masterInput->profile = win->mainWin->getProfileSettings();
 			win->auxWin->fillMasterThreadInput (input.masterInput);
-			win->andorWin->loadCameraCalSettings( input );
 			win->mainWin->loadCameraCalSettings( input.masterInput );
 			win->mainWin->startExperimentThread( input.masterInput );
 		}
@@ -256,14 +204,14 @@ namespace commonFunctions{
 		}
 	}
 
-	void prepareMasterThread( int msgID, IChimeraQtWindow* win, AllExperimentInput& input, 
-							  bool runMaster, bool runAndor, bool runMako, bool updatePlotXVals )	{
+	void prepareMasterThread( int msgID, IChimeraQtWindow* win, AllExperimentInput& input,
+							  bool runMaster, bool runCamera, bool runMako, bool updatePlotXVals )	{
 		win->mainWin->checkProfileSave();
 		win->scriptWin->checkScriptSaves( );
 		// Set the thread structure.
 		input.masterInput = new ExperimentThreadInput ( win );
 		input.masterInput->updatePlotterXVals = updatePlotXVals;
-		input.masterInput->skipNext = win->andorWin->getSkipNextAtomic( );
+		input.masterInput->skipNext = nullptr;
 		input.masterInput->numVariations = win->auxWin->getTotalVariationNumber ( );
 		input.masterInput->sleepTime = win->mainWin->getDebuggingOptions ().sleepTime;
 		input.masterInput->profile = win->mainWin->getProfileSettings ();
@@ -271,24 +219,12 @@ namespace commonFunctions{
 		win->scriptWin->fillMasterThreadInput( input.masterInput );
 		win->auxWin->fillMasterThreadInput( input.masterInput );
 		win->mainWin->fillMasterThreadInput( input.masterInput );
-		win->andorWin->fillMasterThreadInput( input.masterInput );
 	}
 
 	void startExperimentThread(IChimeraQtWindow* win, AllExperimentInput& input){
 		win->mainWin->addTimebar( "main" );
 		win->mainWin->addTimebar( "error" );
 		win->mainWin->startExperimentThread( input.masterInput );
-	}
-
-	void abortCamera(IChimeraQtWindow* win){
-		if (!win->andorWin->cameraIsRunning()){
-			win->mainWin->reportErr ( "System was not running. Can't Abort.\r\n" );
-			return;
-		}
-		std::string errorMessage;
-		// abort acquisition if in progress
-		win->andorWin->abortCameraRun();
-		win->mainWin->reportStatus( "Aborted Camera Operation.\r\n" );
 	}
 
 	void abortMaster( IChimeraQtWindow* win ){
@@ -302,10 +238,6 @@ namespace commonFunctions{
 
 
 	void exitProgram(IChimeraQtWindow* win)	{
-		if (win->andorWin->cameraIsRunning()){
-			thrower ( "The Camera is Currently Running. Please stop the system before exiting so that devices devices "
-					  "can stop normally." );
-		}
 		if (win->mainWin->masterIsRunning()){
 			thrower ( "The Master system (ttls & aoSys) is currently running. Please stop the system before exiting so "
 					  "that devices can stop normally." );
@@ -313,8 +245,7 @@ namespace commonFunctions{
 		win->scriptWin->checkScriptSaves( );
 		win->mainWin->checkProfileSave();
 		std::string exitQuestion = "Are you sure you want to exit?\n\nThis will stop all output of the NI arbitrary "
-			"waveform generator. The Andor camera temperature control will also stop, causing the Andor camera to "
-			"return to room temperature.";
+			"waveform generator.";
 		auto areYouSure = QMessageBox::question (win, "Exit?", qstr(exitQuestion));
 		if (areYouSure == QMessageBox::Yes){
 			forceExit ( win );
@@ -330,7 +261,6 @@ namespace commonFunctions{
 
 	bool getPermissionToStart( IChimeraQtWindow* win, bool runMaster, AllExperimentInput& input ){
 		std::string startMsg = "Current Settings:\r\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~\r\n\r\n";
-		startMsg = win->andorWin->getStartMessage( );
 		startMsg += "\r\n\r\nBegin Experiment with these Settings?";
 		//StartDialog dlg( startMsg, IDD_BEGINNING_SETTINGS );
 		//bool areYouSure = dlg.DoModal( );

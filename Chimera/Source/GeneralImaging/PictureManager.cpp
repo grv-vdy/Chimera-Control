@@ -2,8 +2,6 @@
 #include "stdafx.h"
 #include "PictureManager.h"
 #include "ConfigurationSystems/ConfigSystem.h"
-#include "Andor/pictureSettingsControl.h"
-#include <PrimaryWindows/QtAndorWindow.h>
 
 PictureManager::PictureManager ( bool histOption, std::string configurationFileDelimiter, bool autoscaleDefault, 
 	Qt::TransformationMode mode)

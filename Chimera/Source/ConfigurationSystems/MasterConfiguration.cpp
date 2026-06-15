@@ -5,7 +5,6 @@
 #include "AnalogOutput/AoSystem.h"
 #include <sys/stat.h>
 #include "PrimaryWindows/QtAuxiliaryWindow.h"
-#include "PrimaryWindows/QtAndorWindow.h"
 #include "PrimaryWindows/QtMainWindow.h"
 #include "PrimaryWindows/QtScriptWindow.h"
 #include <string>
@@ -13,7 +12,7 @@
 
 MasterConfiguration::MasterConfiguration(std::string address) : configurationFileAddress{address}{}
 
-void MasterConfiguration::save(QtMainWindow* mainWin, QtAuxiliaryWindow* auxWin, QtAndorWindow* camWin) {
+void MasterConfiguration::save(QtMainWindow* mainWin, QtAuxiliaryWindow* auxWin) {
 	/*
 		information to save:
 		- TTL names
@@ -45,12 +44,11 @@ void MasterConfiguration::save(QtMainWindow* mainWin, QtAuxiliaryWindow* auxWin,
 	configStream << "Version " + version.str() + "\n";
 	auxWin->handleMasterConfigSave(configStream);
 	mainWin->handleMasterConfigSave (configStream);
-	camWin->handleMasterConfigSave(configStream);
 	configFile << configStream.str();
 	configFile.close();
 }
 
-void MasterConfiguration::load(QtMainWindow* mainWin, QtAuxiliaryWindow* auxWin, QtAndorWindow* camWin){
+void MasterConfiguration::load(QtMainWindow* mainWin, QtAuxiliaryWindow* auxWin){
 	try {
 		// make sure that file exists	
 		FILE* file;
@@ -65,7 +63,6 @@ void MasterConfiguration::load(QtMainWindow* mainWin, QtAuxiliaryWindow* auxWin,
 		ConfigSystem::getVersionFromFile (configFile);
 		auxWin->handleMasterConfigOpen (configFile);
 		mainWin->handleMasterConfigOpen (configFile);
-		camWin->handleMasterConfigOpen (configFile);
 		mainWin->scriptWin->updateDoAoDdsNames ();
 	}
 	catch (ChimeraError & err) {

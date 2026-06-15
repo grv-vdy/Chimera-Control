@@ -32,7 +32,7 @@ int main (int argc, char** argv) {
 	qRegisterMetaType<size_t>("size_t");
 
 	qRegisterMetaType<CameraInfo>();
-	qRegisterMetaType<AndorRunSettings>();
+	//qRegisterMetaType<AndorRunSettings>();
 	qRegisterMetaType<MakoSettings*>();
 
 	qRegisterMetaType<std::vector<AoCommand>>();

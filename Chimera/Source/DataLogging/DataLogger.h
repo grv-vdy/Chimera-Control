@@ -3,8 +3,7 @@
 #include "nidaqmx2.h"
 #include <ExperimentThread/ExpRuntimeData.h>
 #include "RealTimeDataAnalysis/DataAnalysisControl.h"					  
-#include "Andor/CameraImageDimensions.h"
-#include "Andor/AndorRunSettings.h"
+
 #include <GeneralObjects/Matrix.h>
 #include <DigitalOutput/DoCore.h>
 #include <CMOSCamera/CMOSSetting.h>
@@ -29,7 +28,8 @@ class DataLogger : public IChimeraSystem {
 		void logMasterRuntime ( const ExpRuntimeData& expRuntime);
 		void logError ( H5::Exception& err );
 		void initializeDataFiles( std::string specialName="", bool needsCal=true);
-		void writeAndorPic( Matrix<long> image, imageParameters dims );
+		
+
 		void writeMakoPic(std::vector<double> image, int width, int height, CameraInfo::name name);
 		void writeTemperature(std::pair<std::vector<long long>, std::vector<double>> timedata, std::string identifier );
 		void writePressure(std::pair<std::vector<long long>, std::vector<double>> timedata, std::string identifier, InfluxDataUnitType::mode unit);
@@ -52,7 +52,6 @@ class DataLogger : public IChimeraSystem {
 		void initOptimizationFile ( );
 		void updateOptimizationFile ( std::string appendTxt );
 		void finOptimizationFile ( );
-		bool andorDataSetShouldBeValid = false;
 		unsigned getNextFileNumber ( );
 		std::string getMostRecentDateString ( );
 		// the core file.
@@ -71,17 +70,14 @@ class DataLogger : public IChimeraSystem {
 		H5::DataSet writeDataSet (std::vector<std::string> dataVec, std::string name, H5::Group& group);
 		void writeAttribute (double data, std::string name, H5::DataSet& dset);
 		void writeAttribute (bool data, std::string name, H5::DataSet& dset);
-		H5::DataSet AndorPictureDataset, voltsDataSet/*, MakoPictureDataset*/;
+		H5::DataSet voltsDataSet;
 		std::map<CameraInfo::name, H5::DataSet> MakoPictureDataset;
 		// for the entire set
-		H5::DataSpace AndorPicureSetDataSpace/*, MakoPicureSetDataSpace*/;
 		std::map<CameraInfo::name, H5::DataSpace> MakoPicureSetDataSpace;
 		// just one pic
-		H5::DataSpace AndorPicDataSpace/*, MakoPicDataSpace*/;
 		std::map<CameraInfo::name, H5::DataSpace> MakoPicDataSpace;
 
 		H5::DataSpace voltsDataSpace, voltsSetDataSpace;
-		unsigned currentAndorPicNumber/*, currentMakoPicNumber*/;
 		std::map<CameraInfo::name, unsigned> currentMakoPicNumber;
 		std::string mr_dayStr, mr_monthStr, mr_yearStr;
 

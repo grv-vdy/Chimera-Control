@@ -8,9 +8,9 @@
 #include "ParameterSystem/ParameterSystem.h"
 #include "MiscellaneousExperimentOptions/DebugOptionsControl.h"
 #include "MiscellaneousExperimentOptions/MainOptionsControl.h"
-#include "Andor/AndorCameraCore.h"
+
 #include "expSystemRunList.h" 
-#include "Andor/AndorRunSettings.h"
+
 #include "RealTimeDataAnalysis/atomGrid.h"
 #include "ConfigurationSystems/profileSettings.h"
 #include "Rearrangement/atomCruncherInput.h"

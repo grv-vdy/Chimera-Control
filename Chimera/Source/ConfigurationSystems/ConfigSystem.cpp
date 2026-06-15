@@ -2,10 +2,8 @@
 #include "stdafx.h"
 
 #include "ConfigurationSystems/ConfigSystem.h"
-#include "Andor/AndorCameraCore.h"
 #include <RealTimeDataAnalysis/DataAnalysisControl.h>
 #include "PrimaryWindows/QtAuxiliaryWindow.h"
-#include "PrimaryWindows/QtAndorWindow.h"
 #include "PrimaryWindows/QtScriptWindow.h"
 #include "PrimaryWindows/QtMakoWindow.h"
 #include "PrimaryWindows/QtAnalysisWindow.h"
@@ -102,7 +100,6 @@ void ConfigSystem::openConfigFromPath( std::string pathToConfig, IChimeraQtWindo
 	try	{
 		getVersionFromFile(cStream);
 		win->scriptWin->windowOpenConfig(cStream );
-		win->andorWin->windowOpenConfig(cStream );
 		win->auxWin->windowOpenConfig(cStream );
 		win->makoWin1->windowOpenConfig(cStream);
 		win->makoWin2->windowOpenConfig(cStream);
@@ -233,7 +230,6 @@ void ConfigSystem::saveConfiguration(IChimeraQtWindow* win, bool askOverwrite){
 	saveStream << "Version: " + version.str() + "\n";
 	// give it to each window, allowing each window to save its relevant contents to the config file. Order matters.
 	win->scriptWin->windowSaveConfig(saveStream);
-	win->andorWin->windowSaveConfig(saveStream);
 	win->auxWin->windowSaveConfig(saveStream);
 	win->makoWin1->windowSaveConfig(saveStream);
 	win->makoWin2->windowSaveConfig(saveStream);
@@ -275,7 +271,6 @@ void ConfigSystem::saveConfigurationAs(IChimeraQtWindow* win){
 	configSaveStream << "Version: " + version.str() + "\n";
 	// give it to each window, allowing each window to save its relevant contents to the config file. Order matters.
 	win->scriptWin->windowSaveConfig(configSaveStream);
-	win->andorWin->windowSaveConfig(configSaveStream);
 	win->auxWin->windowSaveConfig(configSaveStream);
 	win->makoWin1->windowSaveConfig(configSaveStream);
 	win->makoWin2->windowSaveConfig(configSaveStream);

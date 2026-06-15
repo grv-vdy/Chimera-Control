@@ -13,7 +13,6 @@ class ColorBox;
 class QtMainWindow;
 class QtScriptWindow;
 class QtAuxiliaryWindow;
-class QtAndorWindow;
 class QtMakoWindow;
 class QtAnalysisWindow;
 
@@ -37,14 +36,13 @@ class IChimeraQtWindow : public QMainWindow{
 		void initializeShortcuts ();
 		void initializeMenu ();
 		void loadFriends (QtMainWindow* mainWin_, QtScriptWindow* scriptWin_, QtAuxiliaryWindow* auxWin_,
-						  QtAndorWindow* andorWin_, QtMakoWindow* makoWin1_, QtMakoWindow* makoWin2_, QtAnalysisWindow* analysisWin_);
+						  QtMakoWindow* makoWin1_, QtMakoWindow* makoWin2_, QtAnalysisWindow* analysisWin_);
 		void reportErr (QString errStr, unsigned errorLevel=0);
 		void reportStatus (QString statusStr, unsigned notificationLevel=0);
 
 		std::vector<IChimeraQtWindow*> winList();
 		QtMainWindow* mainWin = nullptr;
 		QtScriptWindow* scriptWin = nullptr;
-		QtAndorWindow* andorWin = nullptr;
 		QtAuxiliaryWindow* auxWin = nullptr;
 		QtMakoWindow* makoWin1 = nullptr;
 		QtMakoWindow* makoWin2 = nullptr;

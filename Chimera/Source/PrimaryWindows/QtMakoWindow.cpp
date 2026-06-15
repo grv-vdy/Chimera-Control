@@ -2,7 +2,6 @@
 #include "QtMakoWindow.h"
 #include <qdesktopwidget.h>
 #include <PrimaryWindows/QtScriptWindow.h>
-#include <PrimaryWindows/QtAndorWindow.h>
 #include <PrimaryWindows/QtAuxiliaryWindow.h>
 #include <PrimaryWindows/QtMainWindow.h>
 #include "ExperimentMonitoringAndStatus/colorbox.h"
@@ -114,9 +113,8 @@ void QtMakoWindow::CMOSChkFinished()
 	for (auto& camera : cam) {
 		allfinished = allfinished && (!camera.isExpStillRunning());
 	}
-	if (!andorWin->cameraIsRunning() && allfinished) {
-		// else it will close when the mako camera finishes.
-		andorWin->getLogger().normalCloseFile();
+	if (allfinished) {
+		mainWin->getLogger().normalCloseFile();
 	}
 }
 

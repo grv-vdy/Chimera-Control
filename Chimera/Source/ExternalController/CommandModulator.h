@@ -4,7 +4,6 @@
 class IChimeraSystem;
 class IChimeraQtWindow;
 class QtMainWindow;
-class QtAndorWindow;
 class QtMakoWindow;
 class QtAuxiliaryWindow;
 class QtScriptWindow;
@@ -56,7 +55,6 @@ private:
 private:
 	QtMainWindow* mainWin = nullptr;
 	QtScriptWindow* scriptWin = nullptr;
-	QtAndorWindow* andorWin = nullptr;
 	QtAuxiliaryWindow* auxWin = nullptr;
 	QtMakoWindow* makoWin1 = nullptr;
 	QtMakoWindow* makoWin2 = nullptr;

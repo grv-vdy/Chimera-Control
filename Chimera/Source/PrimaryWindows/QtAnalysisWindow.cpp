@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "QtAnalysisWindow.h"
 #include <PrimaryWindows/QtScriptWindow.h>
-#include <PrimaryWindows/QtAndorWindow.h>
 #include <PrimaryWindows/QtAuxiliaryWindow.h>
 #include <PrimaryWindows/QtMainWindow.h>
 #include <ExperimentMonitoringAndStatus/colorbox.h>
