@@ -26,15 +26,20 @@ QCustomPlotCtrl::~QCustomPlotCtrl() {
 
 void QCustomPlotCtrl::init(IChimeraQtWindow* parent, QString titleIn, unsigned numTraces)
 {
-	plot = new QCustomPlot(parent);
+	init(static_cast<QWidget*>(parent), parent, titleIn, numTraces);
+}
+
+void QCustomPlotCtrl::init(QWidget* widgetParent, IChimeraQtWindow* owner, QString titleIn, unsigned numTraces)
+{
+	plot = new QCustomPlot(widgetParent);
 	plot->setContextMenuPolicy(Qt::CustomContextMenu);
-	parent->connect(plot, &QCustomPlot::customContextMenuRequested,
-		[this, parent](const QPoint& pos2) {
+	owner->connect(plot, &QCustomPlot::customContextMenuRequested,
+		[this, owner](const QPoint& pos2) {
 			try {
 				handleContextMenu(pos2);
 			}
 			catch (ChimeraError& err) {
-				parent->reportErr(err.qtrace());
+				owner->reportErr(err.qtrace());
 			}
 		});
 	title = new QCPTextElement(plot, titleIn);

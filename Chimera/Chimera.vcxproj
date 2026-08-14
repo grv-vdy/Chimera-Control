@@ -68,7 +68,7 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;$(Qt_LIBS_);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;$(Qt_LIBS_);Source\Hamamatsu\dcamapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -83,7 +83,7 @@
       <ShowIncludes>false</ShowIncludes>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;Source\Hamamatsu\dcamapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="QtSettings">
@@ -180,6 +180,16 @@
     <ClCompile Include="Source\CMOSCamera\ImageProcessingThread.cpp" />
     <ClCompile Include="Source\CMOSCamera\MakoCamera.cpp" />
     <ClCompile Include="Source\CMOSCamera\MakoCameraCore.cpp" />
+    <ClCompile Include="Source\Hamamatsu\CameraImageDimensions.cpp" />
+    <ClCompile Include="Source\Hamamatsu\HamamatsuCameraCore.cpp" />
+    <ClCompile Include="Source\Hamamatsu\HamamatsuCameraSettingsControl.cpp" />
+    <ClCompile Include="Source\Hamamatsu\HamamatsuCameraThreadImageGrabber.cpp" />
+    <ClCompile Include="Source\Hamamatsu\HamamatsuCameraThreadWorker.cpp" />
+    <ClCompile Include="Source\Hamamatsu\HamamatsuFlume.cpp" />
+    <ClCompile Include="Source\Hamamatsu\hamamatsuRunMode.cpp" />
+    <ClCompile Include="Source\Hamamatsu\HamamatsuRunSettings.cpp" />
+    <ClCompile Include="Source\Hamamatsu\HamamatsuTriggerModes.cpp" />
+    <ClCompile Include="Source\Hamamatsu\PictureSettingsControl.cpp" />
     <ClCompile Include="Source\CMOSCamera\MakoSettingControl.cpp">
       <DynamicSource Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">input</DynamicSource>
       <QtMocFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename).moc</QtMocFileName>
@@ -206,6 +216,7 @@
     <ClCompile Include="Source\GeneralImaging\csvReader.cpp" />
     <ClCompile Include="Source\CustomQtControls\RangeSlider.cpp" />
     <ClCompile Include="Source\PrimaryWindows\QtMakoWindow.cpp" />
+    <ClCompile Include="Source\PrimaryWindows\QtHamamatsuWindow.cpp" />
     <ClCompile Include="Source\AnalogInput\BSplineFit.cpp" />
     <ClCompile Include="Source\AnalogInput\PolynomialFit.cpp" />
     <ClCompile Include="Source\AnalogInput\AiCore.cpp" />
@@ -262,6 +273,9 @@
     <ClInclude Include="Source\AnalogInput\PolynomialFit.h" />
     <ClInclude Include="Source\AnalogInput\AiCore.h" />
     <ClInclude Include="Source\CMOSCamera\CMOSSetting.h" />
+    <ClInclude Include="Source\Hamamatsu\cameraThreadInput.h" />
+    <ClInclude Include="Source\Hamamatsu\dcamapi4.h" />
+    <ClInclude Include="Source\Hamamatsu\dcamprop.h" />
     <QtMoc Include="Source\CMOSCamera\FrameObserver.h" />
     <ClInclude Include="Source\CMOSCamera\GaussianFit.h" />
     <ClInclude Include="Source\CMOSCamera\Helper.h" />
@@ -450,6 +464,11 @@
     <ClInclude Include="Source\GeneralObjects\multiDimensionalKey.h" />
     <ClInclude Include="Source\GeneralObjects\Queues.h" />
     <ClInclude Include="Source\GeneralObjects\RunInfo.h" />
+    <ClInclude Include="Source\Hamamatsu\HamamatsuFlume.h" />
+    <ClInclude Include="Source\Hamamatsu\HamamatsuRunMode.h" />
+    <ClInclude Include="Source\Hamamatsu\HamamatsuRunSettings.h" />
+    <ClInclude Include="Source\Hamamatsu\HamamatsuTemperatureStatus.h" />
+    <ClInclude Include="Source\Hamamatsu\HamamatsuTriggerModes.h" />
     <ClInclude Include="Source\GeneralUtilityFunctions\cleanString.h" />
     <ClInclude Include="Source\GeneralUtilityFunctions\commonFunctions.h" />
     <ClInclude Include="Source\GeneralUtilityFunctions\miscCommonFunctions.h" />
@@ -492,7 +511,14 @@
     <QtMoc Include="Source\RealTimeDataAnalysis\MachineOptimizer.h" />
     <QtMoc Include="Source\Rearrangement\AtomCruncherWorker.h" />
     <QtMoc Include="Source\RealTimeDataAnalysis\AnalysisThreadWorker.h" />
+    <QtMoc Include="Source\Hamamatsu\CameraImageDimensions.h" />
+    <QtMoc Include="Source\Hamamatsu\HamamatsuCameraCore.h" />
+    <QtMoc Include="Source\Hamamatsu\HamamarsuCameraThreadImageGrabber.h" />
+    <QtMoc Include="Source\Hamamatsu\HamamatsuCameraSettingsControl.h" />
+    <QtMoc Include="Source\Hamamatsu\HamamatsuCameraThreadWorker.h" />
+    <QtMoc Include="Source\Hamamatsu\PictureSettingsControl.h" />
     <QtMoc Include="Source\PrimaryWindows\QtScriptWindow.h" />
+    <QtMoc Include="Source\PrimaryWindows\QtHamamatsuWindow.h" />
     <QtMoc Include="Source\PrimaryWindows\QtMainWindow.h" />
     <QtMoc Include="Source\PrimaryWindows\QtAuxiliaryWindow.h" />
     <QtMoc Include="Source\PrimaryWindows\IChimeraQtWindow.h" />

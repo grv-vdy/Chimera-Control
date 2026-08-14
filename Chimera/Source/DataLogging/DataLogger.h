@@ -5,6 +5,7 @@
 #include "RealTimeDataAnalysis/DataAnalysisControl.h"					  
 
 #include <GeneralObjects/Matrix.h>
+#include <GeneralImaging/imageParameters.h>
 #include <DigitalOutput/DoCore.h>
 #include <CMOSCamera/CMOSSetting.h>
 #include <ExperimentMonitoringAndStatus/InfluxTypes.h>
@@ -31,6 +32,7 @@ class DataLogger : public IChimeraSystem {
 		
 
 		void writeMakoPic(std::vector<double> image, int width, int height, CameraInfo::name name);
+		void writeHamamatsuPic(const Matrix<long>& image, const imageParameters& dims);
 		void writeTemperature(std::pair<std::vector<long long>, std::vector<double>> timedata, std::string identifier );
 		void writePressure(std::pair<std::vector<long long>, std::vector<double>> timedata, std::string identifier, InfluxDataUnitType::mode unit);
 		void writeVolts ( unsigned currentVoltNumber, std::vector<float64> data );
@@ -45,6 +47,7 @@ class DataLogger : public IChimeraSystem {
 		int getCalibrationFileIndex ();
 		static void getDataLocation ( std::string base, std::string& todayFolder, std::string& fullPath );
 		void normalCloseFile();
+		bool isFileOpen() const { return fileIsOpen; }
 		void deleteFile(std::string fileName = "");
 		int getDataFileNumber( );
 		void assertClosed ();
@@ -79,6 +82,7 @@ class DataLogger : public IChimeraSystem {
 
 		H5::DataSpace voltsDataSpace, voltsSetDataSpace;
 		std::map<CameraInfo::name, unsigned> currentMakoPicNumber;
+		unsigned currentHamamatsuPicNumber = 0;
 		std::string mr_dayStr, mr_monthStr, mr_yearStr;
 
 	private:

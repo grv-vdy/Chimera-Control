@@ -119,7 +119,7 @@ class QtMainWindow : public IChimeraQtWindow{
 		TemperatureMonitor tempMonitor;
 		DataLogger logger;
 
-		ExpThreadWorker* expWorker;
+		ExpThreadWorker* expWorker = nullptr;
 		QThread* expThread = nullptr;
 		std::atomic<bool> experimentIsRunning = false;
 

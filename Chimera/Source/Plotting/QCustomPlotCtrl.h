@@ -16,6 +16,7 @@
 
 //typedef std::vector<dataPoint> plotDataVec;
 class IChimeraQtWindow;
+class QWidget;
 
 /*
 * This is a custom object that I use for plotting. All of the drawing is done manually by standard win32 / MFC
@@ -37,6 +38,7 @@ public:
 	QCPGraph* getCalData();
 	// numTraces is used for DAC, OFFSETLOCK or TTL plot for std::vector<std::byte> isShow
 	void init(IChimeraQtWindow* parent, QString titleIn, unsigned numTraces = 0);
+	void init(QWidget* widgetParent, IChimeraQtWindow* owner, QString titleIn, unsigned numTraces = 0);
 	dataPoint getMainAnalysisResult();
 	void resetChart();
 	void setStyle(plotStyle newStyle);

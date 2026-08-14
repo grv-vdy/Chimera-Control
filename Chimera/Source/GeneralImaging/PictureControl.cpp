@@ -97,9 +97,9 @@ void PictureControl::initialize(std::string name, int width, int height, IChimer
 	QHBoxLayout* layout2 = new QHBoxLayout(this);
 	layout2->setContentsMargins(0, 0, 0, 0);
 	pic.setStyle(plotStyle::DensityPlotWithHisto);
-	pic.init(parent,"");
+	pic.init(this, parent, "");
 	pic.plot->setMinimumSize(400, 350);
-	pictureObject = new ImageLabel (parent);	
+	pictureObject = new ImageLabel(this);	
 	//connect (pictureObject, &ImageLabel::mouseReleased, [this](QMouseEvent* event) {handleMouse (event); });
 	std::vector<unsigned char> data (20000);
 	for (auto& pt : data){

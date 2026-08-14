@@ -15,6 +15,7 @@ class QtScriptWindow;
 class QtAuxiliaryWindow;
 class QtMakoWindow;
 class QtAnalysisWindow;
+class QtHamamatsuWindow;
 
 namespace Ui {
 	class IChimeraQtWindow;
@@ -36,7 +37,8 @@ class IChimeraQtWindow : public QMainWindow{
 		void initializeShortcuts ();
 		void initializeMenu ();
 		void loadFriends (QtMainWindow* mainWin_, QtScriptWindow* scriptWin_, QtAuxiliaryWindow* auxWin_,
-						  QtMakoWindow* makoWin1_, QtMakoWindow* makoWin2_, QtAnalysisWindow* analysisWin_);
+					  QtMakoWindow* makoWin1_, QtMakoWindow* makoWin2_, QtAnalysisWindow* analysisWin_,
+					  QtHamamatsuWindow* hamamatsuWin_);
 		void reportErr (QString errStr, unsigned errorLevel=0);
 		void reportStatus (QString statusStr, unsigned notificationLevel=0);
 
@@ -47,7 +49,8 @@ class IChimeraQtWindow : public QMainWindow{
 		QtMakoWindow* makoWin1 = nullptr;
 		QtMakoWindow* makoWin2 = nullptr;
 		QtAnalysisWindow* analysisWin = nullptr;
-		static constexpr unsigned numWindows = 6;
+		QtHamamatsuWindow* hamamatsuWin = nullptr;
+		static constexpr unsigned numWindows = 7;
 		ColorBox* statBox;
 		virtual void changeBoxColor (std::string sysDelim, std::string color);
 	private:

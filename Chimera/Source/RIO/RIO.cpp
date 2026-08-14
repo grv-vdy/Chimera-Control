@@ -9,6 +9,10 @@ RIO::RIO() : session(0) {}
 RIO::~RIO() { close(); }
 
 void RIO::initialize(const char* resource) {
+    if (RIO_SAFEMODE) {
+        session = 0;
+        return;
+    }
     NiFpga_Initialize();
     NiFpga_Status status = NiFpga_Open(
         NiFpga_chimerasequencer_Bitfile,
@@ -35,6 +39,10 @@ void RIO::initialize(const char* resource) {
 }
 
 void RIO::close() {
+    if (RIO_SAFEMODE) {
+        session = 0;
+        return;
+    }
     if (session) {
         NiFpga_StopFifo(session, NiFpga_chimerasequencer_HostToTargetFifoU64_FIFO_Time);
         NiFpga_StopFifo(session, NiFpga_chimerasequencer_HostToTargetFifoU64_FIFO_Data);
@@ -45,6 +53,9 @@ void RIO::close() {
 }
 
 int RIO::writeTTL(const std::vector<uint64_t>& times, const std::vector<uint64_t>& data) {
+    if (RIO_SAFEMODE) {
+        return 0;
+    }
     if (times.size() != data.size()) return 1;
     size_t empty; // Change the type of 'empty' to size_t
 
@@ -78,6 +89,9 @@ int RIO::writeDACs(const std::vector<AoChannelSnapshot>& dacSnapshots) {
 }
 
 void RIO::trigger() {
+    if (RIO_SAFEMODE) {
+        return;
+    }
     NiFpga_Status status;
     NiFpga_WriteBool(session, NiFpga_chimerasequencer_ControlBool_start_copy_to_ram, 0);
     status = NiFpga_WriteBool(session, NiFpga_chimerasequencer_ControlBool_trigger_i, 1);
@@ -88,6 +102,9 @@ void RIO::trigger() {
 }
 
 void RIO::untrigger() {
+   if (RIO_SAFEMODE) {
+        return;
+    }
    NiFpga_Status status;
     status = NiFpga_WriteBool(session, NiFpga_chimerasequencer_ControlBool_trigger_i, 0);
 	if (status != NiFpga_Status_Success) {
@@ -96,6 +113,9 @@ void RIO::untrigger() {
 }
 
 void RIO::set_reprogram(int reprogram) {
+   if (RIO_SAFEMODE) {
+        return;
+    }
    NiFpga_Status status;
     status = NiFpga_WriteBool(session, NiFpga_chimerasequencer_ControlBool_skip_program, reprogram);
 	if (status != NiFpga_Status_Success) {
@@ -104,6 +124,9 @@ void RIO::set_reprogram(int reprogram) {
 }
 
 void RIO::reset() {
+    if (RIO_SAFEMODE) {
+        return;
+    }
     NiFpga_Abort(session);
     NiFpga_Run(session, 0);
     NiFpga_Status status;
@@ -121,6 +144,9 @@ void RIO::reset() {
 }
 
 void RIO::waitForMemLoaded() {
+    if (RIO_SAFEMODE) {
+        return;
+    }
     NiFpga_Bool loaded = 0;
     NiFpga_Status status = NiFpga_Status_Success;
 
@@ -137,7 +163,7 @@ void RIO::waitForMemLoaded() {
         );
 
         if (NiFpga_IsNotError(status) == 0) {
-            thrower("RIO::waitForMemLoaded failed while reading mem_loaded. NiFpga status: " + str(status));
+            //thrower("RIO::waitForMemLoaded failed while reading mem_loaded. NiFpga status: " + str(status));
         }
 
         status = NiFpga_ReadI16(
@@ -147,7 +173,7 @@ void RIO::waitForMemLoaded() {
         );
 
         if (NiFpga_IsNotError(status) == 0) {
-            thrower("RIO::waitForMemLoaded failed while reading index_count. NiFpga status: " + str(status));
+            //thrower("RIO::waitForMemLoaded failed while reading index_count. NiFpga status: " + str(status));
         }
 
         if (std::chrono::steady_clock::now() - start > timeout) {
@@ -164,6 +190,9 @@ void RIO::waitForMemLoaded() {
 
 int RIO::clearFifo()
 {
+    if (RIO_SAFEMODE) {
+        return NiFpga_Status_Success;
+    }
     NiFpga_Status status;
 
   
@@ -203,6 +232,9 @@ int RIO::clearFifo()
 }
 
 void RIO::waitForFinish() {
+    if (RIO_SAFEMODE) {
+        return;
+    }
     NiFpga_Bool done = 0;
     while (!done) {
         NiFpga_ReadBool(session, NiFpga_chimerasequencer_IndicatorBool_finish_stb_o, &done);

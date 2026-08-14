@@ -75,6 +75,9 @@ void ExpThreadWorker::experimentThreadProcedure () {
 
 		/// Anaylsis preparation
 		emit prepareAnalysis();
+		// Arm the Hamamatsu camera + start its grabber before the sequence runs (the slot no-ops if the
+		// camera isn't being controlled). Blocking so the sequence doesn't start triggering until it's armed.
+		emit prepareHamamatsuCamera(expRuntime.repetitions, input->numVariations);
 		emit notification("Enabling real time analysis \r\n", 1);
 
 		runConsistencyChecks (expRuntime.expParams, input->calibrations);

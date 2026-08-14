@@ -306,6 +306,39 @@
     <ClCompile Include="Source\PrimaryWindows\QtMakoWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\PrimaryWindows\QtHamamatsuWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Hamamatsu\CameraImageDimensions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Hamamatsu\HamamatsuCameraCore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Hamamatsu\HamamatsuCameraSettingsControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Hamamatsu\HamamatsuCameraThreadImageGrabber.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Hamamatsu\HamamatsuCameraThreadWorker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Hamamatsu\HamamatsuFlume.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Hamamatsu\hamamatsuRunMode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Hamamatsu\HamamatsuRunSettings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Hamamatsu\HamamatsuTriggerModes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Hamamatsu\PictureSettingsControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="Source\GeneralImaging\csvReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -578,6 +611,27 @@
     <QtMoc Include="Source\PrimaryWindows\QtMakoWindow.h">
       <Filter>Header Files</Filter>
     </QtMoc>
+    <QtMoc Include="Source\Hamamatsu\CameraImageDimensions.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="Source\Hamamatsu\HamamatsuCameraCore.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="Source\Hamamatsu\HamamarsuCameraThreadImageGrabber.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="Source\Hamamatsu\HamamatsuCameraSettingsControl.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="Source\Hamamatsu\HamamatsuCameraThreadWorker.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="Source\Hamamatsu\PictureSettingsControl.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="Source\PrimaryWindows\QtHamamatsuWindow.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
     <QtMoc Include="Source\GeneralImaging\PictureViewer.h">
       <Filter>Header Files</Filter>
     </QtMoc>
@@ -839,6 +893,30 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\GeneralObjects\RunInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Hamamatsu\cameraThreadInput.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Hamamatsu\dcamapi4.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Hamamatsu\dcamprop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Hamamatsu\HamamatsuFlume.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Hamamatsu\HamamatsuRunMode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Hamamatsu\HamamatsuRunSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Hamamatsu\HamamatsuTemperatureStatus.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Hamamatsu\HamamatsuTriggerModes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\GeneralUtilityFunctions\cleanString.h">

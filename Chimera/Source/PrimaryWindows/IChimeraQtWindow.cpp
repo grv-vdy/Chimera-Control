@@ -5,6 +5,7 @@
 #include "QtScriptWindow.h"
 #include "QtMakoWindow.h"
 #include "QtAnalysisWindow.h"
+#include "QtHamamatsuWindow.h"
 #include "ExperimentMonitoringAndStatus/colorbox.h"
 #include "GeneralUtilityFunctions/CommonFunctions.h"
 #include <qshortcut.h>
@@ -21,7 +22,8 @@ void IChimeraQtWindow::reportStatus (QString statusStr, unsigned notificationLev
 }
 
 void IChimeraQtWindow::loadFriends ( QtMainWindow* mainWin_, QtScriptWindow* scriptWin_, QtAuxiliaryWindow* auxWin_,
-									 QtMakoWindow* makoWin1_, QtMakoWindow* makoWin2_, QtAnalysisWindow* analysisWin_ )
+									 QtMakoWindow* makoWin1_, QtMakoWindow* makoWin2_, QtAnalysisWindow* analysisWin_,
+									 QtHamamatsuWindow* hamamatsuWin_ )
 {
 	mainWin = mainWin_;
 	scriptWin = scriptWin_;
@@ -29,6 +31,8 @@ void IChimeraQtWindow::loadFriends ( QtMainWindow* mainWin_, QtScriptWindow* scr
 	makoWin1 = makoWin1_;
 	makoWin2 = makoWin2_;
 	analysisWin = analysisWin_;
+	hamamatsuWin = hamamatsuWin_;
+
 }
 
 
@@ -41,7 +45,8 @@ void IChimeraQtWindow::changeBoxColor (std::string sysDelim, std::string color){
 std::vector<IChimeraQtWindow*> IChimeraQtWindow::winList (){
 	std::vector<IChimeraQtWindow*> list = { 
 		(IChimeraQtWindow*)scriptWin,
-		(IChimeraQtWindow*)auxWin, (IChimeraQtWindow*)makoWin1, (IChimeraQtWindow*)makoWin2, (IChimeraQtWindow*)analysisWin,
+		(IChimeraQtWindow*)auxWin, (IChimeraQtWindow*)makoWin1, (IChimeraQtWindow*)makoWin2,
+		(IChimeraQtWindow*)hamamatsuWin, (IChimeraQtWindow*)analysisWin,
 		(IChimeraQtWindow*)mainWin };
 	return list;
 }

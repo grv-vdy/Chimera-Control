@@ -78,6 +78,9 @@ void CruncherThreadWorker::init () {
 			}
 		}
 	}
+	if (input->thresholds.empty()) {
+		input->thresholds.push_back({ 100 });
+	}
 	for (auto picThresholds : input->thresholds) {
 		if (picThresholds.size () != 1 && picThresholds.size () != input->grids[0].numAtoms ()) {
 			emit error (cstr ("the list of thresholds isn't size 1 (constant) or the size of the number of atoms in the "
@@ -135,7 +138,8 @@ void CruncherThreadWorker::handleImage (){
 
 			unsigned count = 0;
 			for (auto& pix : tempImagePixels[gridInc].image) {
-				auto& picThresholds = input->thresholds[imageCount % input->picsPerRep];
+				auto safePicIdx = input->thresholds.empty() ? 0 : (imageCount % input->picsPerRep) % input->thresholds.size();
+				auto& picThresholds = input->thresholds[safePicIdx];
 				if (pix >= picThresholds[count % picThresholds.size()]) {
 					tempAtomArray[gridInc].image[count] = true;
 				}

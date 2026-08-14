@@ -1,4 +1,5 @@
 t = 1
 dac: greenimg 0
-
-t += 2
+on: greenshutter
+t+= 10000
+on: greenshutter

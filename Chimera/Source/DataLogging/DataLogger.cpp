@@ -432,6 +432,34 @@ void DataLogger::writeMakoPic(std::vector<double> image, int width, int height, 
 	}
 }
 
+void DataLogger::writeHamamatsuPic(const Matrix<long>& image, const imageParameters& dims)
+{
+	UNREFERENCED_PARAMETER(dims);
+	if (fileIsOpen == false) {
+		thrower("Tried to write to h5 file (for Hamamatsu pic), but the file is closed!\r\n");
+	}
+	try {
+		H5::Group hamamatsuGroup;
+		try {
+			hamamatsuGroup = file.openGroup("/Hamamatsu");
+		}
+		catch (H5::Exception&) {
+			hamamatsuGroup = file.createGroup("/Hamamatsu");
+		}
+
+		H5::Group picGroup = hamamatsuGroup.createGroup("Picture_" + str(currentHamamatsuPicNumber++));
+		writeDataSet(static_cast<int>(image.getRows()), "Rows", picGroup);
+		writeDataSet(static_cast<int>(image.getCols()), "Cols", picGroup);
+		std::vector<long long> pixels(image.data.begin(), image.data.end());
+		writeDataSet(pixels, "Pixels", picGroup);
+	}
+	catch (H5::Exception& err) {
+		auto fullE = getFullError(err);
+		throwNested("Failed to write Hamamatsu pic data to HDF5 file! Error: " + str(err.getDetailMsg()) + "\n"
+			+ "; Full error:" + fullE);
+	}
+}
+
 void DataLogger::writeTemperature(std::pair<std::vector<long long>, std::vector<double>> timedata, std::string identifier)
 {
 	if (fileIsOpen == false) {

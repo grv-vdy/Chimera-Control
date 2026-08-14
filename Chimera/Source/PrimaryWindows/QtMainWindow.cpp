@@ -6,6 +6,7 @@
 #include <PrimaryWindows/QtAuxiliaryWindow.h>
 #include <PrimaryWindows/QtMakoWindow.h>
 #include <PrimaryWindows/QtAnalysisWindow.h>
+#include <PrimaryWindows/QtHamamatsuWindow.h>
 #include <ExperimentThread/autoCalConfigInfo.h>
 #include <GeneralObjects/ChimeraStyleSheets.h>
 #include <ExperimentThread/ExpThreadWorker.h>
@@ -37,6 +38,8 @@ QtMainWindow::QtMainWindow () :
 		makoWin1 = new QtMakoWindow(1, MakoInfo::camWindow1);
 		which = "CMOS";
 		makoWin2 = new QtMakoWindow(2, MakoInfo::camWindow2);
+		which = "Hamamatsu";
+		hamamatsuWin = new QtHamamatsuWindow;
 		which = "Analysis";
 		analysisWin = new QtAnalysisWindow;
 	}
@@ -44,11 +47,12 @@ QtMainWindow::QtMainWindow () :
 		errBox ("FATAL ERROR: " + which + " Window constructor failed! Error: " + err.trace ());
 		return;
 	}
-	scriptWin->loadFriends( this, scriptWin, auxWin, makoWin1, makoWin2, analysisWin);
-	auxWin->loadFriends (this, scriptWin, auxWin, makoWin1, makoWin2, analysisWin);
-	makoWin1->loadFriends(this, scriptWin, auxWin, makoWin1, makoWin2, analysisWin);
-	makoWin2->loadFriends(this, scriptWin, auxWin, makoWin1, makoWin2, analysisWin);
-	analysisWin->loadFriends(this, scriptWin, auxWin, makoWin1, makoWin2, analysisWin);
+	scriptWin->loadFriends( this, scriptWin, auxWin, makoWin1, makoWin2, analysisWin, hamamatsuWin);
+	auxWin->loadFriends (this, scriptWin, auxWin, makoWin1, makoWin2, analysisWin, hamamatsuWin);
+	makoWin1->loadFriends(this, scriptWin, auxWin, makoWin1, makoWin2, analysisWin, hamamatsuWin);
+	makoWin2->loadFriends(this, scriptWin, auxWin, makoWin1, makoWin2, analysisWin, hamamatsuWin);
+	hamamatsuWin->loadFriends(this, scriptWin, auxWin, makoWin1, makoWin2, analysisWin, hamamatsuWin);
+	analysisWin->loadFriends(this, scriptWin, auxWin, makoWin1, makoWin2, analysisWin, hamamatsuWin);
 	startupTimes.push_back (chronoClock::now ());
 
 	for (auto* window : winList ()) {
@@ -63,8 +67,8 @@ QtMainWindow::QtMainWindow () :
 	auto numMonitors = qApp->screens ().size ();
 	auto screens = qApp->screens ();
 	unsigned winCount = 0;
-	std::vector<unsigned> monitorNum = { 1,3,0,0,3,2 };
-	/*	scriptWin, auxWin, makoWin1, makoWin2, analysisWin, mainWin; */
+	std::vector<unsigned> monitorNum = { 1,3,0,0,3,3,2 };
+	/*	scriptWin, auxWin, makoWin1, makoWin2, hamamatsuWin, analysisWin, mainWin; */
 	for (auto* window : winList ()) { 
 		if (!window) {
 			continue;
@@ -95,6 +99,7 @@ QtMainWindow::QtMainWindow () :
 		initializationString += auxWin->getVisaDeviceStatus ();
 		initializationString += makoWin1->getSystemStatusString();
 		initializationString += makoWin2->getSystemStatusString();
+		initializationString += hamamatsuWin->getSystemStatusString();
 		initializationString += scriptWin->getSystemStatusString ();
 		initializationString += analysisWin->getSystemStatusString();
 		reportStatus (qstr(initializationString));
@@ -193,6 +198,7 @@ void QtMainWindow::showHardwareStatus (){
 		initializationString += auxWin->getVisaDeviceStatus();
 		initializationString += makoWin1->getSystemStatusString();
 		initializationString += makoWin2->getSystemStatusString();
+		initializationString += hamamatsuWin->getSystemStatusString();
 		initializationString += scriptWin->getSystemStatusString();
 		initializationString += analysisWin->getSystemStatusString();
 		infoBox (initializationString);
@@ -271,6 +277,7 @@ void QtMainWindow::startExperimentThread (ExperimentThreadInput* input){
 	connect (expWorker, &ExpThreadWorker::updateBoxColor, this, &QtMainWindow::handleColorboxUpdate);
 	connect (expWorker, &ExpThreadWorker::prepareMako, makoWin1, &QtMakoWindow::prepareWinForAcq, Qt::BlockingQueuedConnection);// want expthread wait untill mako set it up
 	connect (expWorker, &ExpThreadWorker::prepareMako, makoWin2, &QtMakoWindow::prepareWinForAcq, Qt::BlockingQueuedConnection);// want expthread wait untill mako set it up
+	connect (expWorker, &ExpThreadWorker::prepareHamamatsuCamera, hamamatsuWin, &QtHamamatsuWindow::prepareForExperiment, Qt::BlockingQueuedConnection);// exp thread waits until the Hamamatsu is armed
 	connect (expWorker, &ExpThreadWorker::prepareAnalysis, analysisWin, &QtAnalysisWindow::prepareCalcForAcq);
 	connect (expWorker, &ExpThreadWorker::notification, this, &QtMainWindow::handleNotification);
 	connect (expWorker, &ExpThreadWorker::warn, this, &QtMainWindow::onErrorMessage);
@@ -309,7 +316,7 @@ void QtMainWindow::setDebuggingOptions (debugInfo options) { debugger.setOptions
 mainOptions QtMainWindow::getMainOptions () { return mainOptsCtrl.getOptions (); }
 void QtMainWindow::setShortStatus (std::string text) { shortStatus.setText (text); }
 void QtMainWindow::changeShortStatusColor (std::string color) { shortStatus.setColor (color); }
-bool QtMainWindow::experimentIsPaused () { return expWorker->getIsPaused (); }
+bool QtMainWindow::experimentIsPaused () { return expWorker != nullptr && expWorker->getIsPaused (); }
 
 DataLogger& QtMainWindow::getLogger () { return logger; }
 
@@ -383,6 +390,14 @@ void QtMainWindow::onNormalFinish (QString finMsg, profileSettings finishedProfi
 	changeShortStatusColor ("B");
 	handleFinishText ();
 	auxWin->handleNormalFin ();
+	// Let the Hamamatsu window stop its grabber / clean up. Guarded so a camera-side issue can't break
+	// the main finish handling.
+	try {
+		hamamatsuWin->handleNormalFinish (finishedProfile);
+	}
+	catch (ChimeraError& err) {
+		reportErr (err.qtrace ());
+	}
 	if (autoF5_AfterFinish)	{
 		commonFunctions::handleCommonMessage (ID_ACCELERATOR_F5, this);
 		autoF5_AfterFinish = false;

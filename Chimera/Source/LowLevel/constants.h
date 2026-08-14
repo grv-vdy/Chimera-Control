@@ -184,7 +184,9 @@ constexpr bool PYTHON_SAFEMODE = true;
 #else
 constexpr bool  PYTHON_SAFEMODE = true;
 #endif
-//constexpr bool DAQMX_SAFEMODE = true;
+// Analog-output / NI-DAQmx safemode. This machine has no NI driver (nicaiu.dll), so the DAQmx calls are
+// delay-loaded; leaving this true keeps the AO system from actually calling into NI (which would crash).
+constexpr bool DAQMX_SAFEMODE = true;
 //constexpr bool ANALOG_OUT_SAFEMODE = true;
 
 constexpr auto CODE_ROOT = "C:\\Users\\ronak\\desktop\\Chimera-Control";
@@ -240,7 +242,7 @@ const double OL_TRIGGER_TIME = 0.01; //in ms i.e. 50us
 //#define DDS_FPGA_ADDRESS "FT1I6IBSB"; //Device Serial: FT1I6IBS, Use FT1I6IBSB in C++ to select Channel B
 
 //ArbGens
-const bool UWAVE_SAFEMODE = true;
+	const bool UWAVE_SAFEMODE = true;
 const bool UWAVE_SAFEMODE_SIG = true;
 const int numArbGen = 2;	// Siglent0 (192.168.105.52) and Siglent1 (192.168.105.54)
 const std::array<std::string, 2> UWAVE_SIGLENT_ADDRESSES = {
@@ -249,6 +251,10 @@ const std::array<std::string, 2> UWAVE_SIGLENT_ADDRESSES = {
 };
 const std::pair<unsigned, unsigned> UWAVE_SIGLENT_TRIGGER_LINE = std::make_pair(7 - 1, 1); /*the first is the label on the box minus 1, has minus'd 1 explicitly */
 const std::string RAMP_LOCATION = str(CODE_ROOT) + "\\Ramp_Files\\";
+
+//hamamatsu qcmos
+const bool HAM_SAFEMODE = false;
+
 
 //Analog in 
 const bool AI_SAFEMODE = true;
@@ -262,7 +268,7 @@ const int WIESERLABS_IPPORT = 26000;
 // Per-channel hardware triggers on FlexDDS-NG: both channels use BNC_IN_A
 const std::pair<unsigned, unsigned> WIESERLABS_CH0_TRIGGER_LINE = std::make_pair(1, 0); /*BNC_IN_A: Row 1, Column 0*/
 const std::pair<unsigned, unsigned> WIESERLABS_CH1_TRIGGER_LINE = std::make_pair(1, 0); /*BNC_IN_A: Row 1, Column 0*/
-const std::array<bool, 6> SLOT_CONNECTED = { true, false, false, false, false, false };
+const std::array<bool, 6> SLOT_CONNECTED = { false, false, false, false, false, false };
 
 //Mako camera
 const unsigned MAKO_NUMBER = 4;

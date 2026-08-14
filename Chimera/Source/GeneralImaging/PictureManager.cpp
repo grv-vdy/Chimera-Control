@@ -5,18 +5,40 @@
 
 PictureManager::PictureManager ( bool histOption, std::string configurationFileDelimiter, bool autoscaleDefault, 
 	Qt::TransformationMode mode)
-	: pictures{ {{histOption, mode}, {false, mode}, {false, mode}, {false, mode} } }, configDelim (configurationFileDelimiter) {
+	: configDelim (configurationFileDelimiter) {
+	autoScalePictures = autoscaleDefault;
+	displayMask.assign(MAX_PICTURES, true);
+	UNREFERENCED_PARAMETER(histOption);
+	for (auto& pic : pictures) {
+		pic.setTransformationMode(mode);
+	}
 }
 
-void PictureManager::setSoftwareAccumulationOptions ( std::array<softwareAccumulationOption, 4> opts ){
-	for ( auto picInc : range ( 4 ) ){
-		pictures[ picInc ].setSoftwareAccumulationOption ( opts[ picInc ] );
+void PictureManager::setDisplayMask(const std::vector<bool>& mask){
+	displayMask.assign(MAX_PICTURES, true);
+	for (auto picInc : range(std::min<size_t>(mask.size(), MAX_PICTURES))) {
+		displayMask[picInc] = mask[picInc];
+	}
+}
+
+void PictureManager::setSoftwareAccumulationOptions (const std::vector<softwareAccumulationOption>& opts ){
+	if (opts.empty()) {
+		for (auto picInc : range(MAX_PICTURES)) {
+			pictures[picInc].setSoftwareAccumulationOption(softwareAccumulationOption{});
+		}
+		return;
+	}
+	for ( auto picInc : range ( MAX_PICTURES ) ){
+		pictures[picInc].setSoftwareAccumulationOption(opts[std::min<size_t>(picInc, opts.size() - 1)]);
 	}
 }
 
 void PictureManager::drawBitmap (Matrix<long> picData, std::pair<int,int> minMax, unsigned whichPicCtrl,
 	std::vector<atomGrid> grids, unsigned pictureNumber, 
 	bool includingAnalysisMarkers, QPainter& painter){
+	if (whichPicCtrl >= pictures.size()) {
+		thrower("Picture index out of range in PictureManager::drawBitmap: " + str(whichPicCtrl));
+	}
 	std::tuple<bool, int, int> autoScaleInfo = std::make_tuple ( autoScalePictures, minMax.first, minMax.second );
 	pictures[whichPicCtrl].drawBitmap (picData, autoScaleInfo, specialLessThanMin, specialGreaterThanMax,
 									   grids, pictureNumber, includingAnalysisMarkers);
@@ -25,25 +47,31 @@ void PictureManager::drawBitmap (Matrix<long> picData, std::pair<int,int> minMax
 	}
 }
 
-void PictureManager::setPalletes(std::array<int, 4> palleteIds){
-	for (int picInc = 0; picInc < 4; picInc++){
-		if ( palleteIds[ picInc ] >= 3 ){
+void PictureManager::setPalletes(const std::vector<int>& palleteIds){
+	if (palleteIds.empty()) {
+		return;
+	}
+	for (int picInc = 0; picInc < MAX_PICTURES; picInc++){
+		auto paletteIndex = palleteIds[std::min<size_t>(picInc, palleteIds.size() - 1)];
+		if ( paletteIndex >= 3 ){
 			errBox ( "Image Pallete ID out of range! Forcing to 0." );
-			palleteIds[ picInc ] = 0;
+			paletteIndex = 0;
 		}
-		pictures[picInc].updatePalette(palettes[palleteIds[picInc]]);
+		pictures[picInc].updatePalette(palettes[paletteIndex]);
 	}
 }
 
 void PictureManager::setAlwaysShowGrid(bool showOption, QPainter& painter){
 	alwaysShowGrid = showOption;
 	if (alwaysShowGrid){
-		if (!pictures[1].isActive()){
+		if (MAX_PICTURES < 2 || !pictures[1].isActive()){
 			pictures[0].drawGrid( painter );
 			return;
 		}
 		for (auto& pic : pictures){
-			pic.drawGrid( painter );
+			if (pic.isActive()) {
+				pic.drawGrid( painter );
+			}
 		}
 	}
 }
@@ -61,6 +89,9 @@ void PictureManager::redrawPictures( coordinate selectedLocation, std::vector<at
 		return;
 	}
 	for (auto& pic : pictures){
+		if (!pic.isActive()) {
+			continue;
+		}
 		pic.redrawImage();
 		if (alwaysShowGrid || forceGrid ){
 			pic.drawGrid(painter);
@@ -69,6 +100,12 @@ void PictureManager::redrawPictures( coordinate selectedLocation, std::vector<at
 }
 
 void PictureManager::setNumberPicturesActive( int numberActive ){
+	if (numberActive < 1) {
+		numberActive = 1;
+	}
+	if (numberActive > MAX_PICTURES) {
+		numberActive = MAX_PICTURES;
+	}
 	int count = 1;
 	for (auto& pic : pictures){
 		pic.setActive( count <= numberActive );
@@ -88,8 +125,8 @@ void PictureManager::setAutoScalePicturesOption(bool autoScaleOption){
 
 void PictureManager::handleSaveConfig(ConfigStream& saveFile){
 	saveFile << configDelim + "\n/*Slider Locs (Min/Max):*/\n";
-	for (auto& pic : pictures){
-		std::pair<unsigned, unsigned> sliderLoc = pic.getSliderLocations();
+	for (auto picInc : range(4u)){
+		std::pair<unsigned, unsigned> sliderLoc = pictures[picInc].getSliderLocations();
 		saveFile << str(sliderLoc.first) << " " << sliderLoc.second << "\n";
 	}
 	saveFile << "/*Auto-Scale Pics?*/ " << autoScalePictures;
@@ -106,10 +143,8 @@ void PictureManager::handleOpenConfig( ConfigStream& configFile ){
 		configFile >> maxes[sliderInc];
 	}
 	configFile >> autoScalePictures >> specialGreaterThanMax >> specialLessThanMin >> alwaysShowGrid;
-	unsigned count = 0;
-	for (auto& pic : pictures){
-		pic.setSliderPositions(mins[count], maxes[count]);
-		count++;
+	for (auto picInc : range(4u)){
+		pictures[picInc].setSliderPositions(mins[picInc], maxes[picInc]);
 	}
 	configFile.get();
 }
@@ -125,53 +160,7 @@ void PictureManager::setSpecialGreaterThanMax(bool option){
 
 
 void PictureManager::setSinglePicture( imageParameters imageParams){
-	setParameters(imageParams);
-	// check if already the right image setup, if true, then ignore the following gui manipulation
-	unsigned numberActivePics = 1;
-	bool allActive = true;
-	bool allNotActive = true;
-	for (unsigned picNum = 0; picNum < 4; picNum++) {
-		if (picNum < numberActivePics) {
-			allActive = allActive && (pictures[picNum].isActive());
-		}
-		else {
-			allNotActive = allNotActive && (!pictures[picNum].isActive());
-		}
-	}
-	if (allActive && allNotActive) {
-		return;
-	}
-
-	for (unsigned picNum = 0; picNum < 4; picNum++){
-		if (picNum < 1){
-			pictures[picNum].setActive(true);
-		}
-		else{
-			pictures[picNum].setActive(false);
-		}
-	}
-	if (picLayout != nullptr) {
-		for (auto picNum : range(pictures.size())) {
-			picLayout->removeWidget(&pictures[picNum]);
-		}
-		picLayout->addWidget(&pictures[0], 2, 2);
-		pictures[0].setSliderSize(800);
-		
-	}
-	if (parentWin != nullptr) {
-		picLayout->setHorizontalSpacing(0);
-		picLayout->setVerticalSpacing(0);
-
-		parentWin->setUpdatesEnabled(false);
-		this->adjustSize();
-		parentWin->adjustSize();
-		QScreen* screen = parentWin->windowHandle()->screen();
-		parentWin->move(screen->availableGeometry().topLeft());
-		parentWin->resize(screen->availableGeometry().width(), screen->availableGeometry().height());
-		this->adjustSize();
-		parentWin->setUpdatesEnabled(true);
-	}
-
+	setMultiplePictures(imageParams, 1);
 }
 
 void PictureManager::resetPictureStorage(){
@@ -182,10 +171,16 @@ void PictureManager::resetPictureStorage(){
 
 void PictureManager::setMultiplePictures( imageParameters imageParams, unsigned numberActivePics ){
 	setParameters(imageParams);
+	if (numberActivePics < 1) {
+		numberActivePics = 1;
+	}
+	if (numberActivePics > MAX_PICTURES) {
+		numberActivePics = MAX_PICTURES;
+	}
 	// check if already the right image setup, if true, then ignore the following gui manipulation
 	bool allActive = true;
 	bool allNotActive = true;
-	for (unsigned picNum = 0; picNum < 4; picNum++) {
+	for (unsigned picNum = 0; picNum < MAX_PICTURES; picNum++) {
 		if (picNum < numberActivePics) {
 			allActive = allActive && (pictures[picNum].isActive());
 		}
@@ -193,51 +188,41 @@ void PictureManager::setMultiplePictures( imageParameters imageParams, unsigned 
 			allNotActive = allNotActive && (!pictures[picNum].isActive());
 		}
 	}
-	if (allActive && allNotActive) {
-		return;
-	}
+	// Always rebuild layout to ensure live UI updates are reflected immediately.
 	
-	for (unsigned picNum = 0; picNum < 4; picNum++){
-		if (picNum < numberActivePics){
-			pictures[picNum].setActive(true);
-		}
-		else{
-			pictures[picNum].setActive(false);
-		}
+	for (unsigned picNum = 0; picNum < MAX_PICTURES; picNum++){
+		bool activeByCount = picNum < numberActivePics;
+		bool activeByMask = activeByCount && picNum < displayMask.size() ? displayMask[picNum] : false;
+		pictures[picNum].setActive(activeByMask);
 	}
 	if (picLayout != nullptr) {
 		for (auto picNum : range(pictures.size())) {
 			picLayout->removeWidget(&pictures[picNum]);
-			pictures[picNum].setSliderSize(390);//prevent the slider bar from growing indefinitely
+			if (overflowLayout != nullptr) {
+				overflowLayout->removeWidget(&pictures[picNum]);
+			}
+			pictures[picNum].setSliderSize(numberActivePics == 1 ? 800 : 390);
 		}
 	}
-	switch (numberActivePics)
-	{
-		case 1:
-			picLayout->addWidget(&pictures[0], 0, 0, 2, 2);
-			break;
-		case 2:
-			picLayout->addWidget(&pictures[0], 0, 0, 1, 2);
-			picLayout->addWidget(&pictures[1], 1, 0, 1, 2);
-			break;
-		case 3:
-			picLayout->addWidget(&pictures[0], 0, 0, 1, 1);
-			picLayout->addWidget(&pictures[1], 0, 1, 1, 1);
-			picLayout->addWidget(&pictures[2], 1, 0, 1, 2);
-			break;
-		case 4:
-			picLayout->addWidget(&pictures[0], 0, 0, 1, 1);
-			picLayout->addWidget(&pictures[1], 0, 1, 1, 1);
-			picLayout->addWidget(&pictures[2], 1, 0, 1, 1);
-			picLayout->addWidget(&pictures[3], 1, 1, 1, 1);
-			break;
-		default:
-			break;
+
+	unsigned columns = numberActivePics == 1 ? 1 : 2;
+	unsigned shownCount = 0;
+	for (unsigned picNum = 0; picNum < numberActivePics; ++picNum) {
+		if (!pictures[picNum].isActive()) {
+			continue;
+		}
+		unsigned row = shownCount / columns;
+		unsigned col = shownCount % columns;
+		picLayout->addWidget(&pictures[picNum], static_cast<int>(row), static_cast<int>(col), 1, 1);
+		shownCount++;
 	}
 
 	if (parentWin != nullptr) {
 		picLayout->setHorizontalSpacing(0);
 		picLayout->setVerticalSpacing(0);
+		if (overflowLayout != nullptr) {
+			overflowLayout->setSpacing(0);
+		}
 		this->adjustSize();
 		picLayout->update();
 
@@ -284,14 +269,23 @@ void PictureManager::initialize( IChimeraQtWindow* widget, int scaleFactor)
 	//picturesWidth = manWidth;
 	//picturesHeight = manHeight;
 	// Square: width = 550, height = 440
-	picLayout = new QGridLayout(this);
+	containerLayout = new QVBoxLayout(this);
+	containerLayout->setContentsMargins(0, 0, 0, 0);
+	containerLayout->setSpacing(0);
+	picLayout = new QGridLayout();
 	picLayout->setContentsMargins(0, 0, 0, 0);
+	overflowLayout = new QVBoxLayout();
+	overflowLayout->setContentsMargins(0, 0, 0, 0);
+	overflowLayout->setSpacing(0);
+	containerLayout->addLayout(picLayout);
+	containerLayout->addStretch();
 	auto width = 1100;
 	auto height = 220;
-	pictures[0].initialize("Pic.1", width, height, widget, scaleFactor);
-	pictures[1].initialize("Pic.2", width, height, widget, scaleFactor);
-	pictures[2].initialize("Pic.3", width, height, widget, scaleFactor);
-	pictures[3].initialize("Pic.4", width, height, widget, scaleFactor);
+	for (auto picNum : range(MAX_PICTURES)) {
+		pictures[picNum].setParent(this);
+		pictures[picNum].setWindowFlags(Qt::Widget);
+		pictures[picNum].initialize("Pic." + str(picNum + 1), width, height, widget, scaleFactor);
+	}
 	picLayout->addWidget(&pictures[0], 2, 2);
 	//picLayout->addWidget(&pictures[1], 0, 1);
 	//picLayout->addWidget(&pictures[2], 1, 0);
@@ -327,7 +321,9 @@ unsigned PictureManager::getNumberActive( ){
 
 void PictureManager::drawGrids(QPainter& painter){
 	for (auto& picture : pictures){
-		picture.drawGrid( painter );
+		if (picture.isActive()) {
+			picture.drawGrid( painter );
+		}
 	}
 }
 

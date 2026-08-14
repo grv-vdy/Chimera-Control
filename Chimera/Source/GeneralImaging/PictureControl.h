@@ -23,7 +23,7 @@ namespace Ui {
 class PictureControl : public QWidget{
 	Q_OBJECT
 	public:
-		PictureControl ( bool histogramOption, Qt::TransformationMode mode );
+		PictureControl ( bool histogramOption = false, Qt::TransformationMode mode = Qt::FastTransformation );
 		void initialize( std::string name, int width, int height, IChimeraQtWindow* widget, int picScaleFactorIn=50);
 		void handleMouse( QMouseEvent* event );
 		void drawPicNum(unsigned picNum, QPainter& painter);
