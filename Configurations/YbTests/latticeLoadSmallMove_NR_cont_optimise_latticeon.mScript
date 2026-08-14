@@ -9,7 +9,6 @@ off: greennarrow
 off: blueimg
 off: greenimg
 off: blueimgshutter
-off: absimg
 
 dac: bias1 (bias1+biasx+biasy)
 dac: bias2 (bias2-biasx+biasy)
@@ -19,9 +18,8 @@ dac: greenmot greenmotpower
 dac: pushbeam bluepushpower
 dac: blueimg 0
 dac: greenimg 0
-dac: absimage 0
 
-
+dac: latticeup 0
 dac: nrlattice 0
 off: nrlattice
 off: lattice
@@ -34,10 +32,6 @@ pulseon: makoshutter 1 %close
 
 t += 1
 
-dac: nrlattice 0.5
-
-
-t += 100
 on: pushbeam
 on: greenmot
 on: blue3dmot
@@ -45,16 +39,22 @@ on: blue3dmot
 
 t += coreshellloadtime
 
+dac: nrlattice nrlatdepth
+t += 3
 
-t += 1
+repeat: 20
+off: lattice
+off: nrlattice
+t += ssloadtime
+
 off: pushbeam
 off: blue3dmot
-dac: nrlattice nrlatdepth
-dac: absimage absimgpower
-t += 3
+t += cooltime
+
+
 on: nrlattice
 on: lattice
-on: scopetrigger
+
 
 t += overlaptime
 
@@ -64,72 +64,74 @@ t += overlaptime
 %----------release mot
 
 
+%dacramp: nrlattice 0 nrlatdepth nrlatramptime
+%t += 2.5
+%off: greenmot
+
 off: greenmot
 
-%
-
-% -- Move
 t += 0.001
 
 on: latmove1
 on: latmove2
-
-%t += 50
-t += motreleasetime
-off: nrlattice
-off: lattice
+%dac: blue3dmot blue3dmotlow
+%t += blueshelllow
 
 
-%off: greenmot
-on: mako1
-t += 0.1
-on: absimg
-t += 0.05
-off: absimg
-t += 0.1
-off: mako1
+%t += (blueshellback-blueshelllow)
+t += (blueshellback)
+%dac: blue3dmot blue3dmotpower
+on: pushbeam
+on: blue3dmot
+on: greenmot
 
-% make sure to destoroy atom
-t += 0.3
-on: absimg
-t += 40
-off: absimg
+t += (72-blueshellback)
+dac: blueimg 1.7
 t += 1
+
+
+on: scopetrigger
+
+
+
 off: latmove1
 off: latmove2
+t+= latticeontime
+end
 
-% img 2
-on: mako1
-t += 0.1
-on: absimg
-t += 0.05
-off: absimg
-t += 0.1
-off: mako1
-t += 0.1
-
-t += 40
-
-on: mako1
-t += 0.1
-
-t += 0.05
-
-t += 0.1
-off: mako1
-t += 0.1
-
-t += 100
-
+on: mako2
+on: blueimgshutter
 t += 3
+
+on: blueimg
+t += blueimgtime
+off: blueimg
+off: mako2
+off: scopetrigger
+off: blueimgshutter
+
+
+off: lattice
+t += 20
+on: lattice 
+
+on: mako2
+on: blueimgshutter
+t += 1
+
+on: blueimg
+t += blueimgtime
+off: blueimg
+off: mako2
+
+
 on: pixis_trg 
-t += 2
+t += 1
 off: pixis_trg
 t += 1
 on: pixis_trg
-t += 2
+t += 1
 off: pixis_trg
-t += 5
-
-
+t += 1
+off: scopetrigger
 

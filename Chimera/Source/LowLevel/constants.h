@@ -108,22 +108,22 @@
 
 	//Mako camera
 	const unsigned MAKO_NUMBER = 4;
-	const std::array<bool, MAKO_NUMBER> MAKO_SAFEMODE = { false,false,true,true};
+	const std::array<bool, MAKO_NUMBER> MAKO_SAFEMODE = { false,false,false,true};
 	const std::array<std::string, MAKO_NUMBER> MAKO_DELIMS = { "MAKO1_CAM"/*MOT G125*/, "MAKO2_CAM"/*MOT G319*/, "MAKO3_CAM"/*420 MON*/, "MAKO4_CAM"/*1013 MON*/};
-	const std::array<std::string, MAKO_NUMBER> MAKO_IPADDRS = { "192.168.105.6", "192.168.105.2","10.10.0.12","10.10.0.11" };
+	const std::array<std::string, MAKO_NUMBER> MAKO_IPADDRS = { "192.168.105.6", "192.168.105.2","192.168.105.17","10.10.0.11" };
 	const std::vector<std::pair<unsigned, unsigned>> MAKO_TRIGGER_LINE
-		= {std::make_pair(3 - 1,5), std::make_pair(1 - 1,2),std::make_pair(5 - 1,3),std::make_pair(5 - 1,7) };
+		= {std::make_pair(5 - 1,3),std::make_pair(3 - 1,3),std::make_pair(1 - 1,2),std::make_pair(5 - 1,7) };
 	/*the first is the label on the box minus 1, has minus'd 1 explicitly and this is not used in the code, just a reminder*/
 
 	//GIGAMOOG
-	const bool GIGAMOOG_SAFEMODE = true;
+	const bool GIGAMOOG_SAFEMODE = false;
 	const std::string GIGAMOOG_IPADDRESS = "192.168.7.179";
 	const int GIGAMOOG_IPPORT = 804;
 	//const std::string GIGAMOOG_PORT = "COM5";
 	//const int GIGAMOOG_BAUDRATE = 115200;
 	const double GM_TRIGGER_TIME = 0.0005; //in ms i.e. 0.5us
 	const std::vector<std::pair<unsigned, unsigned>> GM_TRIGGER_LINE
-		= { std::make_pair(1 - 1,7),std::make_pair(8 - 1,1) }; //load and move
+		= { std::make_pair(4 - 1,6),std::make_pair(4 - 1,7) }; //load and move
 	/*the first is the label on the box minus 1, has minus'd 1 explicitly and this is not used in the code, just a reminder*/
 
 	//Microwave Windfreak

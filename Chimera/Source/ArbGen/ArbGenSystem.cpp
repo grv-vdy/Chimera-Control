@@ -541,6 +541,7 @@ void ArbGenSystem::handleUploadCsvPressed(IChimeraQtWindow* win) {
 		tempSettings.siglentFm.ch1AmplitudeVpp.getValue(0),
 		tempSettings.siglentFm.ch1OffsetV.getValue(0),
 		tempSettings.siglentFm.ch1StartPhaseDeg.getValue(0));
+	siglent->fixBeating(); //In order to fix this weird issue where the computer programming introcuces beating.
 	siglent->waitForOperationCompleteLikePyvisa();
 
 
@@ -608,6 +609,7 @@ void ArbGenSystem::handleProgramSettingsPressed(IChimeraQtWindow* win) {
 		guiSampleRateSaS, static_cast<unsigned>(roundedCycles), "wave");
 	
 	siglent->selectWaveform();
+	siglent->fixBeating(); //In order to fix this weird issue where the computer programming introcuces beating.
 	siglent->waitForOperationCompleteLikePyvisa();
 
 	if (win) {

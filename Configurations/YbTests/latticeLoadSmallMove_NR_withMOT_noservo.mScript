@@ -1,12 +1,14 @@
-t = 1
-on: lattice
+t += 1
+off: lattice
 off: greenmot
 off: pushbeam
 off: blue3dmot
 dac: blue2dmot blue2dmotpower
+off: nrshutter
 off: greennarrow
 off: blueimg
 off: greenimg
+off: blueimgshutter
 
 dac: bias1 (bias1+biasx+biasy)
 dac: bias2 (bias2-biasx+biasy)
@@ -19,9 +21,21 @@ dac: greenimg 0
 
 dac: latticedown 0
 dac: latticeup 0
+dac: nrlattice 0
+off: nrlattice
+off: lattice
 %pulseon: dds0 0.1
 %pulseon: dds1 0.1
-%
+pulseon: makoshutter 1 %close
+
+
+
+
+t += 1
+
+dac: nrlattice 0.5
+
+
 t += 100
 on: pushbeam
 on: greenmot
@@ -30,67 +44,85 @@ on: blue3dmot
 
 t += coreshellloadtime
 
+
+t += 1
 off: pushbeam
 off: blue3dmot
-%motramp
 
+%----------motramp
+dacramp: greenmot greenmotpower greenmotpowerlow 1
+t += 1
 %dacramp: bias1 (bias1+biasxfix) (bias1+biasx+biasy) 1
 %dacramp: bias2 (bias2-biasxfix) (bias2-biasx+biasy) 1
 %dacramp: biasz (biasz+biaszofffix) (biasz+biaszoff) 1
-t += 1
 on: greennarrow
-t += 2
-dacramp: greenmot greenmotpower greenmotpowerlow 1
-t += 1
-
-%dac: greenmot greenmotpowerlow
-t += latloadtime %thermalize mot see 260225
-%t += 80
-
-%release mot
-
-off: greenmot
+dac: nrlattice nrlatdepth
+t += 3
 on: scopetrigger
+
+
+t += latloadtime %thermalize mot see 260225
+
+
+
+on: nrlattice
+on: lattice
+%----------release mot
+
+
+%dacramp: nrlattice 0 nrlatdepth nrlatramptime
+%t += 2.5
+%off: greenmot
+t += handofftime
+off: greenmot
+%on: scopetrigger
 t += motreleasetime
 t += 0.001
-off: scopetrigger
-%recapture mot
-%
 
+
+dac: greenmot greenmotpower
+dac: nrlattice 0 
+t += 2.5
+%-----------recapture mot
+off: nrlattice
+off: lattice
+off: scopetrigger
+t += 0.1
 on: greenmot
 off: greennarrow
-dac: greenmot greenmotpower
-off: lattice
+%off: lat_sh
+
 
 %dacramp: bias1 (bias1+biasx+biasy) (bias1+biasxfix)  1
 %dacramp: bias2 (bias2-biasx+biasy) (bias2-biasxfix) 1
 %dacramp: biasz (biasz+biaszoff) (biasz+biaszofffix) 1
+t += 5
 
+off: nrshutter
+t += 1
+pulseon: makoshutter 1 %open
 t += 10
 
 on: mako1
-t += 100
+t += 200
 off: mako1
 
 
 off: greenmot
-off: blue3dmot
-dac: blueimg blueimgpower
-on: blueimg
+
 
 t += 100
 
-off: blueimg
-dac: blueimg 0
+
 on: greenmot
 t += 2
 on: mako1
-t += 2
+t += 200
 off: mako1
 t += 100
 off: greenmot
 t += 10
-
+%
 
 t += 33
 t += 3

@@ -19,11 +19,11 @@ dds0
 1
 latmove2
 1
-greenshutter
-1
-d11
+nrshutter
 1
 scopetrigger
+1
+do2_5
 1
 camerashutter
 1
@@ -31,21 +31,21 @@ blue3dmot
 1
 pushbeam
 1
-greenimager
+nrlattice
 1
-blueshutter
+makoshutter
 1
-d1lgmtrg
+greennarrow
 1
-do3_3
+mako2
 1
-do3_4
+blueimgshutter
 1
-do3_5
+absimg
 1
-do3_6
+dipoletrap
 1
-do3_7
+ampmod
 1
 do4_0
 1
@@ -59,9 +59,9 @@ do4_4
 1
 do4_5
 1
-do4_6
+gigamoog1
 1
-do4_7
+gigamoog2
 1
 do5_0
 1
@@ -135,11 +135,11 @@ blueimg
 0 - 2
 0
 dac0_1
-none
+nrlattice
 -9.9 - 10
 0
 dac0_2
-greenimager
+absimage
 0 - 7.3
 0
 dac0_3
@@ -159,7 +159,7 @@ blue2dmot
 0 - 2
 0
 dac0_7
-latticedown
+greenblowaway
 -1 - 1
 0
 dac0_8
@@ -175,8 +175,8 @@ mot
 0 - 5
 0
 dac0_11
-d1lgmeomamp
-0 - 9
+dipoletrap
+0 - 2
 0
 dac0_12
 bias1

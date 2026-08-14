@@ -21,7 +21,7 @@ dac: blueimg 0
 dac: greenimg 0
 dac: absimage 0
 
-
+dac: latticeup 0
 dac: nrlattice 0
 off: nrlattice
 off: lattice
@@ -73,18 +73,17 @@ t += 0.001
 
 on: latmove1
 on: latmove2
-
-%t += 50
-t += motreleasetime
+%
+t += 193
 off: nrlattice
 off: lattice
-
+t += motreleasetime
 
 %off: greenmot
 on: mako1
 t += 0.1
 on: absimg
-t += 0.05
+t += time
 off: absimg
 t += 0.1
 off: mako1
@@ -92,7 +91,7 @@ off: mako1
 % make sure to destoroy atom
 t += 0.3
 on: absimg
-t += 40
+t += 50
 off: absimg
 t += 1
 off: latmove1
@@ -102,18 +101,18 @@ off: latmove2
 on: mako1
 t += 0.1
 on: absimg
-t += 0.05
+t += time
 off: absimg
 t += 0.1
 off: mako1
 t += 0.1
 
-t += 40
+t += 50
 
 on: mako1
 t += 0.1
 
-t += 0.05
+t += time
 
 t += 0.1
 off: mako1
@@ -130,6 +129,3 @@ on: pixis_trg
 t += 2
 off: pixis_trg
 t += 5
-
-
-

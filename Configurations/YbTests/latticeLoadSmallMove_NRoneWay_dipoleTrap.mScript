@@ -8,8 +8,8 @@ off: nrshutter
 off: greennarrow
 off: blueimg
 off: greenimg
-off: blueimgshutter
 off: absimg
+off: blueimgshutter
 
 dac: bias1 (bias1+biasx+biasy)
 dac: bias2 (bias2-biasx+biasy)
@@ -19,9 +19,11 @@ dac: greenmot greenmotpower
 dac: pushbeam bluepushpower
 dac: blueimg 0
 dac: greenimg 0
+dac: greenblowaway 1
+
+on: greenimg
+dac: latticeup 0
 dac: absimage 0
-
-
 dac: nrlattice 0
 off: nrlattice
 off: lattice
@@ -45,16 +47,15 @@ on: blue3dmot
 
 t += coreshellloadtime
 
-
+off: greenimg
+dac: greenblowaway 0
 t += 1
 off: pushbeam
 off: blue3dmot
 dac: nrlattice nrlatdepth
-dac: absimage absimgpower
 t += 3
 on: nrlattice
 on: lattice
-on: scopetrigger
 
 t += overlaptime
 
@@ -64,63 +65,76 @@ t += overlaptime
 %----------release mot
 
 
+%dacramp: nrlattice 0 nrlatdepth nrlatramptime
+%t += 2.5
+%off: greenmot
+
 off: greenmot
 
-%
-
-% -- Move
 t += 0.001
 
 on: latmove1
 on: latmove2
 
-%t += 50
-t += motreleasetime
-off: nrlattice
+t += blueshellback
+on: blue3dmot
+
+t += (96-blueshellback)
+
+%dac: greenblowaway 0.3
+%t += 3
+%on: greenimg
+%t += time
+%off: greenimg
+%dac: greenblowaway 0
+
+
+dac: blueimg 1.7
+t += 1
+
 off: lattice
 
+%dacramp: nrlattice nrlatdepth 0 5
+%t += 8
+%off: nrlattice
 
-%off: greenmot
-on: mako1
-t += 0.1
-on: absimg
-t += 0.05
-off: absimg
-t += 0.1
-off: mako1
+t += cell_lat_time
 
-% make sure to destoroy atom
-t += 0.3
-on: absimg
-t += 40
-off: absimg
-t += 1
+on: scopetrigger
+on: mako2
+on: blueimgshutter
+t += 3
+
+on: blueimg
+t += blueimgtime
+off: blueimg
+off: mako2
+off: scopetrigger
+off: blueimgshutter
+t += 10
+
+dac: greenmot greenmotpower
+off: greennarrow
+t += 3
 off: latmove1
 off: latmove2
 
-% img 2
-on: mako1
-t += 0.1
-on: absimg
-t += 0.05
-off: absimg
-t += 0.1
-off: mako1
-t += 0.1
-
+off: nrlattice
+on: blueimg
 t += 40
+off: blueimg
 
-on: mako1
-t += 0.1
 
-t += 0.05
+on: mako2
+on: blueimgshutter
+t += 3
 
-t += 0.1
-off: mako1
-t += 0.1
-
-t += 100
-
+on: blueimg
+t += blueimgtime
+off: blueimg
+off: mako2
+%
+t += 33
 t += 3
 on: pixis_trg 
 t += 2
@@ -130,6 +144,3 @@ on: pixis_trg
 t += 2
 off: pixis_trg
 t += 5
-
-
-

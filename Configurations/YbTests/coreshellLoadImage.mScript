@@ -15,6 +15,7 @@ off: greenmot
 off: blue3dmot
 off: pushbeam
 off: greenshutter
+off: lattice
 off: greenimg
 off: blueimg
 t += 100
@@ -30,7 +31,7 @@ off: blue3dmot
 t += 10
 on: pushbeam
 on: blue3dmot
-%t += 3000
+%t += 6000
 on: greenmot
 
 

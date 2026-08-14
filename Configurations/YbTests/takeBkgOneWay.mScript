@@ -18,59 +18,25 @@ dac: greenimg greenimgpowerthermalize
 
 pulseon: dds0 0.1
 on: lattice
-on: pushbeam
-on: greenmot
-on: blue3dmot
-%
-%% BG 
-%dac: greenimg greenimgpower
-%on: mako1
-%t += 5
-%on: greenimg
-%t += greenimgtime
-%off: greenimg
-%dac: greenimg 0
-%off: mako1
-
-t += ssloadtime
-off: blue3dmot
 off: pushbeam
-t += 3
-on: greennarrow
-t += 2
-dacramp: greenmot greenmotpower greenmotpowerlow 1
-t += 1
-t += latloadtime
 off: greenmot
-%% MOVE
-pulseon: latmove1 1
-pulseon: latmove2 1
+off: blue3dmot
+
+t += 100
 off: greenimg
 dac: greenimg 0
-t += greenmotblink
-off: greennarrow
-dac: greenmot greenmotpower
-on: greenmot
-t += (blueshellblink-greenmotblink)
 
-
-dac: blue3dmot blue3dmotlow
-t += 3
-on: blue3dmot
-on: pushbeam
-
-
-t += blueshellback
-dac: blue3dmot blue3dmotpower
 t += (150.27-blueshellblink-5-blueshellback)
-on: d11
 
+on: pushbeam
+on: greenmot
+on: blue3dmot
 dac: greenimg greenimgpower
 t += 3
 on: mako1
+on: d11
 on: greenimg
 t += 1
-
 on: greenshutter
 t += 3
 t += greenimgtime

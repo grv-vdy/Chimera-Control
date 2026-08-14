@@ -56,7 +56,7 @@ void ExpThreadWorker::experimentThreadProcedure () {
 		for (auto& device : input->devices.list) {
 			deviceLoadExpSettings (device, cStream);/*TODO: remove dds from device, and now device only has andor*/
 			if (device.get().getDelim().find("WIESERLABS_DDS") != std::string::npos) {
-				std::this_thread::sleep_for(std::chrono::milliseconds(500));
+				// std::this_thread::sleep_for(std::chrono::milliseconds(500));
 			}
 		}
 		input->numVariations = determineVariationNumber(expRuntime.expParams);

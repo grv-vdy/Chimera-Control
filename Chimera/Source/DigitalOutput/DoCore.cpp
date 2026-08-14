@@ -536,7 +536,7 @@ void DoCore::formatForFPGA(UINT variation)
 
 void DoCore::writeTtlDataToFPGA(UINT variation, bool /*loadSkip*/)
 {
-	rio.reset();
+	// rio.reset();
 	std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	rio.untrigger();
     rio.writeTTL(doFPGATimes[variation], doFPGAData[variation]);
@@ -549,26 +549,26 @@ void DoCore::writeTtlAoDataToFPGA(UINT variation, bool /*loadSkip*/, AoCore& ao,
 {
 	if (reprogram)
 	{
-		rio.reset();
+		// rio.reset();
 		//ao.writeDacs(variation, false);
 		std::this_thread::sleep_for(std::chrono::milliseconds(5));
-		rio.untrigger();
+		// rio.untrigger();
 		rio.writeTTL(doFPGATimes[variation], doFPGAData[variation]);
 		rio.waitForMemLoaded();
 		rio.trigger();
 		rio.waitForFinish();
-		//ao.handleFinish();
+		// ao.handleFinish();
 	}
 
 	else
 	{
 		//ao.writeDacs(variation, false);
 		std::this_thread::sleep_for(std::chrono::milliseconds(5));
-		rio.untrigger();
+		// rio.untrigger();
 		rio.set_reprogram(1);
 		rio.trigger();
 		rio.waitForFinish();
-		//ao.handleFinish();
+		// ao.handleFinish();
 		rio.set_reprogram(0);
 	}
 	
@@ -576,7 +576,7 @@ void DoCore::writeTtlAoDataToFPGA(UINT variation, bool /*loadSkip*/, AoCore& ao,
 
 void DoCore::triggerTtlAo(UINT variation, bool /*loadSkip*/, AoCore& ao)
 {
-	rio.reset();
+	// rio.reset();
 	ao.writeDacs(variation, false);
 	std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	rio.untrigger();

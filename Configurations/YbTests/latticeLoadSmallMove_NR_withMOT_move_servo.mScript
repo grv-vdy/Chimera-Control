@@ -1,13 +1,15 @@
-t = 1
-on: lattice
+t += 1
+off: lattice
 off: greenmot
 off: pushbeam
 off: blue3dmot
 dac: blue2dmot blue2dmotpower
+off: nrshutter
 off: greennarrow
 off: blueimg
 off: greenimg
-
+off: blueimgshutter
+off: lat_sh
 dac: bias1 (bias1+biasx+biasy)
 dac: bias2 (bias2-biasx+biasy)
 dac: biasz (biasz+biaszoff)
@@ -19,9 +21,21 @@ dac: greenimg 0
 
 dac: latticedown 0
 dac: latticeup 0
+
+dac: nrlattice 0
 %pulseon: dds0 0.1
 %pulseon: dds1 0.1
-%
+pulseon: makoshutter 1 %close
+
+
+
+on: nrshutter
+t += 1
+on: nrlattice
+on: lattice
+dac: nrlattice 0.5
+
+
 t += 100
 on: pushbeam
 on: greenmot
@@ -29,10 +43,21 @@ on: blue3dmot
 
 
 t += coreshellloadtime
+dac: nrlattice nrlatdepth
+t += 100
+on: lat_sh
 
+off: lattice
+off: nrlattice
+dac: nrlattice 0
+off: nrshutter
+
+t += 1
 off: pushbeam
 off: blue3dmot
-%motramp
+
+
+%----------motramp
 
 %dacramp: bias1 (bias1+biasxfix) (bias1+biasx+biasy) 1
 %dacramp: bias2 (bias2-biasxfix) (bias2-biasx+biasy) 1
@@ -43,49 +68,96 @@ t += 2
 dacramp: greenmot greenmotpower greenmotpowerlow 1
 t += 1
 
-%dac: greenmot greenmotpowerlow
 t += latloadtime %thermalize mot see 260225
-%t += 80
 
-%release mot
+on: nrshutter
+t += 1
+dac: nrlattice nrlatdepth
+on: nrlattice
+on: lattice
+
+t += 3
+%off: lat_sh
+
+%----------release mot
+
+
+%dacramp: nrlattice 0 nrlatdepth nrlatramptime
+%t += 2.5
+%off: greenmot
+t += handofftime
 
 off: greenmot
-on: scopetrigger
-t += motreleasetime
-t += 0.001
-off: scopetrigger
-%recapture mot
-%
 
+%t += motreleasetime
+t += 0.001
+
+%MOVE Lattice
+pulseon: latmove1 1
+pulseon: latmove2 1 
+on: scopetrigger
+
+
+%t += 223
+%---linear amp ramp start
+%dacramp: nrlattice nrlatdepth nrlatdepth_low 30
+t += 30
+t += 36.1493
+%dacramp: nrlattice nrlatdepth_low nrlatdepth  30
+t += 30
+%dacramp: nrlattice nrlatdepth nrlatdepth_low 30
+t += 30
+t += 36.1493
+%dacramp: nrlattice nrlatdepth_low nrlatdepth  30
+t += 30
+%---linear amp ramp end
+
+dac: greenmot greenmotpower
+
+t += 2
+
+
+%
+%dacramp: nrlattice nrlatdepth 0 nrlatramptime
+%t += 2.5
+%-----------recapture mot
+off: nrlattice
+
+t += 2
+off: lat_sh
+off: lattice
+off: scopetrigger
+t += 0.1
 on: greenmot
 off: greennarrow
-dac: greenmot greenmotpower
-off: lattice
+
+
 
 %dacramp: bias1 (bias1+biasx+biasy) (bias1+biasxfix)  1
 %dacramp: bias2 (bias2-biasx+biasy) (bias2-biasxfix) 1
 %dacramp: biasz (biasz+biaszoff) (biasz+biaszofffix) 1
+t += 5
 
-t += 10
+off: nrshutter
+t += 1
+pulseon: makoshutter 1 %open
+t += 5
 
 on: mako1
-t += 100
+t += 200
 off: mako1
 
 
 off: greenmot
-off: blue3dmot
-dac: blueimg blueimgpower
-on: blueimg
+
 
 t += 100
 
-off: blueimg
-dac: blueimg 0
+
 on: greenmot
 t += 2
 on: mako1
-t += 2
+t += 200
 off: mako1
 t += 100
 off: greenmot

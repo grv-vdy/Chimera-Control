@@ -2,7 +2,8 @@ t = 1
 off: latmove1
 off: latmove2
 off: greenshutter
-off: greenimg
+off: greenimgsh
+on: greenimg
 dac: blue2dmot blue2dmotpower
 
 dac: bias1 (bias1+biasx+biasy)
@@ -13,7 +14,7 @@ dac: blue3dmot blue3dmotpower
 dac: greenmot greenmotpower
 dac: pushbeam bluepushpower
 dac: blueimg 0
-dac: greenimg 0
+dac: greenimg greenimgpower
 
 
 pulseon: dds0 0.1
@@ -33,49 +34,59 @@ on: blue3dmot
 %off: mako1
 
 t += ssloadtime
-
 off: blue3dmot
 off: pushbeam
 t += 3
+on: greennarrow
+t += 2
 dacramp: greenmot greenmotpower greenmotpowerlow 1
 t += 1
+on: greenimgsh
 t += latloadtime
 off: greenmot
 %% MOVE
 pulseon: latmove1 1
 pulseon: latmove2 1
-
-t += blueshellblink
-
-dac: blue3dmot blue3dmotlow
-t += 3
-on: blue3dmot
-on: pushbeam
-on: blue3dmot
-on: greenmot
+off: greenimg
+dac: greenimg 0
+t += greenmotblink
+off: greennarrow
 dac: greenmot greenmotpower
-t += (125.55-blueshellblink)
+on: greenmot
+t += (blueshellblink-greenmotblink)
 
 
-on: mako1
-
-dac: greenimg greenimgpower
-on: greenshutter
+%dac: blue3dmot blue3dmotlow
 t += 3
+%on: blue3dmot
+on: pushbeam
+
+
+t += blueshellback
+%dac: blue3dmot blue3dmotpower
+t += (150.27-blueshellblink-5-blueshellback)
+
+%dac: greenimg greenimgpower
+t += 3
+on: mako1
 on: d11
 on: greenimg
+t += 1
+on: greenshutter
+t += 3
 t += greenimgtime
 off: greenimg
 dac: greenimg 0
-off: greenshutter
+off: greenimgsh
+
 off: mako1
 off: d11
 
+dac: greenimg greenimgpowerthermalize
 
-t += 1
 dac: blue3dmot blue3dmotpower
-
-
+t += 3
+on: blue3dmot
 
 t += 1
 on: pixis_trg 
@@ -85,4 +96,3 @@ t += 1
 on: pixis_trg
 t += 1
 off: pixis_trg
-

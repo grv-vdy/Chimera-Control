@@ -1,0 +1,154 @@
+t += 1
+off: lattice
+off: greenmot
+off: pushbeam
+off: blue3dmot
+dac: blue2dmot blue2dmotpower
+off: nrshutter
+off: greennarrow
+off: blueimg
+off: greenimg
+off: blueimgshutter
+off: lat_sh
+dac: bias1 (bias1+biasx+biasy)
+dac: bias2 (bias2-biasx+biasy)
+dac: biasz (biasz+biaszoff)
+dac: blue3dmot blue3dmotpower
+dac: greenmot greenmotpower
+dac: pushbeam bluepushpower
+dac: blueimg 0
+dac: greenimg 0
+
+dac: latticedown 0
+dac: latticeup 0
+
+dac: nrlattice 0
+%pulseon: dds0 0.1
+%pulseon: dds1 0.1
+pulseon: makoshutter 1 %close
+
+
+
+on: nrshutter
+t += 1
+on: nrlattice
+on: lattice
+dac: nrlattice 0.5
+
+
+t += 100
+on: pushbeam
+on: greenmot
+on: blue3dmot
+
+
+t += coreshellloadtime
+dac: nrlattice nrlatdepth
+t += 100
+on: lat_sh
+
+off: lattice
+off: nrlattice
+dac: nrlattice 0
+off: nrshutter
+
+t += 1
+off: pushbeam
+off: blue3dmot
+
+
+%----------motramp
+
+
+t += 1
+on: greennarrow
+t += 2
+dacramp: greenmot greenmotpower greenmotpowerlow 1
+t += 1
+
+t += latloadtime %thermalize mot see 260225
+
+on: nrshutter
+t += 1
+dac: nrlattice nrlatdepth
+on: nrlattice
+on: lattice
+%off: lat_sh
+t += 3
+
+
+%----------release mot
+
+
+%dacramp: nrlattice 0 nrlatdepth nrlatramptime
+%t += 2.5
+%off: greenmot
+t += handofftime
+
+off: greenmot
+
+%t += motreleasetime
+t += 0.001
+
+%MOVE Lattice
+pulseon: latmove1 1
+pulseon: latmove2 1 
+
+
+
+t += 94
+
+t += time
+on: mako1
+on: blueimgshutter
+dac: blueimg 1.7
+t += 3
+on: blueimg
+on: scopetrigger
+
+t += blueimgtime
+off: blueimg
+
+t += 30
+off: mako1
+off: scopetrigger
+
+
+dac: blueimg 0
+t += 200
+
+
+on: mako1
+
+dac: blueimg 1.7
+t += 3
+on: blueimg
+t += blueimgtime
+off: blueimg
+
+t += 30
+off: mako1
+
+off: blueimgshutter
+off: nrlattice
+off: lat_sh
+dac: nrlattice 0
+off: nrshutter
+pulseon: makoshutter 1 %open
+
+t += 2
+
+off: lattice
+
+
+
+
+t += 3
+on: pixis_trg 
+t += 2
+off: pixis_trg
+t += 1
+on: pixis_trg
+t += 2
+off: pixis_trg
+t += 5

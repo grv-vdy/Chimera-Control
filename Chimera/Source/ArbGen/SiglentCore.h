@@ -45,6 +45,7 @@ public:
 	void setDC(int channel, dcInfo info, unsigned variation) override;
 	void setExistingWaveform(int channel, preloadedArbInfo info) override;
 	void setSquare(int channel, squareInfo info, unsigned variation) override;
+	void fixBeating();
 	void setSine(int channel, sineInfo info, unsigned variation) override;
 	void outputOff(int channel) override;
 	void outputOn(int channel) override;

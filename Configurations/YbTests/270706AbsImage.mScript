@@ -1,3 +1,5 @@
+%%%%%%%%%%%%%%%%% Start With 1ms %%%%%%%%%%%%%%%%% 
+t = 1
 t += 1
 off: lattice
 off: greenmot
@@ -21,7 +23,7 @@ dac: blueimg 0
 dac: greenimg 0
 dac: absimage 0
 
-
+dac: latticeup 0
 dac: nrlattice 0
 off: nrlattice
 off: lattice
@@ -70,15 +72,14 @@ off: greenmot
 
 % -- Move
 t += 0.001
-
+%
 on: latmove1
 on: latmove2
 
-%t += 50
-t += motreleasetime
+t += 183
 off: nrlattice
 off: lattice
-
+t += motreleasetime
 
 %off: greenmot
 on: mako1
@@ -130,6 +131,3 @@ on: pixis_trg
 t += 2
 off: pixis_trg
 t += 5
-
-
-

@@ -54,6 +54,8 @@ void SiglentCore::setupCh2LikePyvisa(double frequencyMHz, double amplitudeVpp, d
 	visaFlume.write("C2:OUTP ON");
 	long opc = 0;
 	visaFlume.query("*OPC?\n", opc);
+	visaFlume.write("C2:OUTP LOAD,50");
+	visaFlume.query("*OPC?\n", opc);
 	visaFlume.write("C2:BSWV WVTP,SINE,FRQ," + str(frequencyMHz * 1e6)
 		+ ",AMP," + str(amplitudeVpp) + ",OFST,0.0,PHSE," + str(phaseDeg));
 	visaFlume.query("*OPC?\n", opc);
@@ -86,6 +88,7 @@ void SiglentCore::programCh1TrueArbLikePyvisa(double amplitudeVpp, double offset
 	visaFlume.write("C1:BSWV WVTP,ARB");
 	visaFlume.query("*OPC?\n", opc);
 
+
 	visaFlume.write("C1:BSWV AMP," + str(amplitudeVpp) + ",OFST," + str(offsetV) + ",PHSE," + str(startPhaseDeg));
 	visaFlume.query("*OPC?\n", opc);
 	visaFlume.write("C1:BTWV STATE,ON");
@@ -115,6 +118,18 @@ void SiglentCore::selectWaveform()
 	visaFlume.write("VKEY VALUE,175,STATE,1");
 	std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	visaFlume.write("VKEY VALUE,176,STATE,1");
+	std::this_thread::sleep_for(std::chrono::milliseconds(1));
+}
+
+void SiglentCore::fixBeating(){
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	visaFlume.write("VKEY VALUE,5,STATE,1");
+	std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	visaFlume.write("VKEY VALUE,177,STATE,1");
+	std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	visaFlume.write("VKEY VALUE,176,STATE,1");
+	std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	visaFlume.write("VKEY VALUE,175,STATE,1");
 	std::this_thread::sleep_for(std::chrono::milliseconds(1));
 }
 
