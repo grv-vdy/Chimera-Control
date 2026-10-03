@@ -33,7 +33,7 @@ pushbeam
 1
 nrlattice
 1
-makoshutter
+mako3
 1
 greennarrow
 1
@@ -45,7 +45,7 @@ absimg
 1
 dipoletrap
 1
-ampmod
+motoff
 1
 do4_0
 1
@@ -175,7 +175,7 @@ mot
 0 - 5
 0
 dac0_11
-dipoletrap
+rsb1
 0 - 2
 0
 dac0_12

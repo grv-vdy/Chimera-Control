@@ -1,15 +1,15 @@
 t += 1
-off: lattice
+on: lattice
 off: greenmot
 off: pushbeam
 off: blue3dmot
 dac: blue2dmot blue2dmotpower
-off: nrshutter
 off: greennarrow
 off: blueimg
-off: greenimg
 off: blueimgshutter
 off: absimg
+on: nrshutter
+off: nrlattice
 
 dac: bias1 (bias1+biasx+biasy)
 dac: bias2 (bias2-biasx+biasy)
@@ -18,26 +18,11 @@ dac: blue3dmot blue3dmotpower
 dac: greenmot greenmotpower
 dac: pushbeam bluepushpower
 dac: blueimg 0
-dac: greenimg 0
 dac: absimage 0
 
+dac: nrlattice nrlatdepth
 
-dac: nrlattice 0
-off: nrlattice
-off: lattice
-%pulseon: dds0 0.1
-%pulseon: dds1 0.1
-pulseon: makoshutter 1 %close
-
-
-
-
-t += 1
-
-dac: nrlattice 0.5
-
-
-t += 100
+t += 30
 on: pushbeam
 on: greenmot
 on: blue3dmot
@@ -47,11 +32,12 @@ t += coreshellloadtime
 
 
 t += 1
+
 off: pushbeam
 off: blue3dmot
-dac: nrlattice nrlatdepth
-dac: absimage absimgpower
+
 t += 3
+
 on: nrlattice
 on: lattice
 on: scopetrigger
@@ -61,30 +47,33 @@ t += overlaptime
 
 
 
-%----------release mot
-
 
 off: greenmot
 
 %
 
 % -- Move
-t += 0.001
+t += latpausetime
 
 on: latmove1
 on: latmove2
 
-%t += 50
-t += motreleasetime
+t += 15
+dac: absimage absimgpower
+t += 129
+
 off: nrlattice
 off: lattice
+off: nrshutter
+
+t += motreleasetime
 
 
-%off: greenmot
+
 on: mako1
 t += 0.1
 on: absimg
-t += 0.05
+t += absimagetime
 off: absimg
 t += 0.1
 off: mako1
@@ -102,7 +91,7 @@ off: latmove2
 on: mako1
 t += 0.1
 on: absimg
-t += 0.05
+t += absimagetime
 off: absimg
 t += 0.1
 off: mako1

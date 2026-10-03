@@ -1,0 +1,189 @@
+t += 1
+on: lattice
+off: greenmot
+off: pushbeam
+off: blue3dmot
+dac: blue2dmot blue2dmotpower
+off: greennarrow
+off: blueimg
+off: blueimgshutter
+off: absimg
+on: nrshutter
+off: nrlattice
+
+dac: bias1 (bias1+biasx+biasy)
+dac: bias2 (bias2-biasx+biasy)
+dac: biasz (biasz+biaszoff)
+dac: blue3dmot blue3dmotpower
+dac: greenmot greenmotpower
+dac: pushbeam bluepushpower
+dac: blueimg 0
+dac: absimage 0
+
+
+dac: nrlattice 0
+
+t += 30
+on: pushbeam
+on: greenmot
+on: blue3dmot
+
+
+t += coreshellloadtime
+
+
+off: pushbeam
+off: blue3dmot
+
+
+
+on: scopetrigger
+
+dac: absimage absimgpower
+t += 4
+
+
+off: greenmot
+
+t += motreleasetime
+
+
+on: mako1
+t += 0.1
+on: absimg
+t += absimagetime
+off: absimg
+t += 0.1
+off: mako1
+
+% make sure to destoroy atom
+t += 0.3
+on: absimg
+t += 40
+off: absimg
+t += 1
+off: latmove1
+off: latmove2
+
+% img 2
+on: mako1
+t += 0.1
+on: absimg
+t += absimagetime
+off: absimg
+t += 0.1
+off: mako1
+t += 0.1
+
+t += 40
+
+on: mako1
+t += 0.1
+
+t += 0.05
+
+t += 0.1
+off: mako1
+t += 0.1
+
+
+%% normal transport cycle
+t += 1
+
+
+on: pushbeam
+on: greenmot
+on: blue3dmot
+
+
+t += coreshellloadtime
+
+
+t += 1
+off: pushbeam
+off: blue3dmot
+on: nrshutter
+dac: nrlattice nrlatdepth
+t += 3
+on: nrlattice
+on: lattice
+
+dac: blueimg 1.7
+t += overlaptime
+
+
+
+
+%----------release mot
+
+
+%dacramp: nrlattice 0 nrlatdepth nrlatramptime
+%t += 2.5
+%off: greenmot
+
+off: greenmot
+
+t += 0.001
+on: scopetrigger
+on: latmove1
+on: latmove2
+
+t += blueshellback
+on: blue3dmot
+on: greenmot
+
+t += (76-blueshellback)
+
+
+
+
+t += 1
+
+
+t += cell_lat_time
+
+
+on: mako2
+on: blueimgshutter
+t += 3
+
+on: blueimg
+t += blueimgtime
+off: blueimg
+off: mako2
+off: blueimgshutter
+
+
+
+off: latmove1
+off: latmove2
+
+off: lattice
+t += 20
+on: lattice 
+off: scopetrigger
+
+on: mako2
+on: blueimgshutter
+t += 3
+
+on: blueimg
+t += blueimgtime
+off: blueimg
+off: mako2
+
+
+t += 1
+
+t += 3
+on: pixis_trg 
+t += 2
+off: pixis_trg
+t += 1
+on: pixis_trg
+t += 2
+off: pixis_trg
+t += 5
+
+
+

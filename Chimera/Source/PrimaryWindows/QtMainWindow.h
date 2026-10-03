@@ -18,7 +18,7 @@
 #include "ConfigurationSystems/NoteSystem.h"
 #include "ConfigurationSystems/profileSettings.h"
 // NOTE: TCP Server is currently NOT USED - Commenting out for future cleanup
-// #include <ExternalController/TCPServerSystem.h>
+#include <ExternalController/TCPServerSystem.h>
 #include <ExternalController/CommandModulator.h>
 #include "GeneralUtilityFunctions/commonFunctions.h"
 #include "GeneralObjects/RunInfo.h"
@@ -107,7 +107,7 @@ class QtMainWindow : public IChimeraQtWindow{
 		MasterConfiguration masterConfig;
 		NoteSystem notes;
 		// NOTE: TCP Server is currently NOT USED
-		// TCPServerSystem tcpServer;
+		TCPServerSystem tcpServer;
 		DebugOptionsControl debugger;
 		Repetitions repetitionControl;
 		MainOptionsControl mainOptsCtrl;

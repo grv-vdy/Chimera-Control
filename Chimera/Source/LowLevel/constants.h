@@ -112,7 +112,7 @@
 	const std::array<std::string, MAKO_NUMBER> MAKO_DELIMS = { "MAKO1_CAM"/*MOT G125*/, "MAKO2_CAM"/*MOT G319*/, "MAKO3_CAM"/*420 MON*/, "MAKO4_CAM"/*1013 MON*/};
 	const std::array<std::string, MAKO_NUMBER> MAKO_IPADDRS = { "192.168.105.6", "192.168.105.2","192.168.105.17","10.10.0.11" };
 	const std::vector<std::pair<unsigned, unsigned>> MAKO_TRIGGER_LINE
-		= {std::make_pair(5 - 1,3),std::make_pair(3 - 1,3),std::make_pair(1 - 1,2),std::make_pair(5 - 1,7) };
+		= {std::make_pair(3 - 1,1),std::make_pair(3 - 1,3),std::make_pair(1 - 1,2),std::make_pair(5 - 1,7) };
 	/*the first is the label on the box minus 1, has minus'd 1 explicitly and this is not used in the code, just a reminder*/
 
 	//GIGAMOOG
