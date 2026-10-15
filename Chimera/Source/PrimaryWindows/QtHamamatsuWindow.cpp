@@ -283,34 +283,59 @@ void QtHamamatsuWindow::windowSaveConfig (ConfigStream& saveFile){
 
 void QtHamamatsuWindow::windowOpenConfig (ConfigStream& configFile){
 	HamamatsuRunSettings camSettings;
-	try	{
-		ConfigSystem::stdGetFromConfig (configFile, hamamatsu, camSettings);
-		hamamatsuSettingsCtrl.setConfigSettings (camSettings);
-		hamamatsuSettingsCtrl.setImageParameters (camSettings.imageSettings);
-		hamamatsuSettingsCtrl.updateRunSettingsFromPicSettings ();
+	if (ConfigSystem::sectionExists (configFile, hamamatsu.getDelim ())) {
+		try	{
+			ConfigSystem::stdGetFromConfig (configFile, hamamatsu, camSettings);
+			hamamatsuSettingsCtrl.setConfigSettings (camSettings);
+			hamamatsuSettingsCtrl.setImageParameters (camSettings.imageSettings);
+			hamamatsuSettingsCtrl.updateRunSettingsFromPicSettings ();
+		}
+		catch (ChimeraError& err){
+			reportErr (qstr("Failed to get Hamamatsu Camera Run settings from file! " + err.trace ()));
+		}
 	}
-	catch (ChimeraError& err){
-		reportErr (qstr("Failed to get Hamamatsu Camera Run settings from file! " + err.trace ()));
+	else {
+		reportStatus (qstr ("No " + hamamatsu.getDelim () + " section in this config; keeping current Hamamatsu "
+			"camera run settings.\n"));
 	}
-	try	{
-		auto picSettings = ConfigSystem::stdConfigGetter (configFile, "PICTURE_SETTINGS",
-			HamamatsuCameraSettingsControl::getPictureSettingsFromConfig);
-		hamamatsuSettingsCtrl.updatePicSettings (picSettings);
+	if (ConfigSystem::sectionExists (configFile, "PICTURE_SETTINGS")) {
+		try	{
+			auto picSettings = ConfigSystem::stdConfigGetter (configFile, "PICTURE_SETTINGS",
+				HamamatsuCameraSettingsControl::getPictureSettingsFromConfig);
+			hamamatsuSettingsCtrl.updatePicSettings (picSettings);
+		}
+		catch (ChimeraError& err)	{
+			reportErr (qstr ("Failed to get Hamamatsu Camera Picture settings from file! " + err.trace ()));
+		}
 	}
-	catch (ChimeraError& err)	{
-		reportErr (qstr ("Failed to get Hamamatsu Camera Picture settings from file! " + err.trace ()));
+	else {
+		reportStatus ("No PICTURE_SETTINGS section in this config; keeping current picture settings.\n");
 	}
-	try	{
-		ConfigSystem::standardOpenConfig (configFile, pics.configDelim, &pics);
+	// This section used to be saved as ANDOR_PICTURE_MANAGER. Accept the old name so that configs written before
+	// the switch to the Hamamatsu camera still load; saving always writes the current (Hamamatsu) name.
+	auto picManagerDelim = ConfigSystem::firstPresentDelim (configFile, { pics.configDelim,
+																		  "ANDOR_PICTURE_MANAGER" });
+	if (picManagerDelim != "") {
+		try	{
+			ConfigSystem::standardOpenConfig (configFile, picManagerDelim, "END_" + picManagerDelim, &pics);
+		}
+		catch (ChimeraError& err)	{
+			reportErr (qstr ("Failed to load picture settings from config! " + err.trace ()));
+		}
 	}
-	catch (ChimeraError&)	{
-		reportErr ("Failed to load picture settings from config!");
+	else {
+		reportStatus ("No picture manager section in this config; keeping current picture display settings.\n");
 	}
-	try	{
-		ConfigSystem::standardOpenConfig (configFile, "DATA_ANALYSIS", &analysisHandler);
+	if (ConfigSystem::sectionExists (configFile, "DATA_ANALYSIS")) {
+		try	{
+			ConfigSystem::standardOpenConfig (configFile, "DATA_ANALYSIS", &analysisHandler);
+		}
+		catch (ChimeraError& err){
+			reportErr (qstr ("Failed to load Data Analysis settings from config! " + err.trace ()));
+		}
 	}
-	catch (ChimeraError&){
-		reportErr ("Failed to load Data Analysis settings from config!");
+	else {
+		reportStatus ("No DATA_ANALYSIS section in this config; keeping current data analysis settings.\n");
 	}
 	try	{
 		pics.resetPictureStorage ();
@@ -322,6 +347,15 @@ void QtHamamatsuWindow::windowOpenConfig (ConfigStream& configFile){
 	}
 	analysisHandler.updateUnofficialPicsPerRep(hamamatsuSettingsCtrl.getConfigSettings().hamamatsu.picsPerRepetition,
 		false);
+	// Always re-grid the picture controls to whatever settings we ended up with, loaded or default. Without this a
+	// config that is missing the camera sections leaves the pictures with no grid, and every draw then fails with
+	// "Picture data didn't match grid size!".
+	try	{
+		refreshPics ();
+	}
+	catch (ChimeraError& e){
+		reportErr (qstr ("Failed to resize the Hamamatsu picture displays after opening the config.\n\n" + e.trace ()));
+	}
 }
 
 void QtHamamatsuWindow::abortCameraRun (bool askDelete){

@@ -74,6 +74,7 @@ void CommandModulator::startExperiment(QString expDataName, ErrorStatus& status)
 		saveAll(status);
 		commonFunctions::prepareMasterThread(0, mainWin, input, true, false, true, true);
 		input.masterInput->expType = ExperimentType::Normal;
+		commonFunctions::logStandard(input, input.masterInput->logger);
 		commonFunctions::startExperimentThread(mainWin, input);
 	
 	}

@@ -1,0 +1,16 @@
+[
+    {
+        "file": "C:\\Users\\ronak\\Desktop\\Chimera-Control\\Configurations\\YbTests\\tweezerloading_ronak.Config",
+        "master_script": "C:\\Users\\ronak\\Desktop\\Chimera-Control\\Configurations\\YbTests\\continousatoms.mScript",
+        "analysis_script": "",
+        "comment": "exp 1",
+        "repeats": 1
+    },
+    {
+        "file": "C:\\Users\\ronak\\Desktop\\Chimera-Control\\Configurations\\YbTests\\tweezerloading_ronak.Config",
+        "master_script": "C:\\Users\\ronak\\Desktop\\Chimera-Control\\Configurations\\YbTests\\continousatoms.mScript",
+        "analysis_script": "",
+        "comment": "",
+        "repeats": 4
+    }
+]

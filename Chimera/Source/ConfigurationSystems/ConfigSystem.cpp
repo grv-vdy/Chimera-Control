@@ -128,6 +128,40 @@ void ConfigSystem::initializeAtDelim ( ConfigStream& configStream, std::string d
 }
 
 
+/*
+ * Checks whether a section exists in the file without consuming it or moving the get pointer. Used so that a
+ * config which predates a given section (or which never had it) can be opened with defaults instead of an error.
+ */
+bool ConfigSystem::sectionExists ( ConfigStream& configStream, std::string delimiter ){
+	auto originalPos = configStream.tellg ();
+	bool found = true;
+	configStream.clear ();
+	configStream.seekg ( 0, std::ios::beg );
+	try	{
+		ConfigSystem::jumpToDelimiter ( configStream, delimiter );
+	}
+	catch ( ChimeraError& ){
+		found = false;
+	}
+	configStream.clear ();
+	configStream.seekg ( originalPos );
+	return found;
+}
+
+/*
+ * Returns the first of several candidate section names that is actually in the file, or an empty string if none of
+ * them are. This is how a section that has been renamed over time stays readable under all of its old names.
+ */
+std::string ConfigSystem::firstPresentDelim ( ConfigStream& configStream, std::vector<std::string> delimiters ){
+	for ( auto& delim : delimiters ){
+		if ( ConfigSystem::sectionExists ( configStream, delim ) ){
+			return delim;
+		}
+	}
+	return "";
+}
+
+
 void ConfigSystem::jumpToDelimiter ( ConfigStream& configStream, std::string delimiter ){
 	// Search for delimiter in the raw file content (case-insensitive)
 	std::string hay = configStream.str();

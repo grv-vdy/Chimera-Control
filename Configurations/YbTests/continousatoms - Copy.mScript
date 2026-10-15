@@ -1,0 +1,5 @@
+t = 1
+dac: greenimg 0
+on: greenshutter
+t+= 1000
+on: greenshutter
