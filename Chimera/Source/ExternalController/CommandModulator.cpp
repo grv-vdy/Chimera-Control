@@ -78,7 +78,8 @@ void CommandModulator::startExperiment(QString expDataName, ErrorStatus& status)
 		commonFunctions::prepareMasterThread(0, mainWin, input, true, true, true, true);
 		input.masterInput->expType = ExperimentType::Normal;
 
-		commonFunctions::logStandard(input, andorWin->getLogger(), str(expDataName));
+		commonFunctions::logStandard(input, andorWin->getLogger());
+
 		commonFunctions::startExperimentThread(mainWin, input);
 	
 	}

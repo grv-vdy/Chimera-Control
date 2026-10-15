@@ -1,0 +1,119 @@
+%%%%%%%%%%%%%%%%% Start With 1ms %%%%%%%%%%%%%%%%% 
+t += 1
+off: greenmot
+off: pushbeam
+off: blue3dmot
+dac: blue2dmot blue2dmotpower
+on: nrshutter
+off: greennarrow
+off: blueimg
+off: blueimgshutter
+
+dac: bias1 (bias1+biasx+biasy)
+dac: bias2 (bias2-biasx+biasy)
+dac: biasz (biasz+biaszoff)
+dac: blue3dmot blue3dmotpower
+dac: greenmot greenmotpower
+dac: pushbeam bluepushpower
+dac: blueimg 0
+
+dac: nrlattice nrlatdepth
+off: nrlattice
+off: lattice
+
+t += 50
+
+on: pushbeam
+on: greenmot
+on: blue3dmot
+on: nrlattice
+on: lattice
+
+
+t += coreshellloadtime
+
+dac: blueimg 1.7
+t += 3
+
+repeat: 20
+
+t += ssloadtime
+
+off: pushbeam
+off: blue3dmot
+off: lattice
+off: nrlattice
+
+t += cooltime
+
+on: lattice
+on: nrlattice
+
+t += overlaptime
+
+
+off: greenmot
+
+t += 0.001
+
+on: latmove1
+on: latmove2
+
+t += (blueshellback)
+
+on: pushbeam
+on: blue3dmot
+on: greenmot
+
+t += (44-blueshellback)
+
+
+t += 1
+
+
+on: scopetrigger
+
+
+
+off: latmove1
+off: latmove2
+t+= latticeontime
+end
+
+
+
+on: mako2
+on: blueimgshutter
+t += 3
+off: nrlattice
+on: blueimg
+t += blueimgtime
+off: blueimg
+off: mako2
+off: scopetrigger
+off: blueimgshutter
+
+
+off: lattice
+t += 20
+on: lattice 
+
+on: mako2
+on: blueimgshutter
+t += 1
+
+on: blueimg
+t += blueimgtime
+off: blueimg
+off: mako2
+
+on: nrlattice
+on: pixis_trg 
+t += 1
+off: pixis_trg
+t += 1
+on: pixis_trg
+t += 1
+off: pixis_trg
+t += 1
+off: scopetrigger

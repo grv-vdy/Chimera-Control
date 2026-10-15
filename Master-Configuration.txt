@@ -7,7 +7,7 @@ mako1
 1
 broken
 1
-greenimg
+rsb1
 1
 pixis_trg
 1
@@ -143,7 +143,7 @@ absimage
 0 - 7.3
 0
 dac0_3
-greenimg
+rsb1
 0 - 2
 0
 dac0_4
@@ -175,7 +175,7 @@ mot
 0 - 5
 0
 dac0_11
-rsb1
+blank
 0 - 2
 0
 dac0_12

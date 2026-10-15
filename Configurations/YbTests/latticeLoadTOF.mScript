@@ -21,14 +21,14 @@ dac: blueimg 0
 dac: absimage 0
 
 
-dac: nrlattice 0
 dac: nrlattice nrlatdepth
 
 t += 30
 on: pushbeam
 on: greenmot
 on: blue3dmot
-
+on: nrlattice
+on: lattice
 
 t += coreshellloadtime
 
@@ -37,6 +37,8 @@ t += 1
 
 off: pushbeam
 off: blue3dmot
+off: nrlattice
+off: lattice
 
 dac: absimage absimgpower
 t += 3

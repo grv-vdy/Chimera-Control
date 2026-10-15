@@ -1,0 +1,9 @@
+[
+    {
+        "file": "C:\\Users\\yb2\\Chimera-Control\\Configurations\\YbTests\\tweezerloading.Config",
+        "master_script": "C:\\Users\\yb2\\Chimera-Control\\Configurations\\YbTests\\fluxDataTaking.mScript",
+        "analysis": true,
+        "comment": "Test",
+        "repeats": 1
+    }
+]

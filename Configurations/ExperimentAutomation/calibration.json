@@ -1,0 +1,9 @@
+[
+    {
+        "file": "C:\\Users\\yb2\\Chimera-Control\\Configurations\\YbTests\\tweezerloading.Config",
+        "master_script": "C:\\Users\\yb2\\Chimera-Control\\Configurations\\YbTests\\latticeLoadSmallMove_NR_withMOT_noservo_move_blueimg_direct_oneWay.mScript",
+        "analysis": true,
+        "comment": "",
+        "repeats": 2
+    }
+]

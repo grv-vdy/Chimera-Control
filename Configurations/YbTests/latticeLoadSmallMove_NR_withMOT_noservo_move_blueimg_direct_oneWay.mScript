@@ -7,7 +7,6 @@ dac: blue2dmot blue2dmotpower
 on: nrshutter
 off: greennarrow
 off: blueimg
-off: greenimg
 off: absimg
 off: blueimgshutter
 
@@ -28,7 +27,7 @@ off: nrlattice
 off: lattice
 
 
-
+dac: nrlattice nrlatdepth
 
 
 t += 50
@@ -38,6 +37,8 @@ on: pushbeam
 on: greenmot
 on: blue3dmot
 
+on: nrlattice
+on: lattice
 
 t += coreshellloadtime
 
@@ -45,8 +46,9 @@ t += coreshellloadtime
 t += 1
 off: pushbeam
 off: blue3dmot
-on: nrshutter
-dac: nrlattice nrlatdepth
+off: nrlattice
+off: lattice
+
 t += 3
 on: nrlattice
 on: lattice
@@ -75,7 +77,7 @@ t += blueshellback
 on: blue3dmot
 on: greenmot
 
-t += (73-blueshellback)
+t += (30-blueshellback)
 
 
 
@@ -85,11 +87,12 @@ t += 1
 
 t += cell_lat_time
 
-
+off: latmove1
+off: latmove2
 on: mako2
 on: blueimgshutter
 t += 3
-
+off: nrlattice
 on: blueimg
 t += blueimgtime
 off: blueimg
@@ -98,12 +101,10 @@ off: blueimgshutter
 
 
 
-off: latmove1
-off: latmove2
-
 off: lattice
 t += 20
-on: lattice 
+on: lattice
+
 off: scopetrigger
 
 on: mako2
