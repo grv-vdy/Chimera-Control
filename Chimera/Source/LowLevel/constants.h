@@ -24,7 +24,7 @@
 	#else
 		constexpr bool  PYTHON_SAFEMODE = true;
 	#endif
-	//constexpr bool DAQMX_SAFEMODE = true;
+	constexpr bool DAQMX_SAFEMODE = false;
 	//constexpr bool ANALOG_OUT_SAFEMODE = true;
 
 	constexpr auto CODE_ROOT = "C:\\Users\\yb2\\Chimera-Control";
@@ -141,10 +141,13 @@
 	const int STATICAO_IPPORT = 804;
 
 	//static PLL
-	const unsigned int STATICDDS_NUMBER = 4; // Set to the number of StaticDDS systems you want
+	const unsigned int STATICDDS_NUMBER = 6; // Set to the number of StaticDDS systems you want
 	const bool STATICDDS_SAFEMODE = false;
-	const std::array<std::string, STATICDDS_NUMBER> STATICDDS_PORT = {"COM4", "COM5", "COM6", "COM8" };
-	const std::array<unsigned int, STATICDDS_NUMBER> STATICDDS_BAUDRATE = {9600, 9600, 9600, 9600};
+	const std::array<std::string, STATICDDS_NUMBER> STATICDDS_PORT = {"COM4", "COM5", "COM6", "COM8","COM11", "COM12" };
+	const std::array<unsigned int, STATICDDS_NUMBER> STATICDDS_BAUDRATE = {9600, 9600, 9600, 9600, 9600, 9600};
+
+	//hamamatsu qcmos
+	const bool HAM_SAFEMODE = false;
 
 	//Elliptec rotation stage
 	const bool ELLIPTEC_SAFEMODE = true;

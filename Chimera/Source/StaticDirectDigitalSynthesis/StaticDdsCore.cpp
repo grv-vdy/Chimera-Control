@@ -153,7 +153,9 @@ StaticDDSSettings StaticDdsCore::getSettingsFromConfig(ConfigStream& file)
 	}
 
 	if (hasNames) {
-		for (auto idx : range(size_t(StaticDDSGrid::total))) {
+		// only read as many names as the file has, so configs saved with fewer ports still load
+		auto namesToRead = std::min(size_t(StaticDDSGrid::total), availableFreqLevelChannels);
+		for (auto idx : range(namesToRead)) {
 			file >> tempSettings.channelNames[idx];
 		}
 	}

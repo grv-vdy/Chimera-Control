@@ -17,7 +17,7 @@ dac: blue3dmot blue3dmotpower
 dac: greenmot greenmotpower
 dac: pushbeam bluepushpower
 dac: blueimg 0
-dac: greenimg 0
+dac: rsb1 0
 
 
 

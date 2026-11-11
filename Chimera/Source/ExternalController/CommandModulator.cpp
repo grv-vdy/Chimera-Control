@@ -74,13 +74,7 @@ void CommandModulator::startExperiment(QString expDataName, ErrorStatus& status)
 		saveAll(status);
 		commonFunctions::prepareMasterThread(0, mainWin, input, true, false, true, true);
 		input.masterInput->expType = ExperimentType::Normal;
-<<<<<<< HEAD
-
-		commonFunctions::logStandard(input, andorWin->getLogger());
-
-=======
 		commonFunctions::logStandard(input, input.masterInput->logger);
->>>>>>> origin/Sigilent_6000
 		commonFunctions::startExperimentThread(mainWin, input);
 	
 	}
