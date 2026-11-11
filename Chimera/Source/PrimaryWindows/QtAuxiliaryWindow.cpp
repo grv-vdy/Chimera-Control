@@ -2,10 +2,10 @@
 #include "QtAuxiliaryWindow.h"
 #include <qdesktopwidget.h>
 #include <PrimaryWindows/QtScriptWindow.h>
-#include <PrimaryWindows/QtAndorWindow.h>
 #include <PrimaryWindows/QtAuxiliaryWindow.h>
 #include <PrimaryWindows/QtMakoWindow.h>
 #include <PrimaryWindows/QtMainWindow.h>
+#include <ExperimentMonitoringAndStatus/ColorBox.h>
 #include <ExcessDialogs/saveWithExplorer.h>
 #include <ExcessDialogs/openWithExplorer.h>
 #include <qlayout.h>
@@ -80,7 +80,7 @@ void QtAuxiliaryWindow::initializeWidgets (){
 
 		aiSys.initialize(this);
 		calManager.initialize(this, &aiSys, &aoSys, &ttlBoard,
-			scriptWin->getArbGenCore(), andorWin->getPython());
+			scriptWin->getArbGenCore(), &pythonHandler);
 		layout2->addWidget(&aiSys);
 		layout2->addWidget(&calManager);
 		layout2->addStretch(1);
@@ -131,7 +131,6 @@ std::vector<parameterType> QtAuxiliaryWindow::getUsableConstants (){
 
 void QtAuxiliaryWindow::updateOptimization (AllExperimentInput& input){
 	optimizer.verifyOptInput (input);
-	dataPoint resultValue = andorWin->getMainAnalysisResult ();
 	auto params = optimizer.getOptParams ();
 	//optimizer.updateParams ( input, resultValue, camWin->getLogger() );
 	std::string msg = "Next Optimization: ";

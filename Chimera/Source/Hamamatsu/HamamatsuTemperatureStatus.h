@@ -2,11 +2,11 @@
 #include <string>
 #include <qcolor.h>
 
-struct AndorTemperatureStatus
+struct HamamatsuTemperatureStatus
 {
 	int temperature;
 	int temperatureSetting;
-	std::string andorRawMsg;
+	std::string hamamatsuRawMsg;
 	std::string msg;
 	QColor colorCode;
 };

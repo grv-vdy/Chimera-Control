@@ -22,12 +22,12 @@ struct atomCruncherInput
 	std::atomic<bool>* cruncherThreadActive;
 	ThreadsafeQueue<NormalImage>* imageQueue;
 	// options
-	bool andorContinuousMode;
+	bool andorContinuousMode = false;
 	bool rearrangerActive;
 	unsigned picsPerRep;
 	unsigned atomThresholdForSkip = UINT_MAX;
 	// outer vector here is for each location in the first grid.
-	std::array<std::vector<int>, 4> thresholds;
+	std::vector<std::vector<int>> thresholds;
 	imageParameters imageDims;
 	// locks
 	//std::mutex* imageQueueLock;

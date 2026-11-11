@@ -3,8 +3,6 @@
 
 #include "Control.h"
 #include "GeneralObjects/coordinate.h"
-#include "Andor/AndorRunMode.h"
-#include "Andor/AndorTriggerModes.h"
 #include <GeneralObjects/Matrix.h>
 #include <vector>
 #include <string>
@@ -12,6 +10,7 @@
 #include "LowLevel/constants.h"
 #include "PrimaryWindows/IChimeraQtWindow.h"
 #include <qlabel.h>
+#include <QScrollArea>
 
 // contains experimentally calibrated conversion factors. See the onenote section on the camera
 // for more conversion factors and notes on the calibration.
@@ -55,10 +54,11 @@ class PictureStats : public QWidget
 {
 	Q_OBJECT
 	public:
+		static constexpr unsigned MAX_STATS_PICTURES = 64;
 		static constexpr auto RAW_COUNTS = "Raw Counts";
 		static constexpr auto CAMERA_PHOTONS = "Camera Photons";
 		static constexpr auto ATOM_PHOTONS = "Atom Photons";
-		PictureStats::PictureStats(){
+		PictureStats(){
 			displayDataType = RAW_COUNTS;
 		}
 		void initialize( IChimeraQtWindow* parent );
@@ -67,6 +67,7 @@ class PictureStats : public QWidget
 		void reset();
 		void updateType( std::string typeText );
 		statPoint getMostRecentStats ( );
+		void setVisiblePictureCount(unsigned count);
 	private:
 		statPoint mostRecentStat;
 		std::string displayDataType;
@@ -74,12 +75,16 @@ class PictureStats : public QWidget
 		QLabel* pictureStatsHeader;
 		QLabel* repetitionIndicator;
 		std::array<QLabel*, 5> collumnHeaders;
-		std::array<QLabel*, 4> picNumberIndicators;
-		std::array<QLabel*, 4> maxCounts;
-		std::array<QLabel*, 4> minCounts;
+		QScrollArea* statsScrollArea = nullptr;
+		QWidget* statsRowsWidget = nullptr;
+		QGridLayout* statsRowsLayout = nullptr;
+		unsigned visiblePictureCount = 1;
+		std::vector<QLabel*> picNumberIndicators;
+		std::vector<QLabel*> maxCounts;
+		std::vector<QLabel*> minCounts;
 		// average counts in the picture.
-		std::array<QLabel*, 4> avgCounts;
-		std::array<QLabel*, 4> selCounts;
+		std::vector<QLabel*> avgCounts;
+		std::vector<QLabel*> selCounts;
 }
 ;
 

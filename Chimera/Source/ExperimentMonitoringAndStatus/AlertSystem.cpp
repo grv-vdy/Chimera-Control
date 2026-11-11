@@ -4,7 +4,6 @@
 //#include <Mmsystem.h>
 //#include <mciapi.h>
 //#pragma comment(lib, "Winmm.lib")
-#include "PrimaryWindows/QtAndorWindow.h"
 #include "GeneralUtilityFunctions/miscCommonFunctions.h"
 #include <boost/lexical_cast.hpp>
 #include <qlayout.h>

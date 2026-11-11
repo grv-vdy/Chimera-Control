@@ -54,7 +54,7 @@ void ExpThreadWorker::experimentThreadProcedure () {
 			input->logger.logMasterRuntime (expRuntime);
 		}
 		for (auto& device : input->devices.list) {
-			deviceLoadExpSettings (device, cStream);/*TODO: remove dds from device, and now device only has andor*/
+			deviceLoadExpSettings (device, cStream);
 			if (device.get().getDelim().find("WIESERLABS_DDS") != std::string::npos) {
 				// std::this_thread::sleep_for(std::chrono::milliseconds(500));
 			}
@@ -75,6 +75,9 @@ void ExpThreadWorker::experimentThreadProcedure () {
 
 		/// Anaylsis preparation
 		emit prepareAnalysis();
+		// Arm the Hamamatsu camera + start its grabber before the sequence runs (the slot no-ops if the
+		// camera isn't being controlled). Blocking so the sequence doesn't start triggering until it's armed.
+		emit prepareHamamatsuCamera(expRuntime.repetitions, input->numVariations);
 		emit notification("Enabling real time analysis \r\n", 1);
 
 		runConsistencyChecks (expRuntime.expParams, input->calibrations);
@@ -149,7 +152,6 @@ void ExpThreadWorker::experimentThreadProcedure () {
 
 
 
-		waitForAndorFinish ();
 		for (auto& device : input->devices.list) {
 			deviceNormalFinish (device);
 		}
@@ -902,33 +904,6 @@ void ExpThreadWorker::checkTriggerNumbers (std::vector<parameterType>& expParams
 	bool rsgMismatch = false;
 	for (auto variationInc : range (determineVariationNumber (expParams))) {
 		if (true /*runMaster*/) {
-			auto& andorCamera = input->devices.getSingleDevice<AndorCameraCore>();
-			if (andorCamera.experimentActive) {
-				// check if there is just enough trigger for andor if it is used in the experiment
-				if (variationInc == 0) {
-					emit notification("Running consistency checks for Andor Camera", 2);
-				}
-				unsigned actualTrigs = input->ttls.countTriggers(ANDOR_TRIGGER_LINE, variationInc);
-				unsigned expectedTrigs = andorCamera.getAndorRunSettings().picsPerRepetition;
-				if (actualTrigs != expectedTrigs) {
-					// this is a serious low-level/user error. throw, don't warn.
-					std::string infoString = "Actual/Expected Andor Triggers: " + str(actualTrigs) + "/"
-						+ str(expectedTrigs) + ".";
-					thrower("The number of Andor triggers that the ttl system sends to the Andor camera does not "
-						"match the number of images in the Andor control! " + infoString + ", seen in variation #"
-						+ str(variationInc) + "\r\n");
-				}
-			}
-			else {
-				// check if there are triggers for andor but the andor is not set active. If so, warn.
-				unsigned actualTrigs = input->ttls.countTriggers(ANDOR_TRIGGER_LINE, variationInc); 
-				if (actualTrigs != 0 && variationInc == 0) {
-					emit warn("There are " + qstr(actualTrigs) + " triggers sent to Andor trigger in ttl line ("
-						+ qstr(ANDOR_TRIGGER_LINE.first) + "," + qstr(ANDOR_TRIGGER_LINE.second) + "), but the Andor system is not active." +
-						"Make sure that this is what you actually want.\r\n", 0);
-				}
-			}
-
 			auto makoCameras = input->devices.getDevicesByClass<MakoCameraCore>();
 			for (auto makoCam : makoCameras) {
 				if (makoCam.get().getRunningSettings().expActive) {
@@ -1124,22 +1099,9 @@ void ExpThreadWorker::initVariation (unsigned variationInc,std::vector<parameter
 			emit notification (qstr(param.name + ": " + str (param.keyValues[variationInc], 12) + "\r\n"), 2);
 		}
 	}
-	//waitForAndorFinish ();
 	bool skipOption = input->skipNext == nullptr ? false : input->skipNext->load ();
 	if (true /*runMaster*/) { /*input->ttls.ftdi_write (variationInc, skipOption);*/ }
 	handleDebugPlots(input->ttls, input->ao, variationInc);
-}
-
-void ExpThreadWorker::waitForAndorFinish () {
-	auto& andorCamera = input->devices.getSingleDevice<AndorCameraCore> ();
-	while (true) {
-		if (andorCamera.isRunning()/*andorCamera.queryStatus () == DRV_ACQUIRING*/) {
-			Sleep (100);
-			emit notification ("Waiting for Andor camera to finish acquisition...\n");
-			if (isAborting) { thrower (abortString); }
-		}
-		else { break; }
-	}
 }
 
 void ExpThreadWorker::errorFinish (std::atomic<bool>& isAborting, ChimeraError& exception,

@@ -78,6 +78,7 @@ class QtMainWindow : public IChimeraQtWindow{
 		void handleFinishText ();
 		unsigned getRepNumber ();
 		void logParams (DataLogger* logger, ExperimentThreadInput* input);
+		DataLogger& getLogger();
 		bool experimentIsPaused ();
 		void notifyConfigUpdate ();
 
@@ -116,8 +117,9 @@ class QtMainWindow : public IChimeraQtWindow{
 		StatusIndicator shortStatus;
 
 		TemperatureMonitor tempMonitor;
+		DataLogger logger;
 
-		ExpThreadWorker* expWorker;
+		ExpThreadWorker* expWorker = nullptr;
 		QThread* expThread = nullptr;
 		std::atomic<bool> experimentIsRunning = false;
 

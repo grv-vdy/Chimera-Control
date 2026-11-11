@@ -2,10 +2,8 @@
 #include "stdafx.h"
 
 #include "ConfigurationSystems/ConfigSystem.h"
-#include "Andor/AndorCameraCore.h"
 #include <RealTimeDataAnalysis/DataAnalysisControl.h>
 #include "PrimaryWindows/QtAuxiliaryWindow.h"
-#include "PrimaryWindows/QtAndorWindow.h"
 #include "PrimaryWindows/QtScriptWindow.h"
 #include "PrimaryWindows/QtMakoWindow.h"
 #include "PrimaryWindows/QtAnalysisWindow.h"
@@ -102,7 +100,6 @@ void ConfigSystem::openConfigFromPath( std::string pathToConfig, IChimeraQtWindo
 	try	{
 		getVersionFromFile(cStream);
 		win->scriptWin->windowOpenConfig(cStream );
-		win->andorWin->windowOpenConfig(cStream );
 		win->auxWin->windowOpenConfig(cStream );
 		win->makoWin1->windowOpenConfig(cStream);
 		win->makoWin2->windowOpenConfig(cStream);
@@ -128,6 +125,40 @@ void ConfigSystem::initializeAtDelim ( ConfigStream& configStream, std::string d
 	catch ( ChimeraError& ){
 		throwNested ( "Failed to initialize at a delimiter!" );
 	}
+}
+
+
+/*
+ * Checks whether a section exists in the file without consuming it or moving the get pointer. Used so that a
+ * config which predates a given section (or which never had it) can be opened with defaults instead of an error.
+ */
+bool ConfigSystem::sectionExists ( ConfigStream& configStream, std::string delimiter ){
+	auto originalPos = configStream.tellg ();
+	bool found = true;
+	configStream.clear ();
+	configStream.seekg ( 0, std::ios::beg );
+	try	{
+		ConfigSystem::jumpToDelimiter ( configStream, delimiter );
+	}
+	catch ( ChimeraError& ){
+		found = false;
+	}
+	configStream.clear ();
+	configStream.seekg ( originalPos );
+	return found;
+}
+
+/*
+ * Returns the first of several candidate section names that is actually in the file, or an empty string if none of
+ * them are. This is how a section that has been renamed over time stays readable under all of its old names.
+ */
+std::string ConfigSystem::firstPresentDelim ( ConfigStream& configStream, std::vector<std::string> delimiters ){
+	for ( auto& delim : delimiters ){
+		if ( ConfigSystem::sectionExists ( configStream, delim ) ){
+			return delim;
+		}
+	}
+	return "";
 }
 
 
@@ -233,7 +264,6 @@ void ConfigSystem::saveConfiguration(IChimeraQtWindow* win, bool askOverwrite){
 	saveStream << "Version: " + version.str() + "\n";
 	// give it to each window, allowing each window to save its relevant contents to the config file. Order matters.
 	win->scriptWin->windowSaveConfig(saveStream);
-	win->andorWin->windowSaveConfig(saveStream);
 	win->auxWin->windowSaveConfig(saveStream);
 	win->makoWin1->windowSaveConfig(saveStream);
 	win->makoWin2->windowSaveConfig(saveStream);
@@ -275,7 +305,6 @@ void ConfigSystem::saveConfigurationAs(IChimeraQtWindow* win){
 	configSaveStream << "Version: " + version.str() + "\n";
 	// give it to each window, allowing each window to save its relevant contents to the config file. Order matters.
 	win->scriptWin->windowSaveConfig(configSaveStream);
-	win->andorWin->windowSaveConfig(configSaveStream);
 	win->auxWin->windowSaveConfig(configSaveStream);
 	win->makoWin1->windowSaveConfig(configSaveStream);
 	win->makoWin2->windowSaveConfig(configSaveStream);

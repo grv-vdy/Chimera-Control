@@ -64,6 +64,9 @@ class ConfigSystem : public IChimeraSystem
 		static void checkDelimiterLine (ConfigStream& openFile, std::string keyword );
 		static bool checkDelimiterLine(ConfigStream& openFile, std::string delimiter, std::string breakCondition );
 		static void jumpToDelimiter (ConfigStream& openFile, std::string delimiter );
+		// non-destructive existence checks, for sections which may be missing or may have been renamed.
+		static bool sectionExists (ConfigStream& openFile, std::string delimiter );
+		static std::string firstPresentDelim (ConfigStream& openFile, std::vector<std::string> delimiters );
 		static void initializeAtDelim ( ConfigStream& openFile, std::string delimiter, Version minVer=Version("0.0") );
 		template <class coreType, class returnT>
 		static void stdGetFromConfig ( ConfigStream& configStream, coreType& sys, returnT& settings, 

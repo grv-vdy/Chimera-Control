@@ -1,13 +1,13 @@
-#pragma once
+﻿#pragma once
 #include <qobject.h>
-#include <Andor/cameraThreadInput.h>
+#include <Hamamatsu/cameraThreadInput.h>
 
-class AndorCameraThreadImageGrabber : public QObject
+class HamamatsuCameraThreadImageGrabber : public QObject
 {
 	Q_OBJECT
 public:
-	AndorCameraThreadImageGrabber(cameraThreadImageGrabberInput* input_);
-	~AndorCameraThreadImageGrabber();
+	HamamatsuCameraThreadImageGrabber(cameraThreadImageGrabberInput* input_);
+	~HamamatsuCameraThreadImageGrabber();
 
 private:
 	cameraThreadImageGrabberInput* input;

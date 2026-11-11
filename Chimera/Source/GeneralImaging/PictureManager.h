@@ -11,6 +11,7 @@ class PictureManager : public QWidget
 {
 	Q_OBJECT
 	public:
+		static constexpr unsigned MAX_PICTURES = 64;
 		PictureManager ( bool histOption, std::string configurationFileDelim, bool autoscaleDefault,
 						 Qt::TransformationMode mode );
 		void updatePlotData ( );
@@ -20,8 +21,8 @@ class PictureManager : public QWidget
 		void drawGrids(QPainter& painter);
 		unsigned getNumberActive( );
 		void setParameters( imageParameters parameters );
-		void setPalletes(std::array<int, 4> palleteIds);
-		void setSoftwareAccumulationOptions ( std::array<softwareAccumulationOption, 4> opts );
+		void setPalletes(const std::vector<int>& palleteIds);
+		void setSoftwareAccumulationOptions ( const std::vector<softwareAccumulationOption>& opts );
 		// draw pictures...
 		void drawBitmap (Matrix<long> picData, std::pair<int, int> minMax, unsigned whichPicCtrl,
 						 std::vector<atomGrid> grids, unsigned pictureNumber,
@@ -32,6 +33,7 @@ class PictureManager : public QWidget
 		void redrawPictures(coordinate selectedLocation, std::vector<atomGrid> gridInfo, bool forceGrid, 
 			unsigned picNumber, QPainter& painter);
 		void setNumberPicturesActive( int numberActive );
+		void setDisplayMask(const std::vector<bool>& mask);
 		coordinate getSelLocation();
 		void setSinglePicture( imageParameters imageParams );
 		void setMultiplePictures( imageParameters imageParams, unsigned numberActivePics );
@@ -41,11 +43,13 @@ class PictureManager : public QWidget
 		void resetPictureStorage();
 		const std::string configDelim;
 		void setTransformationMode (Qt::TransformationMode mode);
-		std::array<PictureControl, 4> pictures;
+		std::array<PictureControl, MAX_PICTURES> pictures;
 
 
 	private:
 		std::array<QVector<QRgb>,4> palettes;
+		QVBoxLayout* containerLayout = nullptr;
+		QVBoxLayout* overflowLayout = nullptr;
 		QGridLayout* picLayout = nullptr;
 		QVector<QRgb> inferno, greys;
 		QPoint picturesLocation;
@@ -56,6 +60,7 @@ class PictureManager : public QWidget
 		bool specialGreaterThanMax;
 		bool specialLessThanMin;
 		bool alwaysShowGrid;
+		std::vector<bool> displayMask;
 
 		IChimeraQtWindow* parentWin = nullptr;
 };

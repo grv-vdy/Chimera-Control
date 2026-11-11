@@ -3,7 +3,6 @@
 #include "stdafx.h"
 #include "DataLogger.h"
 #include "RealTimeDataAnalysis/DataAnalysisControl.h"
-#include "Andor/CameraImageDimensions.h"
 #include "ExperimentThread/ExperimentThreadInput.h"
 #include <ConfigurationSystems/ConfigSystem.h>
 #include <ExperimentThread/autoCalConfigInfo.h>
@@ -193,7 +192,6 @@ void DataLogger::initializeDataFiles( std::string specialName, bool checkForCali
 		auto fullE = getFullError (err);
 		throwNested ( "ERROR: Failed to initialize HDF5 data file: " + err.getDetailMsg() + "; Full error:" + fullE);
 	}
-	currentAndorPicNumber = 0;
 	for (auto nn : CameraInfo::allCams) {
 		currentMakoPicNumber.insert({ nn,0 });
 	}
@@ -414,41 +412,6 @@ void DataLogger::logParameters( const std::vector<parameterType>& parameters, H5
 
 
 
-void DataLogger::writeAndorPic( Matrix<long> image, imageParameters dims){
-	if (fileIsOpen == false){
-		thrower ("Tried to write to h5 file (for andor pic), but the file is closed!\r\n");
-	}
-	// MUST initialize status
-	// starting coordinates of writebtn area in the h5 file of the array of picture data points.
-	hsize_t offset[] = { currentAndorPicNumber++, 0, 0 };
-	hsize_t slabdim[3] = { 1, dims.heightBinned(), dims.widthBinned() };
-	try{
-		if (AndorPicureSetDataSpace.getId () == -1) {
-			hsize_t dims[3];
-			auto fn = file.getFileName ();
-			try {
-				H5Sget_simple_extent_dims (AndorPicureSetDataSpace.getId (), dims, nullptr);
-			}
-			catch (H5::Exception &) {
-				throwNested ("Failed to write andor pic data to HDF5 file! Filename: \"" + fn + "\", currentAndorPicNumber: "
-					+ str (currentAndorPicNumber) + ", FAILED to get dims! Should be valid: " + str(andorDataSetShouldBeValid ));
-			}
-			thrower ("Invalid datapspace ID? Failed to write andor pic data to HDF5 file! Filename: \"" + fn + "\", currentAndorPicNumber: "
-				+ str (currentAndorPicNumber) + ", dims: " + str (dims[0]) + "," + str (dims[1]) + "," + str (dims[2])+
-				"Should be valid : " + str(andorDataSetShouldBeValid ));
-		}
-		AndorPicureSetDataSpace.selectHyperslab( H5S_SELECT_SET, slabdim, offset );
-		AndorPictureDataset.write( image.data.data(), H5::PredType::NATIVE_LONG, AndorPicDataSpace, AndorPicureSetDataSpace );
-	}
-	catch (H5::Exception& err){
-		auto fullE = getFullError (err);
-		auto fn = file.getFileName ();
-		throwNested ( "Failed to write andor pic data to HDF5 file! Filename: \""+ fn + "\", currentAndorPicNumber: " 
-					  + str(currentAndorPicNumber-1) + ", Error: " + str(err.getDetailMsg()) + "\n""; Full error:" 
-			+ fullE);
-	}
-}
-
 void DataLogger::writeMakoPic(std::vector<double> image, int width, int height, CameraInfo::name name)
 {
 	if (fileIsOpen == false) {
@@ -466,6 +429,34 @@ void DataLogger::writeMakoPic(std::vector<double> image, int width, int height, 
 		auto fullE = getFullError(err);
 		throwNested("Failed to write mako pic data to HDF5 file! Error: " + str(err.getDetailMsg()) + "\n"
 			"; Full error:" + fullE);
+	}
+}
+
+void DataLogger::writeHamamatsuPic(const Matrix<long>& image, const imageParameters& dims)
+{
+	UNREFERENCED_PARAMETER(dims);
+	if (fileIsOpen == false) {
+		thrower("Tried to write to h5 file (for Hamamatsu pic), but the file is closed!\r\n");
+	}
+	try {
+		H5::Group hamamatsuGroup;
+		try {
+			hamamatsuGroup = file.openGroup("/Hamamatsu");
+		}
+		catch (H5::Exception&) {
+			hamamatsuGroup = file.createGroup("/Hamamatsu");
+		}
+
+		H5::Group picGroup = hamamatsuGroup.createGroup("Picture_" + str(currentHamamatsuPicNumber++));
+		writeDataSet(static_cast<int>(image.getRows()), "Rows", picGroup);
+		writeDataSet(static_cast<int>(image.getCols()), "Cols", picGroup);
+		std::vector<long long> pixels(image.data.begin(), image.data.end());
+		writeDataSet(pixels, "Pixels", picGroup);
+	}
+	catch (H5::Exception& err) {
+		auto fullE = getFullError(err);
+		throwNested("Failed to write Hamamatsu pic data to HDF5 file! Error: " + str(err.getDetailMsg()) + "\n"
+			+ "; Full error:" + fullE);
 	}
 }
 
@@ -604,8 +595,6 @@ void DataLogger::logMiscellaneousStart(){
 
 
 void DataLogger::assertClosed () {
-	AndorPicureSetDataSpace.close ();
-	AndorPictureDataset.close ();
 	for (auto nn : CameraInfo::allCams) {
 		MakoPictureDataset[nn].close();
 		MakoPicureSetDataSpace[nn].close();
@@ -613,7 +602,6 @@ void DataLogger::assertClosed () {
 	voltsDataSpace.close ();
 	voltsDataSet.close ();
 	file.close ();
-	andorDataSetShouldBeValid = false;
 	fileIsOpen = false;
 	emit notification ("Closing HDF5 File and associated structures.\n", 0);
 }

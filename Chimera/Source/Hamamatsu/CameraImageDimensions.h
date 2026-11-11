@@ -11,7 +11,7 @@
 #include <qwidget.h>
 
 struct cameraPositions;
-class AndorWindow;
+class HamamatsuWindow;
 class MainWindow;
 class IChimeraQtWindow;
 
@@ -31,7 +31,7 @@ class ImageDimsControl : public QWidget
 		const std::string camType;
 		void updateEnabledStatus (bool viewRunning);
 		void saveParams (ConfigStream& saveFile, imageParameters params);
-		//void setBinningMode(AndorBinningMode::mode mode);
+		//void setBinningMode(HamamatsuBinningMode::mode mode);
 	private:
 		QLabel* leftText = nullptr;
 		QLabel* rightText = nullptr;
@@ -48,8 +48,8 @@ class ImageDimsControl : public QWidget
 
 		//QLabel* binningLabel = nullptr;
 		//CQComboBox* binningComboCopy = nullptr;
-		// just for imageParameters, the actual control is from the AndorCameraSettingsControl class
-		//AndorBinningMode::mode binningMode;
+		// just for imageParameters, the actual control is from the HamamatsuCameraSettingsControl class
+		//HamamatsuBinningMode::mode binningMode;
 
 		bool isReady;
 		imageParameters currentImageParameters;

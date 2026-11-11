@@ -1,7 +1,6 @@
 // created by Mark O. Brown
 #include "stdafx.h"
 #include "ExperimentTimer.h"
-#include "PrimaryWindows/QtAndorWindow.h"
 #include <qprogressbar.h>
 
 void ExperimentTimer::initialize( IChimeraQtWindow* parent ){

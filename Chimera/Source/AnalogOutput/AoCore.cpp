@@ -1016,6 +1016,13 @@ void AoCore::writeDacsToNI(unsigned variation,
                            const std::string& clockSource,
                            const std::string& triggerSource)
 {
+    // In safemode there is no NI-DAQmx driver (nicaiu.dll) on this machine. The DAQmx functions are
+    // delay-loaded, so actually calling them here crashes (jump to a null thunk). Skip the hardware
+    // writes entirely; the rest of the program (config load, GUI, sequencing) runs normally.
+    if (DAQMX_SAFEMODE) {
+        return;
+    }
+
     if (getNumberEvents(variation) == 0 || finalDacSnapshots[variation].empty())
         return;
 

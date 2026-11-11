@@ -4,16 +4,16 @@
 #include <string>
 #include <array>
 
-struct AndorRunModes
+struct HamamatsuRunModes
 {
 	enum class mode
 	{
-		Single = 1,
-		Kinetic = 2,
-		Accumulate = 3
+		Standard = 1,
+		Slow = 2
 	};
-	static const std::array<mode, 3> allModes;
+	static const std::array<mode, 2> allModes;
 	static std::string toStr ( mode m );
 	static mode fromStr ( std::string txt );
 };
+
 

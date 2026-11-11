@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "MakoCamera.h"
 #include "PrimaryWindows/IChimeraQtWindow.h"
-#include <PrimaryWindows/QtAndorWindow.h>
+#include <PrimaryWindows/QtMainWindow.h>
 #include <PrimaryWindows/QtMakoWindow.h>
 #include <qdialog.h>
 #include <qfiledialog.h>
@@ -760,7 +760,7 @@ void MakoCamera::handleExpImage(QVector<double> img, int width, int height)
         return;
     }
     try {
-        auto* andorWin = parentWin->andorWin;
+        auto* mainWin = parentWin->mainWin;
         auto RepVar = core.getCurrentRepVarNumber(currentRepNumber);
         qDebug() << "MakoCamera::handleExpImage -> Get experiment pictures for rep/var: " << RepVar << "with image num:" << currentRepNumber;
         currentRepNumber++;
@@ -774,7 +774,7 @@ void MakoCamera::handleExpImage(QVector<double> img, int width, int height)
         if (MOTCalcActive) {
             emit imgReadyForAnalysis(img, width, height, RepVar.first, RepVar.second);
         }
-        andorWin->getLogger().writeMakoPic(img.toStdVector(), width, height, camInfo.camName);
+        mainWin->getLogger().writeMakoPic(img.toStdVector(), width, height, camInfo.camName);
 
         if (currentRepNumber == core.getRunningSettings().totalPictures()) {
             // handle mako finish

@@ -68,7 +68,7 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;$(Qt_LIBS_);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;$(Qt_LIBS_);Source\Hamamatsu\dcamapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -83,7 +83,7 @@
       <ShowIncludes>false</ShowIncludes>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;Source\Hamamatsu\dcamapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="QtSettings">
@@ -149,12 +149,9 @@
     <ClCompile Include="Source\Rearrangement\RearrangeGenerator.cpp" />
     <ClCompile Include="Source\Rearrangement\rearrangeLUT.cpp" />
     <ClCompile Include="Source\GigaMOOG\DynamicMoveManager.cpp" />
-    <ClCompile Include="Source\Andor\AndorCameraThreadImageGrabber.cpp" />
     <ClCompile Include="Source\ExperimentMonitoringAndStatus\InfluxTypes.cpp" />
     <ClCompile Include="Source\AnalogInput\AiOutput.cpp" />
     <ClCompile Include="Source\ExcessDialogs\AiSettingsDialog.cpp" />
-    <ClCompile Include="Source\Andor\AndorBinningMode.cpp" />
-    <ClCompile Include="Source\Andor\AndorGainMode.cpp" />
     <ClCompile Include="Source\CMOSCamera\FrameAverager.cpp" />
     <ClCompile Include="Source\ExperimentMonitoringAndStatus\StatusOptionsWindow.cpp" />
     <ClCompile Include="Source\ExperimentMonitoringAndStatus\TemperatureMonitor.cpp" />
@@ -183,6 +180,16 @@
     <ClCompile Include="Source\CMOSCamera\ImageProcessingThread.cpp" />
     <ClCompile Include="Source\CMOSCamera\MakoCamera.cpp" />
     <ClCompile Include="Source\CMOSCamera\MakoCameraCore.cpp" />
+    <ClCompile Include="Source\Hamamatsu\CameraImageDimensions.cpp" />
+    <ClCompile Include="Source\Hamamatsu\HamamatsuCameraCore.cpp" />
+    <ClCompile Include="Source\Hamamatsu\HamamatsuCameraSettingsControl.cpp" />
+    <ClCompile Include="Source\Hamamatsu\HamamatsuCameraThreadImageGrabber.cpp" />
+    <ClCompile Include="Source\Hamamatsu\HamamatsuCameraThreadWorker.cpp" />
+    <ClCompile Include="Source\Hamamatsu\HamamatsuFlume.cpp" />
+    <ClCompile Include="Source\Hamamatsu\hamamatsuRunMode.cpp" />
+    <ClCompile Include="Source\Hamamatsu\HamamatsuRunSettings.cpp" />
+    <ClCompile Include="Source\Hamamatsu\HamamatsuTriggerModes.cpp" />
+    <ClCompile Include="Source\Hamamatsu\PictureSettingsControl.cpp" />
     <ClCompile Include="Source\CMOSCamera\MakoSettingControl.cpp">
       <DynamicSource Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">input</DynamicSource>
       <QtMocFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename).moc</QtMocFileName>
@@ -209,6 +216,7 @@
     <ClCompile Include="Source\GeneralImaging\csvReader.cpp" />
     <ClCompile Include="Source\CustomQtControls\RangeSlider.cpp" />
     <ClCompile Include="Source\PrimaryWindows\QtMakoWindow.cpp" />
+    <ClCompile Include="Source\PrimaryWindows\QtHamamatsuWindow.cpp" />
     <ClCompile Include="Source\AnalogInput\BSplineFit.cpp" />
     <ClCompile Include="Source\AnalogInput\PolynomialFit.cpp" />
     <ClCompile Include="Source\AnalogInput\AiCore.cpp" />
@@ -235,14 +243,11 @@
     <QtMoc Include="Source\PicoScrew\PicoScrewSystem.h" />
     <QtMoc Include="Source\PicoScrew\PicoScrewCore.h" />
     <ClInclude Include="Source\PicoScrew\PicoScrewFlume.h" />
-    <QtMoc Include="Source\Andor\AndorCameraThreadImageGrabber.h" />
     <ClInclude Include="Source\Rearrangement\RearrangeGenerator.h" />
     <ClInclude Include="Source\Rearrangement\rearrangeLUT.h" />
     <ClInclude Include="Source\GigaMOOG\DynamicMoveManager.h" />
     <ClInclude Include="Source\ExperimentMonitoringAndStatus\InfluxTypes.h" />
     <ClInclude Include="Source\AnalogInput\AiOutput.h" />
-    <ClInclude Include="Source\Andor\AndorBinningMode.h" />
-    <ClInclude Include="Source\Andor\AndorGainMode.h" />
     <ClInclude Include="Source\ExperimentMonitoringAndStatus\StatusControlOptions.h" />
     <QtMoc Include="Source\ExperimentMonitoringAndStatus\StatusOptionsWindow.h" />
     <ClInclude Include="Source\ExperimentThread\ExpRuntimeData.h" />
@@ -268,6 +273,9 @@
     <ClInclude Include="Source\AnalogInput\PolynomialFit.h" />
     <ClInclude Include="Source\AnalogInput\AiCore.h" />
     <ClInclude Include="Source\CMOSCamera\CMOSSetting.h" />
+    <ClInclude Include="Source\Hamamatsu\cameraThreadInput.h" />
+    <ClInclude Include="Source\Hamamatsu\dcamapi4.h" />
+    <ClInclude Include="Source\Hamamatsu\dcamprop.h" />
     <QtMoc Include="Source\CMOSCamera\FrameObserver.h" />
     <ClInclude Include="Source\CMOSCamera\GaussianFit.h" />
     <ClInclude Include="Source\CMOSCamera\Helper.h" />
@@ -282,16 +290,6 @@
     <ClCompile Include="Source\AnalogOutput\AnalogOutput.cpp" />
     <ClCompile Include="Source\AnalogOutput\AoCore.cpp" />
     <ClCompile Include="Source\AnalogOutput\AoSystem.cpp" />
-    <ClCompile Include="Source\Andor\AndorCameraCore.cpp" />
-    <ClCompile Include="Source\Andor\AndorCameraSettingsControl.cpp" />
-    <ClCompile Include="Source\Andor\AndorCameraThreadWorker.cpp" />
-    <ClCompile Include="Source\Andor\AndorFlume.cpp" />
-    <ClCompile Include="Source\Andor\AndorRunMode.cpp" />
-    <ClCompile Include="Source\Andor\AndorRunSettings.cpp" />
-    <ClCompile Include="Source\Andor\AndorTriggerModes.cpp" />
-    <ClCompile Include="Source\Andor\CameraCalibration.cpp" />
-    <ClCompile Include="Source\Andor\CameraImageDimensions.cpp" />
-    <ClCompile Include="Source\Andor\PictureSettingsControl.cpp" />
     <ClCompile Include="Source\ArbGen\AgilentCore.cpp" />
     <ClCompile Include="Source\ArbGen\ArbGenChannelMode.cpp" />
     <ClCompile Include="Source\ArbGen\ArbGenCore.cpp" />
@@ -367,7 +365,6 @@
     <ClCompile Include="Source\Plotting\PlottingInfo.cpp" />
     <ClCompile Include="Source\Plotting\QCustomPlotCtrl.cpp" />
     <ClCompile Include="Source\PrimaryWindows\IChimeraQtWindow.cpp" />
-    <ClCompile Include="Source\PrimaryWindows\QtAndorWindow.cpp" />
     <ClCompile Include="Source\PrimaryWindows\QtAuxiliaryWindow.cpp" />
     <ClCompile Include="Source\PrimaryWindows\QtMainWindow.cpp" />
     <ClCompile Include="Source\PrimaryWindows\QtScriptWindow.cpp" />
@@ -405,18 +402,6 @@
     <ClInclude Include="Source\AnalogOutput\AoCore.h" />
     <ClInclude Include="Source\AnalogOutput\AoStructures.h" />
     <QtMoc Include="Source\AnalogOutput\AoSystem.h" />
-    <ClInclude Include="Source\Andor\AndorCameraCore.h" />
-    <QtMoc Include="Source\Andor\AndorCameraSettingsControl.h" />
-    <ClInclude Include="Source\Andor\AndorFlume.h" />
-    <ClInclude Include="Source\Andor\andorPicSettingsGroup.h" />
-    <ClInclude Include="Source\Andor\AndorRunMode.h" />
-    <ClInclude Include="Source\Andor\AndorRunSettings.h" />
-    <ClInclude Include="Source\Andor\AndorTemperatureStatus.h" />
-    <ClInclude Include="Source\Andor\AndorTriggerModes.h" />
-    <QtMoc Include="Source\Andor\CameraCalibration.h" />
-    <QtMoc Include="Source\Andor\CameraImageDimensions.h" />
-    <ClInclude Include="Source\Andor\cameraThreadInput.h" />
-    <QtMoc Include="Source\Andor\PictureSettingsControl.h" />
     <ClInclude Include="Source\ArbGen\AgilentCore.h" />
     <ClInclude Include="Source\ArbGen\ArbGenChannelMode.h" />
     <ClInclude Include="Source\ArbGen\ArbGenCore.h" />
@@ -479,6 +464,11 @@
     <ClInclude Include="Source\GeneralObjects\multiDimensionalKey.h" />
     <ClInclude Include="Source\GeneralObjects\Queues.h" />
     <ClInclude Include="Source\GeneralObjects\RunInfo.h" />
+    <ClInclude Include="Source\Hamamatsu\HamamatsuFlume.h" />
+    <ClInclude Include="Source\Hamamatsu\HamamatsuRunMode.h" />
+    <ClInclude Include="Source\Hamamatsu\HamamatsuRunSettings.h" />
+    <ClInclude Include="Source\Hamamatsu\HamamatsuTemperatureStatus.h" />
+    <ClInclude Include="Source\Hamamatsu\HamamatsuTriggerModes.h" />
     <ClInclude Include="Source\GeneralUtilityFunctions\cleanString.h" />
     <ClInclude Include="Source\GeneralUtilityFunctions\commonFunctions.h" />
     <ClInclude Include="Source\GeneralUtilityFunctions\miscCommonFunctions.h" />
@@ -521,10 +511,16 @@
     <QtMoc Include="Source\RealTimeDataAnalysis\MachineOptimizer.h" />
     <QtMoc Include="Source\Rearrangement\AtomCruncherWorker.h" />
     <QtMoc Include="Source\RealTimeDataAnalysis\AnalysisThreadWorker.h" />
+    <QtMoc Include="Source\Hamamatsu\CameraImageDimensions.h" />
+    <QtMoc Include="Source\Hamamatsu\HamamatsuCameraCore.h" />
+    <QtMoc Include="Source\Hamamatsu\HamamarsuCameraThreadImageGrabber.h" />
+    <QtMoc Include="Source\Hamamatsu\HamamatsuCameraSettingsControl.h" />
+    <QtMoc Include="Source\Hamamatsu\HamamatsuCameraThreadWorker.h" />
+    <QtMoc Include="Source\Hamamatsu\PictureSettingsControl.h" />
     <QtMoc Include="Source\PrimaryWindows\QtScriptWindow.h" />
+    <QtMoc Include="Source\PrimaryWindows\QtHamamatsuWindow.h" />
     <QtMoc Include="Source\PrimaryWindows\QtMainWindow.h" />
     <QtMoc Include="Source\PrimaryWindows\QtAuxiliaryWindow.h" />
-    <QtMoc Include="Source\PrimaryWindows\QtAndorWindow.h" />
     <QtMoc Include="Source\PrimaryWindows\IChimeraQtWindow.h" />
     <QtMoc Include="Source\Plotting\QCustomPlotCtrl.h" />
     <QtMoc Include="Source\Plotting\PlotCtrl.h" />
@@ -545,7 +541,6 @@
     <QtMoc Include="Source\ConfigurationSystems\ProfileIndicator.h" />
     <QtMoc Include="Source\ConfigurationSystems\NoteSystem.h" />
     <QtMoc Include="Source\ConfigurationSystems\ConfigSystem.h" />
-    <QtMoc Include="Source\Andor\AndorCameraThreadWorker.h" />
     <QtMoc Include="Source\AnalogInput\CalibrationThreadWorker.h" />
   </ItemGroup>
   <ItemGroup>

@@ -3,8 +3,8 @@
 #include "CameraImageDimensions.h"
 #include "PrimaryWindows/IChimeraQtWindow.h"
 #include "PrimaryWindows/QtMainWindow.h"
-#include "AndorCameraSettingsControl.h"
-#include <PrimaryWindows/QtAndorWindow.h>
+#include "HamamatsuCameraSettingsControl.h"
+#include <PrimaryWindows/QtHamamatsuWindow.h>
 #include <boost/lexical_cast.hpp>
 
 ImageDimsControl::ImageDimsControl (std::string whichCam) : camType (whichCam) {
@@ -14,9 +14,9 @@ ImageDimsControl::ImageDimsControl (std::string whichCam) : camType (whichCam) {
 void ImageDimsControl::initialize(/*CQComboBox* binningCombo, */IChimeraQtWindow* parent) {
 	QGridLayout* layout = new QGridLayout(this);
 	leftText = new QLabel ("Left", parent);
-	rightText = new QLabel ("Right (/2048)", parent);
+	rightText = new QLabel ("Right", parent);
 	horBinningText = new QLabel ("H. Bin", parent);
-	bottomLabel = new QLabel ("Bottom (/2048)", parent);
+	bottomLabel = new QLabel ("Bottom", parent);
 	topLabel = new QLabel ("Top", parent);
 	vertBinningText = new QLabel ("V. Bin", parent);
 	leftEdit = new CQLineEdit ("1", parent);
@@ -29,14 +29,27 @@ void ImageDimsControl::initialize(/*CQComboBox* binningCombo, */IChimeraQtWindow
 	//binningLabel = new QLabel("Bin. Opts", parent);
 
 
+	layout->setContentsMargins(0, 0, 0, 0);
+	layout->setHorizontalSpacing(4);
+	// One header states the pixel range once, so the per-field labels can stay short and not clip.
+	auto roiHeader = new QLabel ("Image ROI (pixels, max 2048; sizes multiple of 4)", parent);
+	roiHeader->setWordWrap (true);
+	layout->addWidget(roiHeader, 0, 0, 1, 6);
+
+	// Tooltips carry the detail that used to clip the labels.
+	for (auto e : { leftEdit, rightEdit, bottomEdit, topEdit }) {
+		e->setToolTip("ROI edge in sensor pixels (1-2048). The window position and size must both be "
+			"multiples of 4 (e.g. Left=1, Right=512).");
+	}
+
 	int idx = 0;
 	for (auto l : { leftText ,rightText ,horBinningText,bottomLabel,topLabel,vertBinningText, /*binningLabel*/}) {
-		layout->addWidget(l, 0, idx);
+		layout->addWidget(l, 1, idx);
 		idx++;
 	}
 	idx = 0;
 	for (auto l : { leftEdit ,rightEdit ,horBinningEdit,bottomEdit,topEdit,vertBinningEdit, }) {
-		layout->addWidget(l, 1, idx);
+		layout->addWidget(l, 2, idx);
 		idx++;
 	}
 	//layout->addWidget(binningCombo, 1, idx);
@@ -54,7 +67,7 @@ void ImageDimsControl::saveParams (ConfigStream& saveFile, imageParameters param
 			 << "\nEND_CAMERA_IMAGE_DIMENSIONS\n";
 }
 
-//void ImageDimsControl::setBinningMode(AndorBinningMode::mode mode)
+//void ImageDimsControl::setBinningMode(HamamatsuBinningMode::mode mode)
 //{
 //	binningMode = mode;
 //}
@@ -119,10 +132,10 @@ imageParameters ImageDimsControl::readImageParameters(){
 		throwNested ( "Bottom border argument not an integer!\r\n" );
 	}
 	//int sel = binningComboCopy->currentIndex();
-	//auto binningMode = AndorBinningMode::fromStr(str(binningComboCopy->currentText()));
+	//auto binningMode = HamamatsuBinningMode::fromStr(str(binningComboCopy->currentText()));
 	try	{
 		params.horizontalBinning = boost::lexical_cast<int>( str(horBinningEdit->text()) );
-		//params.horizontalBinning = AndorBinningMode::toInt(binningMode);
+		//params.horizontalBinning = HamamatsuBinningMode::toInt(binningMode);
 	}
 	catch ( boost::bad_lexical_cast&) {
 		isReady = false;
@@ -130,7 +143,7 @@ imageParameters ImageDimsControl::readImageParameters(){
 	}
 	try	{
 		params.verticalBinning = boost::lexical_cast<int>( str(vertBinningEdit->text()) );
-		//params.horizontalBinning = AndorBinningMode::toInt(binningMode);
+		//params.horizontalBinning = HamamatsuBinningMode::toInt(binningMode);
 	}
 	catch ( boost::bad_lexical_cast&) {
 		isReady = false;

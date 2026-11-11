@@ -1,15 +1,15 @@
-#pragma once
+﻿#pragma once
 
 #include <qobject.h>
 #include <string>
-#include <Andor/cameraThreadInput.h>
+#include <Hamamatsu/cameraThreadInput.h>
 
-class AndorCameraThreadWorker : public QObject {
+class HamamatsuCameraThreadWorker : public QObject {
     Q_OBJECT
 
     public:
-        AndorCameraThreadWorker(cameraThreadWorkerInput* input_);
-        ~AndorCameraThreadWorker ();
+        HamamatsuCameraThreadWorker(cameraThreadWorkerInput* input_);
+        ~HamamatsuCameraThreadWorker ();
     private:
         cameraThreadWorkerInput * input;
 
@@ -23,3 +23,4 @@ class AndorCameraThreadWorker : public QObject {
         void acquisitionFinished ();
 };
  
+

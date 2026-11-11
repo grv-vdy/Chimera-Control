@@ -17,56 +17,52 @@ void PictureStats::initialize( IChimeraQtWindow* parent )
 	layout->addWidget(pictureStatsHeader);
 	layout->addWidget(repetitionIndicator);
 	/// Picture labels ////////////////////////////////////////////////////////////
-	QGridLayout* layout1 = new QGridLayout(this);
-	layout1->setContentsMargins(0, 0, 0, 0);
+	statsScrollArea = new QScrollArea(this);
+	statsScrollArea->setWidgetResizable(true);
+	statsScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+	statsScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+	statsRowsWidget = new QWidget(statsScrollArea);
+	statsRowsLayout = new QGridLayout(statsRowsWidget);
+	statsRowsLayout->setContentsMargins(0, 0, 0, 0);
+	statsRowsLayout->setHorizontalSpacing(6);
+	statsRowsLayout->setVerticalSpacing(2);
+
 	collumnHeaders[0] = new QLabel ("Pic:", parent);
-	int inc = 0;
-	for (auto& control : picNumberIndicators)
-	{
-		inc++;
-		control = new QLabel (cstr ("#" + str (inc) + ":"), parent);
-		layout1->addWidget(control, inc, 0);
-	}
-	/// Max Count 
 	collumnHeaders[1] = new QLabel ("Max:", parent);
-	inc = 0;
-	for (auto& control : maxCounts) {
-		inc++;
-		control = new QLabel ("-", parent);
-		layout1->addWidget(control, inc, 1);
-	}
-	/// Min Counts
 	collumnHeaders[2] = new QLabel ("Min:", parent);
-	inc = 0;
-	for (auto& control : minCounts) {
-		inc++;
-		control = new QLabel ("-", parent);
-		layout1->addWidget(control, inc, 2);
-	}
-	/// Average Counts
 	collumnHeaders[3] = new QLabel ("Avg:", parent);
-	inc = 0;
-	for (auto& control : avgCounts) {
-		inc++;
-		control = new QLabel ("-", parent);
-		layout1->addWidget(control, inc, 3);
-	}
-	/// Selection Counts
-	collumnHeaders[4] = new QLabel ("Avg:", parent);
-	inc = 0;
-	for (auto& control : selCounts) {
-		inc++;
-		control = new QLabel ("-", parent);
-		layout1->addWidget(control, inc, 4);
-	}
+	collumnHeaders[4] = new QLabel ("Sel:", parent);
 	for (auto idx : range(collumnHeaders.size())) {
-		layout1->addWidget(collumnHeaders[idx], 0, idx);
+		statsRowsLayout->addWidget(collumnHeaders[idx], 0, idx);
 	}
-	layout->addLayout(layout1);
+
+	picNumberIndicators.resize(MAX_STATS_PICTURES);
+	maxCounts.resize(MAX_STATS_PICTURES);
+	minCounts.resize(MAX_STATS_PICTURES);
+	avgCounts.resize(MAX_STATS_PICTURES);
+	selCounts.resize(MAX_STATS_PICTURES);
+
+	for (auto picInc : range(MAX_STATS_PICTURES)) {
+		int row = static_cast<int>(picInc) + 1;
+		picNumberIndicators[picInc] = new QLabel(cstr("#" + str(picInc + 1) + ":"), statsRowsWidget);
+		maxCounts[picInc] = new QLabel("-", statsRowsWidget);
+		minCounts[picInc] = new QLabel("-", statsRowsWidget);
+		avgCounts[picInc] = new QLabel("-", statsRowsWidget);
+		selCounts[picInc] = new QLabel("-", statsRowsWidget);
+		statsRowsLayout->addWidget(picNumberIndicators[picInc], row, 0);
+		statsRowsLayout->addWidget(maxCounts[picInc], row, 1);
+		statsRowsLayout->addWidget(minCounts[picInc], row, 2);
+		statsRowsLayout->addWidget(avgCounts[picInc], row, 3);
+		statsRowsLayout->addWidget(selCounts[picInc], row, 4);
+	}
+	statsScrollArea->setWidget(statsRowsWidget);
+	layout->addWidget(statsScrollArea);
+	setVisiblePictureCount(1); // also sizes the panel height to fit the visible rows
 }
 
 
 void PictureStats::reset(){
+	setVisiblePictureCount(visiblePictureCount);
 	for (auto& control : maxCounts)	{
 		control->setText("-");
 	}
@@ -91,6 +87,29 @@ void PictureStats::updateType(std::string typeText){
 
 statPoint PictureStats::getMostRecentStats ( ){
 	return mostRecentStat;
+}
+
+
+void PictureStats::setVisiblePictureCount(unsigned count)
+{
+	visiblePictureCount = std::max(1u, std::min(count, MAX_STATS_PICTURES));
+	for (auto picInc : range(picNumberIndicators.size())) {
+		bool show = picInc < visiblePictureCount;
+		picNumberIndicators[picInc]->setVisible(show);
+		maxCounts[picInc]->setVisible(show);
+		minCounts[picInc]->setVisible(show);
+		avgCounts[picInc]->setVisible(show);
+		selCounts[picInc]->setVisible(show);
+	}
+	// Grow the panel so all visible rows show without scrolling (at least 4, capped at 10).
+	if (statsScrollArea != nullptr && !picNumberIndicators.empty() && collumnHeaders[0] != nullptr) {
+		const int headerHeight = collumnHeaders[0]->sizeHint().height();
+		const int rowHeight = picNumberIndicators[0]->sizeHint().height() + statsRowsLayout->verticalSpacing();
+		const unsigned rowsToShow = std::min<unsigned>(std::max(4u, visiblePictureCount), 10u);
+		const int targetHeight = headerHeight + rowHeight * static_cast<int>(rowsToShow) + 20;
+		statsScrollArea->setMinimumHeight(targetHeight);
+		statsScrollArea->setMaximumHeight(targetHeight);
+	}
 }
 
 
@@ -126,6 +145,9 @@ std::pair<int, int> PictureStats::update ( Matrix<long> image, unsigned imageNum
 	}
 	currentStatPoint.avgv = std::accumulate ( image.data.begin ( ), image.data.end ( ), 0.0 ) / image.size ( );
 
+	if (imageNumber >= maxCounts.size()) {
+		imageNumber = static_cast<unsigned>(maxCounts.size() - 1);
+	}
 	if ( displayDataType == RAW_COUNTS ){
 		maxCounts[ imageNumber ]->setText ( cstr ( currentStatPoint.maxv, 1 ) );
 		minCounts[ imageNumber ]->setText ( cstr ( currentStatPoint.minv, 1 ) );
